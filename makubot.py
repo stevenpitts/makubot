@@ -4,6 +4,8 @@ import random
 import conf
 import asyncio
 from conf import *
+import tokens
+from tokens import *
 import imp
 
 
