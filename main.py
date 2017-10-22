@@ -4,6 +4,8 @@ import time
 import conf
 import imp
 from conf import *
+import tokens
+from tokens import *
 
 def main():
 	bot = makubot.bot
