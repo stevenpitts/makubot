@@ -11,10 +11,6 @@ import sys
 #TODO switch superclass from bot to client cuz bot is stupid
 #Actually maybe don't?
 
-smugbotID = 194991333763579906
-log_to_file = True
-
-move_emote = "\U0001f232"
 
 
 
@@ -22,13 +18,14 @@ move_emote = "\U0001f232"
 class MakuBot(commands.Bot):
     #So, bot is a subclass of discord.Client, and this is a subclass of bot.
 
-    def __init__(self,correct_typos=False):
+    def __init__(self,correct_typos=False,log_to_file=True):
         self.correct_typos = correct_typos
+        self.log_to_file = log_to_file
         commands.Bot.__init__(self,command_prefix=commands.when_mentioned,description="Makusu's bot",case_insensitive=True,owner_id=203285581004931072)
         self.move_requests_pending = {}
         self.lastTime = time.time()
         self.makusu = None
-        self.free_guilds = None
+        self.free_guilds = []
 
     def printDebugInfo(self):
         print("Current servers: ",{guild.name:guild.id for guild in self.guilds})
@@ -41,14 +38,13 @@ class MakuBot(commands.Bot):
         await self.change_presence(activity=discord.Game(name=r"SmugBot is being tsun to me :<"))
         self.load_extension('makucommands')
         await self.load_free_reign_guilds()
-        print("blac",self.free_guilds)
         self.printDebugInfo()
 
     async def on_message(self,message : discord.Message):
         if message.author != self.user:
-             if message.mention_everyone:
+             if message.guild.id in self.free_guilds and message.mention_everyone:
                  await message.channel.send(message.author.mention+" grr")
-             if "vore" in message.content.split():
+             if message.guild.id in self.free_guilds and "vore" in message.content.split():
                  await message.pin()
              if self.user in message.mentions:
                  await self.change_presence(activity=discord.Game(name=message.author.name))
@@ -78,7 +74,7 @@ class MakuBot(commands.Bot):
                 await attachment.save(r"saved_attachments\attch"+str(random.randint(0,100000000)))
             except discord.errors.Forbidden:
                 deletion_message += "Could not save attachment from {} in {} due to it being deleted".format(message.author,message.channel)
-        if log_to_file:
+        if self.log_to_file:
             with open("mylog01.txt","a") as f:
                 f.write(deletion_message+"\n")
         else:
@@ -136,7 +132,6 @@ def getOriginalWord(before,after):
 
 def main():
 	makubot.run(makubotToken)
-    #asyncio.get_event_loop().run_until_complete(makubot.start(makubotToken))
 
 if __name__=="__main__":
     main()

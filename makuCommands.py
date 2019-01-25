@@ -1,12 +1,15 @@
 import discord
 from discord.ext import commands
 import random
-from makubot import move_emote
 import sys
 import asyncio
 import traceback
 
+
+move_emote = "\U0001f232"
+
 def freereign():
+    """Use as a decorator to restrict certain commands to free reign guilds"""
     async def predicate(ctx):
         return ctx.message.guild.id in ctx.bot.free_guilds
     return commands.check(predicate)
@@ -24,11 +27,13 @@ I'm pretty barebones on any server that I wasn't explicitly made to support, sor
         
     @commands.command()
     async def ping(self,ctx):
+        """Get ready to get PONG'D"""
         await ctx.send("pong")
             
     @commands.command()
     @freereign()
     async def reload(self,ctx): 
+        """Reloads my command cogs"""
         #https://gist.github.com/EvieePy/d78c061a4798ae81be9825468fe146be
         try:
             compile(open("makucommands.py", 'r').read() + '\n', "makucommands.py", 'exec')
@@ -43,6 +48,7 @@ I'm pretty barebones on any server that I wasn't explicitly made to support, sor
         
     @commands.command()
     async def emojispam(self,ctx):
+        """Prepare to be spammed by the greatest emojis you've ever seen"""
         emoji_gen = iter(sorted(self.bot.emojis,key=lambda *args: random.random()))
         for emoji_to_add in emoji_gen:
             try:
@@ -53,6 +59,7 @@ I'm pretty barebones on any server that I wasn't explicitly made to support, sor
     @commands.command()
     @commands.is_owner()
     async def perish(self,ctx):
+        """Murders me :( """
         self.bot.close()
         
     @commands.command()
@@ -69,14 +76,17 @@ I'm pretty barebones on any server that I wasn't explicitly made to support, sor
     @commands.command()
     @commands.is_owner()
     async def gowild(self,ctx):
+        """Add the current guild as a gowild guild; I do a bit more on these. Only Maku can add guilds though :("""
         await self.bot.add_free_reign_guild(ctx.message.guild.id)
             
     async def on_member_join(self,member:discord.Member):
+        """Called when a member joins to tell them that Maku loves them (because they do love them) <3 """
         if member.guild.id in self.bot.free_guilds:
             await member.guild.system_channel.send(member.mention+" Hi! Maku loves you! <333333")
         
         
     async def on_reaction_add(self,reaction,user):
+        """Called when a user adds a reaction to a message which is in my cache. Currently only looks for the "move message" emoji."""
         if reaction.emoji == move_emote:
             await reaction.message.channel.send(user.mention+" Move to which channel?")
             self.bot.move_requests_pending[user] = reaction.message
