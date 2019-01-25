@@ -1,6 +1,12 @@
 #Token (Secret)
 tokens.py
 
+#free_reign
+free_reign.txt
+
+saved_attachments/
+mylog01.txt
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]
