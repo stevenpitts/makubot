@@ -7,6 +7,8 @@ free_reign.txt
 saved_attachments/
 mylog01.txt
 
+picture_associations/
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]
