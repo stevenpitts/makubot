@@ -46,7 +46,7 @@ while youtube is None:
     except OSError:
         pass
 
-def aeval(s):
+def aeval(s,return_error=True):
     print("Ignore due to asteval being dumb:")
     # old_stdout = sys.stdout
     # old_stderr = sys.stderr
@@ -57,7 +57,10 @@ def aeval(s):
         #print("After thing")
         if len(aeval_interpreter.error) > 0:
             #return '\n'.join([str(thing.msg) for thing in aeval_interpreter.error])
-            return str(aeval_interpreter.error[0].msg)
+            if return_error:
+                return str(aeval_interpreter.error[0].msg)
+            else:
+                return None
         else:
             return result
     finally:
@@ -114,20 +117,21 @@ Also you can just ask Makusu2#2222 cuz they're never too busy to make a new frie
         self.log_to_file = log_to_file
         self.move_requests_pending = {}
         self.free_guilds = set()
-        for folder_name in os.listdir("picture_associations"):
-            folder_command = commands.Command(folder_name,lambda thing,ctx: thing.post_picture_command(ctx),brief="Post one of {}'s favorite pictures~".format(folder_name))
-            folder_command.instance = self
-            folder_command.module = self.__module__
-            self.bot.add_command(folder_command)
+        # for folder_name in os.listdir("picture_associations"):
+        #     folder_command = commands.Command(folder_name,lambda thing,ctx: thing.post_picture_command(ctx),brief="Post one of {}'s favorite pictures~".format(folder_name))
+        #     folder_command.instance = self
+        #     folder_command.module = self.__module__
+        #     self.bot.add_command(folder_command)
         asyncio.get_event_loop().create_task(self.load_free_reign_guilds())
+        self.print_debug_info()
             
             
-    async def post_picture_command(self,ctx):
-        await self.post_picture(ctx.channel,ctx.invoked_with)
-        
-    async def post_picture(self,channel,folder_name):
-        file_to_send = r"picture_associations\{}\{}".format(folder_name,random.choice(os.listdir(r"picture_associations\{}".format(folder_name))))
-        await channel.send(file=discord.File(file_to_send))
+    # async def post_picture_command(self,ctx):
+    #     await self.post_picture(ctx.channel,ctx.invoked_with)
+    # 
+    # async def post_picture(self,channel,folder_name):
+    #     file_to_send = r"picture_associations\{}\{}".format(folder_name,random.choice(os.listdir(r"picture_associations\{}".format(folder_name))))
+    #     await channel.send(file=discord.File(file_to_send))
             
     async def send_maku_message(self,msg):
         for i in range(0, len(msg), 2000):
@@ -138,6 +142,9 @@ Also you can just ask Makusu2#2222 cuz they're never too busy to make a new frie
         print(r"```Error in send_error_message: {}```".format(msg))
         
     
+    def print_debug_info(self):
+        print("Current servers: ",{guild.name:guild.id for guild in self.bot.guilds})
+    
     @commands.command()
     async def ping(self,ctx):
         """
@@ -146,22 +153,6 @@ Also you can just ask Makusu2#2222 cuz they're never too busy to make a new frie
         time_passed = (datetime.datetime.utcnow()-ctx.message.created_at).microseconds/1000
         await ctx.send("pong! It took me {} milliseconds to get the ping.".format(time_passed))
             
-    @commands.command()
-    @commands.is_owner()
-    async def reload(self,ctx): 
-        """Reloads my command cogs"""
-        #https://gist.github.com/EvieePy/d78c061a4798ae81be9825468fe146be
-        try:
-            compile(open("makucommands.py", 'r').read() + '\n', "makucommands.py", 'exec')
-        except Exception:
-            await self.send_error_message(traceback.format_exc())
-        else:
-            print("\n"*2+"---Reloading---"+"\n"*2)
-            self.bot.unload_extension('makucommands')
-            try:
-                self.bot.load_extension('makucommands')
-            except Exception:
-                await self.send_error_message("Dang, didn't notice the error, now can't reload. "+traceback.format_exc())
     
     @commands.command(aliases=["are you free","areyoufree?","are you free?",])
     async def areyoufree(self,ctx):
@@ -250,6 +241,7 @@ Also you can just ask Makusu2#2222 cuz they're never too busy to make a new frie
     
     @commands.command(aliases=["what was that","whatwasthat?","what was that?"])
     async def whatwasthat(self,ctx):
+        """Tells you what that fleeting message was"""
         last_thing = last_deleted_message.pop(ctx.channel.id,None)
         if last_thing is None:
             await ctx.send("I can't find anything, sorry :(")
@@ -262,7 +254,7 @@ Also you can just ask Makusu2#2222 cuz they're never too busy to make a new frie
         await ctx.send(random.choice(facts))
         
     @commands.command()
-    async def remindme(self,ctx):
+    async def remindme(self,ctx,timelength:int,timetype:str,*,reminder:str):
         """Not currently supported :("""
         await ctx.send("This isn't currently supported, sorry :(")
             
@@ -318,8 +310,9 @@ Also you can just ask Makusu2#2222 cuz they're never too busy to make a new frie
             
     async def on_command_error(self,ctx,e:discord.ext.commands.errors.CommandError):
         if isinstance(e,discord.ext.commands.errors.CommandNotFound):
-            astevald = aeval(ctx.message.content.replace(self.bot.user.mention,"").strip())
-            await ctx.send(astevald)
+            astevald = aeval(ctx.message.content.replace(self.bot.user.mention,"").strip(),return_error=False)
+            if astevald:
+                await ctx.send(astevald)
         elif isinstance(e,discord.ext.commands.errors.NotOwner):
             await ctx.send("Sorry, only Maku can use that command :(")
         #elif isinstance(e,ServerNotFreeReign):
@@ -428,6 +421,38 @@ Also you can just ask Makusu2#2222 cuz they're never too busy to make a new frie
         pass
     async def on_group_join(self,channel,user):
         pass
+        
+class CutiePictures:
+    def __init__(self,bot):
+        self.bot = bot
+        for folder_name in os.listdir("picture_associations"):
+            folder_command = commands.Command(folder_name,lambda thing,ctx: thing.post_picture(ctx.channel,ctx.invoked_with,parent_dir="picture_associations"),brief="Post one of {}'s favorite pictures~".format(folder_name))
+            folder_command.instance = self
+            folder_command.module = self.__module__
+            self.bot.add_command(folder_command)
+        
+    async def post_picture(self,channel,folder_name,parent_dir="picture_associations"):
+        file_to_send = r"{}\{}\{}".format(parent_dir,folder_name,random.choice(os.listdir(r"{}\{}".format(parent_dir,folder_name))))
+        await channel.send(file=discord.File(file_to_send))
+class ReactionImages:
+    def __init__(self,bot):
+        self.bot = bot
+        for folder_name in os.listdir("picture_reactions"):
+            folder_command = commands.Command(folder_name,lambda thing,ctx: thing.post_picture(ctx.channel,ctx.invoked_with,parent_dir="picture_reactions"),brief=folder_name)
+            folder_command.instance = self
+            folder_command.module = self.__module__
+            self.bot.add_command(folder_command)
+        
+    async def post_picture(self,channel,folder_name,parent_dir="picture_reactions"):
+        file_to_send = r"{}\{}\{}".format(parent_dir,folder_name,random.choice(os.listdir(r"{}\{}".format(parent_dir,folder_name))))
+        await channel.send(file=discord.File(file_to_send))
     
 def setup(bot):
     bot.add_cog(MakuCommands(bot))
+    bot.add_cog(CutiePictures(bot))
+    bot.add_cog(ReactionImages(bot))
+    
+    
+    
+
+#Fact command that makes bot print the first sentence of a random wikipedia article
