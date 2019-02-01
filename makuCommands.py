@@ -16,8 +16,6 @@ import datetime
 
 last_deleted_message = {} #Maps channel ID to last deleted message content, along with a header of who send it.
 
-temp_string_io = StringIO()
-aeval_interpreter = asteval.Interpreter(writer=temp_string_io)
 
 facts = """Geese are NEAT
 How can mirrors be real if our eyes aren't real
@@ -38,7 +36,6 @@ Expiration dates are just suggestions
 Cake am lie
 Oh dang is that a gun -Uncle Ben
 With great power comes great responsibility -Uncle Ben""".split('\n')
-
 youtube = None
 while youtube is None:
     try:
@@ -47,31 +44,14 @@ while youtube is None:
         pass
 
 def aeval(s,return_error=True):
-    print("Ignore due to asteval being dumb:")
-    # old_stdout = sys.stdout
-    # old_stderr = sys.stderr
-    # new_stdout = sys.stdout = sys.stderr = StringIO()
-    try:
-            #print("Before thing")
-        result = aeval_interpreter(s)
-        #print("After thing")
-        if len(aeval_interpreter.error) > 0:
-            #return '\n'.join([str(thing.msg) for thing in aeval_interpreter.error])
-            if return_error:
-                return str(aeval_interpreter.error[0].msg)
-            else:
-                return None
-        else:
-            return result
-    finally:
-        # sys.stdout = old_stdout
-        # sys.stderr = old_stderr
-        print("End ignore")
+    temp_string_io = StringIO()
+    aeval_interpreter = asteval.Interpreter(writer=temp_string_io,err_writer=temp_string_io)
+    result = aeval_interpreter(s) or "No result found."
+    return "```{}```\nResult: {}".format(temp_string_io.getvalue(),result)
             
 def youtube_search(search_term):
     search_response = youtube.search().list(q=search_term,part='id,snippet',maxResults=10).execute()
     for search_result in search_response.get('items', []):
-        #print("Searchresultthing: ",print(search_result))
         if search_result['id']['kind'] == 'youtube#video':
             return search_result['id']['videoId']
 
@@ -117,21 +97,8 @@ Also you can just ask Makusu2#2222 cuz they're never too busy to make a new frie
         self.log_to_file = log_to_file
         self.move_requests_pending = {}
         self.free_guilds = set()
-        # for folder_name in os.listdir("picture_associations"):
-        #     folder_command = commands.Command(folder_name,lambda thing,ctx: thing.post_picture_command(ctx),brief="Post one of {}'s favorite pictures~".format(folder_name))
-        #     folder_command.instance = self
-        #     folder_command.module = self.__module__
-        #     self.bot.add_command(folder_command)
         asyncio.get_event_loop().create_task(self.load_free_reign_guilds())
         self.print_debug_info()
-            
-            
-    # async def post_picture_command(self,ctx):
-    #     await self.post_picture(ctx.channel,ctx.invoked_with)
-    # 
-    # async def post_picture(self,channel,folder_name):
-    #     file_to_send = r"picture_associations\{}\{}".format(folder_name,random.choice(os.listdir(r"picture_associations\{}".format(folder_name))))
-    #     await channel.send(file=discord.File(file_to_send))
             
     async def send_maku_message(self,msg):
         for i in range(0, len(msg), 2000):
@@ -144,6 +111,10 @@ Also you can just ask Makusu2#2222 cuz they're never too busy to make a new frie
     
     def print_debug_info(self):
         print("Current servers: ",{guild.name:guild.id for guild in self.bot.guilds})
+        
+    async def send_reminder(self,channel,reminder_target:discord.member.Member,seconds:int,reminder_message:str):
+        await asyncio.sleep(seconds)
+        await channel.send("{}, you have a reminder from {} seconds ago:\n{}".format(reminder_target.mention,seconds,reminder_message))
     
     @commands.command()
     async def ping(self,ctx):
@@ -224,7 +195,7 @@ Also you can just ask Makusu2#2222 cuz they're never too busy to make a new frie
             await ctx.send(r"https://www.youtube.com/watch?v={}".format(search_result))
         
     @commands.command()
-    async def eval(self,ctx):
+    async def eval(self,ctx,*,to_eval:str):
         """Evals a statement. Feel free to inject malicious code \o/
         Example: 
             @makubot eval 3+3
@@ -233,8 +204,7 @@ Also you can just ask Makusu2#2222 cuz they're never too busy to make a new frie
             >>>ERROR ERROR MAJOR ERROR SELF DESTRUCT SEQUENCE INITIALIZE
         """
         try:
-            without_command_stuff = re.search(r"{} eval (.*)".format(self.bot.user.mention),ctx.message.content).group(1)
-            astevald = aeval(without_command_stuff)
+            astevald = aeval(to_eval)
             await ctx.send(astevald)
         except AttributeError:
             print("Couldn't get a match on {}. Weird.".format(ctx.message.content))
@@ -254,12 +224,21 @@ Also you can just ask Makusu2#2222 cuz they're never too busy to make a new frie
         await ctx.send(random.choice(facts))
         
     @commands.command()
-    async def remindme(self,ctx,timelength:int,timetype:str,*,reminder:str):
-        """Not currently supported :("""
-        await ctx.send("This isn't currently supported, sorry :(")
-            
-    
-
+    async def remindme(self,ctx,timelength:str,*,reminder:str):
+        """Reminds you of a thing (not reliable)
+        Usage: remindme [<days>d][<hours>h][<minutes>m][<seconds>s] <reminder message>
+        Example: remindme 1d2h9s do laundry
+        Do not rely on me to remind you for long periods of time! Yet. Eventually I'll be run on a VPS :3
+        """
+        timereg = re.compile(r"((?P<days>\d*)d)?((?P<hours>\d*)h)?((?P<minutes>\d*)m)?((?P<seconds>\d*)s)?")
+        matches = re.search(timereg,timelength)
+        if matches:
+            days,hours,minutes,seconds = [int(val) if val else 0 for val in matches.group("days","hours","minutes","seconds")]
+            total_seconds = days*86400 + hours*3600 + minutes*60 + seconds
+            await ctx.send("Coolio I'll remind you in {} seconds".format(total_seconds))
+            asyncio.get_event_loop().create_task(self.send_reminder(ctx.channel,ctx.message.author,total_seconds,reminder))
+        else:
+            await ctx.send("Hmm, that doesn't look valid. Ask for help if you need it!")
             
             
             
@@ -315,8 +294,6 @@ Also you can just ask Makusu2#2222 cuz they're never too busy to make a new frie
                 await ctx.send(astevald)
         elif isinstance(e,discord.ext.commands.errors.NotOwner):
             await ctx.send("Sorry, only Maku can use that command :(")
-        #elif isinstance(e,ServerNotFreeReign):
-        #    await ctx.send("This command isn't supported on this guild because this server is not free reign. Free reign servers make me super annoying, so you probably don't want me to be, but if you do, invite Makusu2#2222 to your server and ask them to invoke free reign.")
         elif isinstance(e,discord.ext.commands.errors.CheckFailure):
             await ctx.send("Hmmm, there was a check failure but it wasn't accounted for. Maku did a mistake :(")
         else:
@@ -334,9 +311,6 @@ Also you can just ask Makusu2#2222 cuz they're never too busy to make a new frie
                  await message.pin()
                 if self.bot.user in message.mentions:
                  await self.bot.change_presence(activity=discord.Game(name=message.author.name))
-             #if message.guild.id in self.free_guilds and "maku" in message.content.lower() and r"@ma" not in message.content.lower() and "makubot" not in message.content.lower():
-            #        await message.channel.send(r"<@!203285581004931072>")
-             
                 if message.author in self.move_requests_pending:
                  try:
                      channel_id = int(message.content.strip().replace("<","").replace("#","").replace(">",""))
@@ -381,8 +355,6 @@ Also you can just ask Makusu2#2222 cuz they're never too busy to make a new frie
                 f.write("\n")
         else:
             print(deletion_message)
-        #await self.process_commands(message)
-        #That's for some thing with the API, it's weird but don't remove it
             
     async def on_message_edit(self,before,after):
         if self.correct_typos and before.guild.id in self.free_guilds:
@@ -422,7 +394,7 @@ Also you can just ask Makusu2#2222 cuz they're never too busy to make a new frie
     async def on_group_join(self,channel,user):
         pass
         
-class CutiePictures:
+class FavePictures:
     def __init__(self,bot):
         self.bot = bot
         for folder_name in os.listdir("picture_associations"):
@@ -449,7 +421,7 @@ class ReactionImages:
     
 def setup(bot):
     bot.add_cog(MakuCommands(bot))
-    bot.add_cog(CutiePictures(bot))
+    bot.add_cog(FavePictures(bot))
     bot.add_cog(ReactionImages(bot))
     
     
