@@ -5,10 +5,6 @@ from io import StringIO
 import traceback
 
 
-def exception_traceback(e):
-    return ''.join(traceback.format_exception(type(e), e, e.__traceback__))
-
-
 
 class CriticalCommands:
     def __init__(self,bot):
@@ -28,7 +24,7 @@ class CriticalCommands:
             await ctx.send("Successfully reloaded!")
         except Exception as e:
             await ctx.send("Failed to reload, sending you the details :(")
-            await self.send_maku_message(exception_traceback(e))
+            await self.send_maku_message(''.join(traceback.format_exception(type(e), e, e.__traceback__)))
         print("---Reloading---")
     
     @commands.command()

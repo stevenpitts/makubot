@@ -46,7 +46,7 @@ def aeval(s,return_error=True):
     return "```{}```\nResult: {}".format(temp_string_io.getvalue(),result)
             
 def youtube_search(search_term):
-    search_response = youtube.search().list(q=search_term,part='id,snippet',maxResults=10).execute()
+    search_response = youtube.search().list(q=search_term,part='id',maxResults=10).execute()
     for search_result in search_response.get('items', []):
         if search_result['id']['kind'] == 'youtube#video':
             return search_result['id']['videoId']
@@ -62,7 +62,7 @@ move_emote = "\U0001f232"
 
 
 class MakuCommands():
-    def __init__(self,bot,correct_typos=False,log_to_file=True):
+    def __init__(self,bot):
         self.bot = bot
         self.bot.description = """
 Hey there! I'm Makubot!
@@ -72,8 +72,6 @@ I'm pretty barebones on any server that I wasn't explicitly made to support, sor
 I can do some cool things like basic math if you tag me with a mathematical expression!
 Also you can just ask Makusu2#2222 cuz they're never too busy to make a new friend <3
         """.format(".".join(map(str, sys.version_info[:3])))
-        self.correct_typos = correct_typos
-        self.log_to_file = log_to_file
         self.move_requests_pending = {}
         self.free_guilds = set()
         asyncio.get_event_loop().create_task(self.load_free_reign_guilds())
@@ -82,9 +80,7 @@ Also you can just ask Makusu2#2222 cuz they're never too busy to make a new frie
         for i in range(0, len(msg), 1500):
             await self.bot.makusu.send(msg[i:i+1500])
         
-    async def send_reminder(self,channel,reminder_target:discord.member.Member,seconds:int,reminder_message:str):
-        await asyncio.sleep(seconds)
-        await channel.send("{}, you have a reminder from {} seconds ago:\n{}".format(reminder_target.mention,seconds,reminder_message))
+
     
     @commands.command()
     @commands.is_owner()
@@ -111,8 +107,7 @@ Also you can just ask Makusu2#2222 cuz they're never too busy to make a new frie
     @commands.command(aliases=["emoji spam",])
     async def emojispam(self,ctx):
         """Prepare to be spammed by the greatest emojis you've ever seen"""
-        emoji_gen = iter(sorted(self.bot.emojis,key=lambda *args: random.random()))
-        for emoji_to_add in emoji_gen:
+        for emoji_to_add in iter(sorted(self.bot.emojis,key=lambda *args: random.random())):
             try:
                 await ctx.message.add_reaction(emoji_to_add)
             except discord.errors.Forbidden:
@@ -200,6 +195,9 @@ Also you can just ask Makusu2#2222 cuz they're never too busy to make a new frie
         
     @commands.command()
     async def remindme(self,ctx,timelength:str,*,reminder:str):
+        async def send_reminder(channel,reminder_target:discord.member.Member,seconds:int,reminder_message:str):
+            await asyncio.sleep(seconds)
+            await channel.send("{}, you have a reminder from {} seconds ago:\n{}".format(reminder_target.mention,seconds,reminder_message))
         """Reminds you of a thing (not reliable)
         Usage: remindme [<days>d][<hours>h][<minutes>m][<seconds>s] <reminder message>
         Example: remindme 1d2h9s do laundry
@@ -212,7 +210,7 @@ Also you can just ask Makusu2#2222 cuz they're never too busy to make a new frie
             total_seconds = days*86400 + hours*3600 + minutes*60 + seconds
             await ctx.send("Coolio I'll remind you in {} seconds".format(total_seconds))
             asyncio.get_event_loop().create_task(
-            self.send_reminder(ctx.channel,ctx.message.author,total_seconds,reminder))
+            send_reminder(ctx.channel,ctx.message.author,total_seconds,reminder))
         else:
             await ctx.send("Hmm, that doesn't look valid. Ask for help if you need it!")
             
@@ -324,16 +322,13 @@ Also you can just ask Makusu2#2222 cuz they're never too busy to make a new frie
                 await attachment.save(r"saved_attachments\attch"+str(random.randint(0,100000000)))
             except discord.errors.Forbidden:
                 deletion_message += "Could not save attachment from {} in {} due to it being deleted".format(message.author,message.channel)
-        if self.log_to_file:
-            with open("mylog01.txt","a") as f:
-                for word in deletion_message.split():
-                    try:
-                        f.write(word+" ")
-                    except UnicodeEncodeError:
-                        f.write("?!?!?!"+" ")
-                f.write("\n")
-        else:
-            print(deletion_message)
+        with open("mylog01.txt","a") as f:
+            for word in deletion_message.split():
+                try:
+                    f.write(word+" ")
+                except UnicodeEncodeError:
+                    f.write("?!?!?!"+" ")
+            f.write("\n")
             
     async def on_message_edit(self,before,after):
         pass
@@ -370,30 +365,28 @@ Also you can just ask Makusu2#2222 cuz they're never too busy to make a new frie
     async def on_group_join(self,channel,user):
         pass
         
+        
+async def post_picture(channel,folder_name,parent_dir):
+    file_to_send = r"{}\{}\{}".format(parent_dir,folder_name,random.choice(os.listdir(r"{}\{}".format(parent_dir,folder_name))))
+    await channel.send(file=discord.File(file_to_send))
+    
 class FavePictures:
     def __init__(self,bot):
         self.bot = bot
         for folder_name in os.listdir("picture_associations"):
-            folder_command = commands.Command(folder_name,lambda thing,ctx: thing.post_picture(ctx.channel,ctx.invoked_with,parent_dir="picture_associations"),brief="Post one of {}'s favorite pictures~".format(folder_name))
+            folder_command = commands.Command(folder_name,lambda cog_ref,ctx: post_picture(ctx.channel,ctx.invoked_with,parent_dir="picture_associations"),brief="Post one of {}'s favorite pictures~".format(folder_name))
             folder_command.instance = self
             folder_command.module = self.__module__
             self.bot.add_command(folder_command)
-        
-    async def post_picture(self,channel,folder_name,parent_dir="picture_associations"):
-        file_to_send = r"{}\{}\{}".format(parent_dir,folder_name,random.choice(os.listdir(r"{}\{}".format(parent_dir,folder_name))))
-        await channel.send(file=discord.File(file_to_send))
+            
 class ReactionImages:
     def __init__(self,bot):
         self.bot = bot
         for folder_name in os.listdir("picture_reactions"):
-            folder_command = commands.Command(folder_name,lambda thing,ctx: thing.post_picture(ctx.channel,ctx.invoked_with,parent_dir="picture_reactions"),brief=folder_name)
+            folder_command = commands.Command(folder_name,lambda cog_ref,ctx: post_picture(ctx.channel,ctx.invoked_with,parent_dir="picture_reactions"),brief=folder_name)
             folder_command.instance = self
             folder_command.module = self.__module__
             self.bot.add_command(folder_command)
-        
-    async def post_picture(self,channel,folder_name,parent_dir="picture_reactions"):
-        file_to_send = r"{}\{}\{}".format(parent_dir,folder_name,random.choice(os.listdir(r"{}\{}".format(parent_dir,folder_name))))
-        await channel.send(file=discord.File(file_to_send))
     
 def setup(bot):
     bot.add_cog(MakuCommands(bot))
