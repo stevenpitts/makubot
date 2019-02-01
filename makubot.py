@@ -24,11 +24,8 @@ class MakuBot(commands.Bot):
         print('Logged in as ',self.user.name,' with ID ',self.user.id)
         await self.change_presence(activity=discord.Game(name=r"SmugBot is being tsun to me :<"))
         self.load_extension('criticalcommands')
-        try:
-            self.load_extension('makucommands')
-        except NameError:
-            print("Error loading makucommands.")
-            raise
+        self.load_extension('makucommands')
+
         
 
 

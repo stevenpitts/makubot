@@ -26,7 +26,7 @@ class CriticalCommands:
         try:
             self.bot.load_extension('makucommands')
             await ctx.send("Successfully reloaded!")
-        except NameError as e:
+        except Exception as e:
             await ctx.send("Failed to reload, sending you the details :(")
             await self.send_maku_message(exception_traceback(e))
         print("---Reloading---")

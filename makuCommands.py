@@ -36,12 +36,8 @@ Expiration dates are just suggestions
 Cake am lie
 Oh dang is that a gun -Uncle Ben
 With great power comes great responsibility -Uncle Ben""".split('\n')
-youtube = None
-while youtube is None:
-    try:
-        youtube = build('youtube', 'v3',developerKey=googleAPI)
-    except OSError:
-        pass
+
+youtube = build('youtube', 'v3',developerKey=googleAPI)
 
 def aeval(s,return_error=True):
     temp_string_io = StringIO()
@@ -59,24 +55,7 @@ def youtube_search(search_term):
 
 
 move_emote = "\U0001f232"
-
-# def freereign():
-#     """Use as a decorator to restrict certain commands to free reign guilds"""
-#     async def predicate(ctx):
-#         if ctx.message.guild and ctx.message.guild.id in ctx.bot.free_guilds:
-#             return True
-#         raise ServerNotFreeReign("Server is not free reign.")
-#     return commands.check(predicate)
     
-
-def getMessageString(message):
-    return str(message.created_at)+" "+message.author.name+" in "+str(message.channel)+"   "+message.content
-def getOriginalWord(before,after):
-    """Called for edited messages. Args of "Lol taht was funny" and "Lol that was funny" should return "taht" """
-    return [word for word in before.split() if word not in after.split()][0]
-def exception_traceback(e):
-    return ''.join(traceback.format_exception(type(e), e, e.__traceback__))
-
 
 
 
@@ -98,24 +77,20 @@ Also you can just ask Makusu2#2222 cuz they're never too busy to make a new frie
         self.move_requests_pending = {}
         self.free_guilds = set()
         asyncio.get_event_loop().create_task(self.load_free_reign_guilds())
-        self.print_debug_info()
             
     async def send_maku_message(self,msg):
-        for i in range(0, len(msg), 2000):
-            await self.bot.makusu.send(msg[i:i+2000])
-            
-    async def send_error_message(self,msg):
-        await self.send_maku_message(msg)
-        print(r"```Error in send_error_message: {}```".format(msg))
-        
-    
-    def print_debug_info(self):
-        print("Current servers: ",{guild.name:guild.id for guild in self.bot.guilds})
+        for i in range(0, len(msg), 1500):
+            await self.bot.makusu.send(msg[i:i+1500])
         
     async def send_reminder(self,channel,reminder_target:discord.member.Member,seconds:int,reminder_message:str):
         await asyncio.sleep(seconds)
         await channel.send("{}, you have a reminder from {} seconds ago:\n{}".format(reminder_target.mention,seconds,reminder_message))
     
+    @commands.command()
+    @commands.is_owner()
+    async def getstatus(self,ctx):
+        await send_maku_message("Current servers: ",{guild.name:guild.id for guild in self.bot.guilds})
+        
     @commands.command()
     async def ping(self,ctx):
         """
@@ -236,13 +211,14 @@ Also you can just ask Makusu2#2222 cuz they're never too busy to make a new frie
             days,hours,minutes,seconds = [int(val) if val else 0 for val in matches.group("days","hours","minutes","seconds")]
             total_seconds = days*86400 + hours*3600 + minutes*60 + seconds
             await ctx.send("Coolio I'll remind you in {} seconds".format(total_seconds))
-            asyncio.get_event_loop().create_task(self.send_reminder(ctx.channel,ctx.message.author,total_seconds,reminder))
+            asyncio.get_event_loop().create_task(
+            self.send_reminder(ctx.channel,ctx.message.author,total_seconds,reminder))
         else:
             await ctx.send("Hmm, that doesn't look valid. Ask for help if you need it!")
             
     @commands.command()
     async def cancel(self,ctx):
-        """Cancel a pending command"""
+        """Cancel pending commands"""
         if self.move_requests_pending.pop(ctx.message.author,None):
             await ctx.send("Cancelled move command.")
             
@@ -300,9 +276,9 @@ Also you can just ask Makusu2#2222 cuz they're never too busy to make a new frie
         elif isinstance(e,discord.ext.commands.errors.CheckFailure):
             await ctx.send("Hmmm, there was a check failure but it wasn't accounted for. Maku did a mistake :(")
         else:
-            await self.send_error_message(exception_traceback(e))
+            await self.send_maku_message(r'```'+''.join(traceback.format_exception(type(e), e, e.__traceback__))+r'```')
     async def on_error(self,ctx,e):
-        await self.send_error_message(exception_traceback(e))
+        await self.send_maku_message(r'```'+''.join(traceback.format_exception(type(e), e, e.__traceback__))+r'```')
         
     
     async def on_message(self,message : discord.Message):
@@ -342,7 +318,7 @@ Also you can just ask Makusu2#2222 cuz they're never too busy to make a new frie
             
     async def on_message_delete(self,message):
         last_deleted_message[message.channel.id] = "From {}: {}".format(message.author.name,message.content)
-        deletion_message = "A user has deleted a message. "+str(getMessageString(message))
+        deletion_message = "A user has deleted a message. "+str(message.created_at)+" "+message.author.name+" in "+str(message.channel)+"   "+message.content
         for attachment in message.attachments:
             try:
                 await attachment.save(r"saved_attachments\attch"+str(random.randint(0,100000000)))
