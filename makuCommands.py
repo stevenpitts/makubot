@@ -240,8 +240,11 @@ Also you can just ask Makusu2#2222 cuz they're never too busy to make a new frie
         else:
             await ctx.send("Hmm, that doesn't look valid. Ask for help if you need it!")
             
-            
-            
+    @commands.command()
+    async def cancel(self,ctx):
+        """Cancel a pending command"""
+        if self.move_requests_pending.pop(ctx.message.author,None):
+            await ctx.send("Cancelled move command.")
             
             
             
@@ -306,23 +309,23 @@ Also you can just ask Makusu2#2222 cuz they're never too busy to make a new frie
         if message.author != self.bot.user:
             if message.guild:
                 if message.guild.id in self.free_guilds and message.mention_everyone:
-                 await message.channel.send(message.author.mention+" grr")
+                    await message.channel.send(message.author.mention+" grr")
                 if message.guild.id in self.free_guilds and "vore" in message.content.split():
-                 await message.pin()
+                    await message.pin()
                 if self.bot.user in message.mentions:
-                 await self.bot.change_presence(activity=discord.Game(name=message.author.name))
+                    await self.bot.change_presence(activity=discord.Game(name=message.author.name))
                 if message.author in self.move_requests_pending:
-                 try:
-                     channel_id = int(message.content.strip().replace("<","").replace("#","").replace(">",""))
-                     channel_to_move_to = self.bot.get_channel(channel_id)
-                 except ValueError:
-                     await message.channel.send("That doesn't look like a tagged channel, try again. (You do not need to readd the reaction. Type \"cancel\" to cancel the move request.)")
-                 except TypeError:
-                    await message.channel.send("Hmmm, that looks like a channel but I can't figure out what it is. It's already been logged for Maku to debug.")
-                    print("Couldn't figure out what channel "+str(channel_id)+" was.")
-                 else:
-                    message_to_move = self.move_requests_pending.pop(message.author)
-                    asyncio.get_event_loop().create_task(self.move_message_attempt(message_to_move,channel_to_move_to,message.author))
+                    try:
+                        channel_id = int(message.content.strip().replace("<","").replace("#","").replace(">",""))
+                        channel_to_move_to = self.bot.get_channel(channel_id)
+                    except ValueError:
+                        await message.channel.send("That doesn't look like a tagged channel, try again. (You do not need to readd the reaction. Use the 'cancel' command to cancel the move request.)")
+                    except TypeError:
+                        await message.channel.send("Hmmm, that looks like a channel but I can't figure out what it is. It's already been logged for Maku to debug.")
+                        print("Couldn't figure out what channel "+str(channel_id)+" was.")
+                    else:
+                        message_to_move = self.move_requests_pending.pop(message.author)
+                        asyncio.get_event_loop().create_task(self.move_message_attempt(message_to_move,channel_to_move_to,message.author))
                 
     
     async def move_message_attempt(self,message:discord.Message, channel:discord.TextChannel, move_request_user:discord.member.Member):
@@ -357,10 +360,7 @@ Also you can just ask Makusu2#2222 cuz they're never too busy to make a new frie
             print(deletion_message)
             
     async def on_message_edit(self,before,after):
-        if self.correct_typos and before.guild.id in self.free_guilds:
-            probMisspelledWord = getOriginalWord(before.content,after.content)
-            if probMisspelledWord is not None:
-                await before.channel.send("LOL nice going there with your '"+probMisspelledWord+"'")
+        pass
                 
     async def on_member_join(self,member:discord.Member):
         """Called when a member joins to tell them that Maku loves them (because they do love them) <3 """
