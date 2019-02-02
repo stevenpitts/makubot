@@ -220,6 +220,26 @@ Also you can just ask Makusu2#2222 cuz they're never too busy to make a new frie
         if self.move_requests_pending.pop(ctx.message.author,None):
             await ctx.send("Cancelled move command.")
             
+    @commands.command(aliases=["deletehist",])
+    @commands.is_owner()
+    async def removehist(self,ctx,num_to_delete:int):
+        async def get_bot_history():
+            async for current_message in message_history:
+                if current_message.author == self.bot.user:
+                    yield current_message
+        bot_history = (message async for message in ctx.channel.history() if message.author == self.bot.user)
+        for i in range(num_to_delete):
+            next(bot_history).delete()
+        # message_history = ctx.channel.history()
+        # num_deleted = 0
+        # async for current_message in message_history:
+        #     if current_message.author == self.bot.user:
+        #         await current_message.delete()
+        #         num_deleted += 1
+        #         if num_deleted >= num_to_delete:
+        #             break
+        
+            
             
             
             
