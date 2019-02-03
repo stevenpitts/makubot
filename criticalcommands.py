@@ -3,16 +3,13 @@ from discord.ext import commands
 import sys
 from io import StringIO
 import traceback
+import commandutil
 
 
 
 class CriticalCommands:
     def __init__(self,bot):
         self.bot = bot
-        
-    async def send_maku_message(self,msg):
-        for i in range(0, len(msg), 1500):
-            await self.bot.makusu.send(r"```"+msg[i:i+1500]+r"```")
             
     @commands.command()
     @commands.is_owner()
@@ -24,7 +21,7 @@ class CriticalCommands:
             await ctx.send("Successfully reloaded!")
         except Exception as e:
             await ctx.send("Failed to reload, sending you the details :(")
-            await self.send_maku_message(''.join(traceback.format_exception(type(e), e, e.__traceback__)))
+            await commandutil.send_formatted_message(self.bot.makusu,commandutil.get_formatted_traceback(e))
         print("---Reloading---")
     
     @commands.command()
