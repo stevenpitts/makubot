@@ -2,6 +2,8 @@ import discord
 from discord.ext import commands
 import tokens
 import logging
+import importlib
+import commandutil
 logging.basicConfig(filename='makubot.log',level=logging.INFO)
 
 class MakuBot(commands.Bot):
