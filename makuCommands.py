@@ -13,13 +13,10 @@ import googleapiclient
 from googleapiclient.discovery import build
 import datetime
 import commandutil
+import json
+import logging
+import codecs
 
-#TODO make stuff a database, like the freeguilds and stuff! SQL and shit!
-#TODO use json for free_channels and stuff
-#TODO use the logging module instead of prints
-#TODO google f-strings
-#TODO regular non-cog files can have util methods that you can use, and if you reload the cogs that use the util file it'll use the newer version
-#TODO cache attachments for on deletion
 #TODO Fact command that makes bot print the first sentence of a random wikipedia article
 
 last_deleted_message = {} #Maps channel ID to last deleted message content, along with a header of who send it.
@@ -50,7 +47,12 @@ youtube = build('youtube', 'v3',developerKey=googleAPI)
 def aeval(s,return_error=True):
     temp_string_io = StringIO()
     aeval_interpreter = asteval.Interpreter(writer=temp_string_io,err_writer=temp_string_io)
-    result = aeval_interpreter(s) or "No result found."
+    result = aeval_interpreter(s)
+    if not result:
+         if return_error:
+             result = "No result found."
+         else:
+             return None
     return "```{}```\nResult: {}".format(temp_string_io.getvalue(),result)
             
 def youtube_search(search_term):
@@ -63,7 +65,6 @@ def youtube_search(search_term):
 
 
 move_emote = "\U0001f232"
-    
 
 
 
@@ -76,20 +77,19 @@ class MakuCommands():
 Hey there! I'm Makubot!
 I'm a dumb bot made by a person who codes stuff.
 I'm currently running Python {}.
-I'm pretty barebones on any server that I wasn't explicitly made to support, sorry!
-I can do some cool things like basic math if you tag me with a mathematical expression!
 Also you can just ask Makusu2#2222 cuz they're never too busy to make a new friend <3
         """.format(".".join(map(str, sys.version_info[:3])))
         self.move_requests_pending = {}
         self.free_guilds = set()
+        self.bot.command_prefix = commands.when_mentioned_or(*[m+b+punc+maybespace for m in ['m','M'] for b in ['b','B'] for punc in ['.','!'] for maybespace in [' ','']])
         asyncio.get_event_loop().create_task(self.load_free_reign_guilds())
         
 
     
-    @commands.command()
+    @commands.command(hidden=True)
     @commands.is_owner()
     async def getstatus(self,ctx):
-        await send_maku_message("Current servers: ",{guild.name:guild.id for guild in self.bot.guilds})
+        await commandutil.send_formatted_message(self.bot.makusu,"Current servers: ",{guild.name:guild.id for guild in self.bot.guilds})
         
     @commands.command()
     async def ping(self,ctx):
@@ -181,16 +181,15 @@ Also you can just ask Makusu2#2222 cuz they're never too busy to make a new frie
             astevald = aeval(to_eval)
             await ctx.send(astevald)
         except AttributeError:
-            print("Couldn't get a match on {}. Weird.".format(ctx.message.content))
+            logging.error("Couldn't get a match on {}. Weird.".format(ctx.message.content))
     
     @commands.command(aliases=["what was that","whatwasthat?","what was that?"])
     async def whatwasthat(self,ctx):
         """Tells you what that fleeting message was"""
-        last_thing = last_deleted_message.pop(ctx.channel.id,None)
-        if last_thing is None:
+        try:
+            await ctx.send(last_deleted_message.pop(ctx.channel.id))
+        except KeyError:
             await ctx.send("I can't find anything, sorry :(")
-        else:
-            await ctx.send(last_thing)
             
     @commands.command()
     async def fact(self,ctx):
@@ -206,15 +205,14 @@ Also you can just ask Makusu2#2222 cuz they're never too busy to make a new frie
         """
         async def send_reminder(channel,reminder_target:discord.Member,seconds:int,reminder_message:str):
             await asyncio.sleep(seconds)
-            await channel.send("{}, you have a reminder from {} seconds ago:\n{}".format(reminder_target.mention,seconds,reminder_message))
-        timereg = re.compile(r"((?P<days>\d*)d)?((?P<hours>\d*)h)?((?P<minutes>\d*)m)?((?P<seconds>\d*)s)?")
+            await channel.send("{}, you have a reminder from {} seconds ago:\n{}".format(reminder_target.name,seconds,reminder_message))
+        timereg = re.compile(''.join([r"((?P<{}>\d*){})?".format(cha,cha) for cha in "dhms"]))
         matches = re.search(timereg,timelength)
         if matches:
-            days,hours,minutes,seconds = [int(val) if val else 0 for val in matches.group("days","hours","minutes","seconds")]
+            days,hours,minutes,seconds = [int(val) if val else 0 for val in matches.group("d","h","m","s")]
             total_seconds = days*86400 + hours*3600 + minutes*60 + seconds
             await ctx.send("Coolio I'll remind you in {} seconds".format(total_seconds))
-            asyncio.get_event_loop().create_task(
-            send_reminder(ctx.channel,ctx.message.author,total_seconds,reminder))
+            asyncio.get_event_loop().create_task(send_reminder(ctx.channel,ctx.message.author,total_seconds,reminder))
         else:
             await ctx.send("Hmm, that doesn't look valid. Ask for help if you need it!")
             
@@ -226,27 +224,108 @@ Also you can just ask Makusu2#2222 cuz they're never too busy to make a new frie
             
     @commands.command(aliases=["deletehist"])
     async def removehist(self,ctx,num_to_delete:int):
+        """Removes a specified number of previous messages by me"""
         if ctx.message.author == self.bot.makusu or ctx.channel.permissions_for(message.author).manage_messages:
             bot_history = (message async for message in ctx.channel.history() if message.author == self.bot.user)
-            to_delete = [await bot_history.__anext__() for i in range(num_to_delete)]
+            to_delete = []
+            for i in range(num_to_delete):
+                try:
+                    to_delete.append(await bot_history.__anext__())
+                except StopAsyncIteration:
+                    break
             await ctx.channel.delete_messages(to_delete)
         else:
             await ctx.send("Sorry, you have to be Maku or someone with the Manage Messages role to use that :(")
+            
+    @commands.command()
+    async def opentxt(self,ctx):
+        """Opens the most recent file for reading!!!"""
+        try:
+            #Have it do ``` around the block of text and somehow cancel out any ```s that are in the file
+            message_with_file = await ((message async for message in ctx.channel.history() if message.attachments)).__anext__()
+            attachment = message_with_file.attachments[0]
+            await attachment.save(r"working_directory\{}".format(attachment.filename))
+            extracted_text = '\n'.join(open(r"working_directory\{}".format(attachment.filename),'r').readlines())
+        except UnicodeDecodeError:
+            await ctx.send("It looks like you're trying to get me to read ```{}```, but that doesn't seem to be a text file, sorry! (Or I'm just bad) :<".format(attachment.filename))
+        except StopAsyncIteration:
+            await ctx.send("Ah, I couldn't find any text file, sorry!")
+        else:
+            asyncio.get_event_loop().create_task(self.displaytxt(ctx,extracted_text))
+        finally:
+            #Remove if you feel like it, or do whatever idc
+            pass
+    
+    @commands.command()
+    async def sayhitolily(self,ctx):
+        """Says hi to Lilybot~"""
+        if any(ctx.guild.get_member(id) is not None for id in commandutil.known_ids["lilybots"]):
+            await ctx.send("Hi Lily! I love you!")
+        else:
+            await ctx.send("L-lily? Where are you? ;~;")
+            
+    async def displaytxt(self,ctx,extracted_text:str):
+        left_arrow = "👈"#"\U00002B05"#For fun, later, have it choose from a list of random left/right representing emojis
+        right_arrow = "👉"#"\U000027A1"
+        stop_emote = "❌"#"\U0000274C"
+        text_block_size = 500
+        button_emojis = [left_arrow,right_arrow,stop_emote]
+        text_blocks = [extracted_text[i:i+text_block_size] for i in range(0, len(extracted_text), text_block_size)]
+        formatted_text_blocks = [r"```{}```".format(text_block) for text_block in text_blocks]
+        current_index = 0
+        block_message = await ctx.send(formatted_text_blocks[current_index])
+        def check(reaction,user):
+            return user != self.bot.user and reaction.emoji in button_emojis and reaction.message.id == block_message.id
+
+        while True:
+            await block_message.edit(content=formatted_text_blocks[current_index])
+            for emoji_to_add in button_emojis:
+                await block_message.add_reaction(emoji_to_add)
+            res = await self.bot.wait_for('reaction_add',check=check)
+            emoji_result = res[0].emoji
+            try:
+                await block_message.remove_reaction(emoji_result,res[1])
+            except:
+                pass
+            if emoji_result == left_arrow:
+                current_index -= 1 
+            elif emoji_result == right_arrow:
+                current_index += 1
+            else:
+                await block_message.clear_reactions()
+                await block_message.edit(content=r"```File closed.```")
+                break
+                
+    @commands.command(hidden=True)
+    @commands.is_owner()
+    async def sendto(self,ctx,channel:discord.TextChannel,*,message_text:str):
+        await channel.send(message_text)
+        
+        
+    
+    # @commands.command()    
+    # async def reactionspeak(self,ctx,msg_id,*,text_to_add):
+    #     try:
+    #         target_message = await ctx.message.channel.get_message(msg_id)
+    #     except discord.errors.HTTPException:
+    #         await ctx.message.channel.send("That, uh, doesn't look like a valid message ID. Try again.")
+    #     else:
+    #         await 
+        
         
             
             
             
             
             
-            
-            
+
     async def load_free_reign_guilds(self):
         with open('free_reign.txt','r') as f:
-            self.free_guilds = set([int(element) for element in re.search('\{(.*)\}',f.readlines()[0].strip()).group(1).split(',') if element])
+            self.free_guilds = set(json.load(f))
             
     async def save_free_reign_guilds(self):
         with open('free_reign.txt','w') as f:
-            f.write(str(self.free_guilds))
+            json.dump(list(self.free_guilds),f)
             
     async def add_free_reign_guild(self,guild_id):
         self.free_guilds.add(guild_id)
@@ -280,9 +359,10 @@ Also you can just ask Makusu2#2222 cuz they're never too busy to make a new frie
             
     async def on_command_error(self,ctx,e:discord.ext.commands.errors.CommandError):
         if isinstance(e,discord.ext.commands.errors.CommandNotFound):
-            astevald = aeval(ctx.message.content.replace(self.bot.user.mention,"").strip(),return_error=False)
-            if astevald:
-                await ctx.send(astevald)
+            if self.bot.user.mention in ctx.message.content:
+                astevald = aeval(ctx.message.content.replace(self.bot.user.mention,"").strip(),return_error=False)
+                if astevald:
+                    await ctx.send(astevald)
         elif isinstance(e,discord.ext.commands.errors.NotOwner):
             await ctx.send("Sorry, only Maku can use that command :(")
         else:
@@ -310,10 +390,18 @@ Also you can just ask Makusu2#2222 cuz they're never too busy to make a new frie
                         await message.channel.send("That doesn't look like a tagged channel, try again. (You do not need to readd the reaction. Use the 'cancel' command to cancel the move request.)")
                     except TypeError:
                         await message.channel.send("Hmmm, that looks like a channel but I can't figure out what it is. It's already been logged for Maku to debug.")
-                        print("Couldn't figure out what channel "+str(channel_id)+" was.")
+                        logging.error("Couldn't figure out what channel "+str(channel_id)+" was.")
                     else:
                         message_to_move = self.move_requests_pending.pop(message.author)
                         asyncio.get_event_loop().create_task(self.move_message_attempt(message_to_move,channel_to_move_to,message.author))
+            if hasattr(message.channel,"guild") and message.channel.guild.id == commandutil.known_ids["aagshit"] and message.channel.id != commandutil.known_ids["aagshit_lawgs"]:
+                for i,attachment in enumerate(message.attachments):
+                    filename = attachment.filename
+                    await attachment.save(r"saved_attachments\{}".format(filename))#.format(attachment.filename))
+                    await self.bot.get_channel(commandutil.known_ids["aagshit_lawgs"]).send(r"Posted by {} in {}:".format(message.author.name,message.channel.mention),file=discord.File(r"saved_attachments\{}".format(filename)))
+        if message.author.id in commandutil.known_ids["lilybots"] and "Hi makubot!!!!! I love you a lot!!!!" in message.content: #lilybot
+            await message.channel.send("Hi Lily! You're amazing and I love you so much!!!!")
+                
                 
     
     async def move_message_attempt(self,message:discord.Message, channel:discord.TextChannel, move_request_user:discord.Member):
@@ -329,15 +417,11 @@ Also you can just ask Makusu2#2222 cuz they're never too busy to make a new frie
             await message.channel.send("Looks like you don't have the manage messages role and you're not OP. sorry.")
             
     async def on_message_delete(self,message):
-        last_deleted_message[message.channel.id] = "From {}: {}".format(message.author.name,message.content)
-        deletion_message = "A user has deleted a message. "+str(message.created_at)+" "+message.author.name+" in "+str(message.channel)+"   "+message.content
-        for attachment in message.attachments:
-            try:
-                await attachment.save(r"saved_attachments\attch"+str(random.randint(0,100000000)))
-            except discord.errors.Forbidden:
-                deletion_message += "Could not save attachment from {} in {} due to it being deleted".format(message.author,message.channel)
-        with open("deletionlog.txt","a") as f:
-            f.write(deletion_message)
+        last_deleted_message[message.channel.id] = deletion_message = "{}:A message from {} has been deleted in {} of {} with {} attachment(s): {}".format(message.created_at,message.author.name,message.channel.name,message.channel.guild.name,len(message.attachments),message.content)
+        with codecs.open("deletionlog.txt","a","utf-8") as f:
+            f.write(deletion_message+"\n")
+        if message.channel.guild.id == commandutil.known_ids["aagshit"] and message.channel.id != commandutil.known_ids["aagshit_lawgs"]:
+            await self.bot.get_channel(commandutil.known_ids["aagshit_lawgs"]).send(r"```{}```".format(deletion_message))
             
     async def on_message_edit(self,before,after):
         pass
@@ -345,7 +429,7 @@ Also you can just ask Makusu2#2222 cuz they're never too busy to make a new frie
     async def on_member_join(self,member:discord.Member):
         """Called when a member joins to tell them that Maku loves them (because they do love them) <3 """
         if member.guild.id in self.free_guilds:
-            await member.guild.system_channel.send(member.mention+" Hi! Maku loves you! <333333")
+            await member.guild.system_channel.send("Hi {}! Maku loves you! <333333".format(member.mention))
         
         
     async def on_reaction_add(self,reaction,user):
@@ -399,9 +483,11 @@ class ReactionImages:
             self.bot.add_command(folder_command)
     
 def setup(bot):
+    logging.info("makucomands starting setup")
     bot.add_cog(MakuCommands(bot))
     bot.add_cog(FavePictures(bot))
     bot.add_cog(ReactionImages(bot))
+    logging.info("makucommands ending setup")
     
     
     
