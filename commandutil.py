@@ -6,4 +6,4 @@ async def send_formatted_message(recipient,msg):
 def get_formatted_traceback(e):
     return ''.join(traceback.format_exception(type(e), e, e.__traceback__))
     
-known_ids = {"aagshit":322509699159162883,"aagshit_lawgs":541742610604359720, "lilybots":[287343736046878730,]} 
+known_ids = {"aagshit":322509699159162883,"aagshit_lawgs":541742610604359720, "lilybots":[287343736046878730,]}
