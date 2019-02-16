@@ -1,3 +1,8 @@
+"""
+Main module for makubot.
+This module should never have to be reloaded;
+    all reloading should take place in makucommands, criticalcommands, and commandutil.
+"""
 import discord
 from discord.ext import commands
 import tokens

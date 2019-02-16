@@ -1,3 +1,7 @@
+"""
+Module containing the majority of the basic commands makubot can execute.
+Also used to reload criticalcommands.
+"""
 import discord
 from discord.ext import commands
 import random
@@ -17,8 +21,6 @@ import json
 import logging
 import codecs
 import wikipedia
-
-#TODO Fact command that makes bot print the first sentence of a random wikipedia article
 
 last_deleted_message = {} #Maps channel ID to last deleted message content, along with a header of who send it.
 
@@ -45,7 +47,7 @@ With great power comes great responsibility -Uncle Ben""".split('\n')
 
 youtube_search = build('youtube', 'v3',developerKey=googleAPI).search()
 
-def aeval(s,return_error=True):
+def aeval(s,return_error=True) -> str:
     temp_string_io = StringIO()
     aeval_interpreter = asteval.Interpreter(writer=temp_string_io,err_writer=temp_string_io)
     result = aeval_interpreter(s)
@@ -276,9 +278,14 @@ Also you can just ask Makusu2#2222 cuz they're never too busy to make a new frie
         
     @commands.command()
     async def whatis(self,ctx,*,query):
+        """Searches Wikipedia to see what something is! Give it a try!"""
         closest_result = wikipedia.search(query)[0]
-        description_result = ''.join(wikipedia.page(closest_result).summary)[:1500]
-        await ctx.send('```{}...```\nhttps://en.wikipedia.org/wiki/{}'.format(description_result,closest_result))
+        try:
+            description_result = ''.join(wikipedia.page(closest_result).summary)[:1500]
+        except wikipedia.exceptions.DisambiguationError:
+            await ctx.send("Sorry, you'll have to be more specific than that ;~;")
+        else:
+            await ctx.send('```{}...```\nhttps://en.wikipedia.org/wiki/{}'.format(description_result,closest_result))
 
                 
     @commands.command(hidden=True)
@@ -316,7 +323,7 @@ Also you can just ask Makusu2#2222 cuz they're never too busy to make a new frie
         print("\n"*10)
         
         
-    
+    #TODO
     # @commands.command()    
     # async def reactionspeak(self,ctx,msg_id,*,text_to_add):
     #     try:
@@ -379,8 +386,10 @@ Also you can just ask Makusu2#2222 cuz they're never too busy to make a new frie
                     await ctx.send(astevald)
         elif isinstance(e,discord.ext.commands.errors.NotOwner):
             await ctx.send("Sorry, only Maku can use that command :(")
-        elif isinstance(e,(discord.ext.commands.errors.CommandOnCooldown,discord.ext.commands.errors.MissingPermissions,discord.ext.commands.errors.BotMissingPermissions,discord.ext.commands.errors.BadUnionArgument)):
-            await ctx.send(str(e)) #Commands that have a decent response based on the str value
+        elif isinstance(e, discord.ext.commands.errors.CommandOnCooldown):
+            await ctx.send("Slow down! You're going too fast for me ;a;\nI'm sorry that I'm not good enough to keep up with you :(")
+        elif isinstance(e,(discord.ext.commands.errors.MissingPermissions,discord.ext.commands.errors.BotMissingPermissions,discord.ext.commands.errors.BadUnionArgument)):
+            await ctx.send(str(e)) 
         else:
             await commandutil.send_formatted_message(self.bot.makusu,commandutil.get_formatted_traceback(e))
     async def on_error(self,ctx,e):

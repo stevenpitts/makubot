@@ -1,3 +1,7 @@
+"""
+Module used for any activity that must stay usable even in the event that makucommands become unusable.
+This can happen if, for example, makucommands is reloaded with a syntax error.
+"""
 import discord
 from discord.ext import commands
 import sys
