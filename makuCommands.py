@@ -83,10 +83,10 @@ Also you can just ask Makusu2#2222 cuz they're never too busy to make a new frie
         
 
     
-    @commands.command(hidden=True)
+    @commands.command(hidden=True,aliases=["status",])
     @commands.is_owner()
     async def getstatus(self,ctx):
-        await commandutil.send_formatted_message(self.bot.makusu,"Current servers: ",{guild.name:guild.id for guild in self.bot.guilds})
+        await commandutil.send_formatted_message(self.bot.makusu,"Current servers: {}".format({guild.name:guild.id for guild in self.bot.guilds}))
         
     @commands.command()
     @commands.cooldown(1,1,type=commands.BucketType.user)
