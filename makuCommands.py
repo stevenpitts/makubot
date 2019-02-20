@@ -322,6 +322,14 @@ Also you can just ask Makusu2#2222 cuz they're never too busy to make a new frie
         """Adds a few newlines to Maku's shell (for clean debugging)"""
         print("\n"*10)
         
+    @commands.command()
+    async def choose(self,ctx,*args):
+        """
+        Returns a random choice from the choices you provide!
+        Separated  by spaces
+        """
+        await ctx.send("I choose {}!".format(random.choice(args)))
+        
         
     #TODO
     # @commands.command()    
