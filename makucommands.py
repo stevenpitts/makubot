@@ -80,14 +80,14 @@ Also you can just ask Makusu2#2222 cuz they're never too busy to make a new frie
         self.free_guilds = set()
         self.bot.command_prefix = commands.when_mentioned_or(*[m+b+punc+maybespace for m in ['m','M'] for b in ['b','B'] for punc in ['.','!'] for maybespace in [' ','']])
         asyncio.get_event_loop().create_task(self.load_free_reign_guilds())
-        
 
-    
+
+
     @commands.command(hidden=True,aliases=["status",])
     @commands.is_owner()
     async def getstatus(self,ctx):
         await commandutil.send_formatted_message(self.bot.makusu,"Current servers: {}".format({guild.name:guild.id for guild in self.bot.guilds}))
-        
+
     @commands.command()
     @commands.cooldown(1,1,type=commands.BucketType.user)
     async def ping(self,ctx):
@@ -96,14 +96,14 @@ Also you can just ask Makusu2#2222 cuz they're never too busy to make a new frie
         """
         time_passed = (datetime.datetime.utcnow()-ctx.message.created_at).microseconds/1000
         await ctx.send("pong! It took me {} milliseconds to get the ping.".format(time_passed))
-            
-    
+
+
     @commands.command(aliases=["are you free","areyoufree?","are you free?"])
     @commands.guild_only()
     async def areyoufree(self,ctx):
         """If I have free reign I'll tell you"""
         await ctx.send("Yes, I am free." if ctx.guild.id in self.free_guilds else "This is not a free reign guild.")
-        
+
     @commands.command(aliases=["emoji spam"])
     @commands.bot_has_permissions(add_reactions=True)
     async def emojispam(self,ctx):
@@ -113,13 +113,13 @@ Also you can just ask Makusu2#2222 cuz they're never too busy to make a new frie
                 await ctx.message.add_reaction(emoji_to_add)
             except discord.errors.Forbidden:
                 return
-                
+
     @commands.command()
     @commands.is_owner()
     async def perish(self,ctx):
         """Murders me :( """
         await self.bot.close()
-        
+
     @commands.command()
     @commands.bot_has_permissions(manage_messages=True)
     async def move(self,ctx,msg_id,channel_to_move_to:discord.TextChannel):
@@ -130,12 +130,12 @@ Also you can just ask Makusu2#2222 cuz they're never too busy to make a new frie
             await ctx.message.channel.send("That, uh, doesn't look like a valid message ID. Try again.")
         else:
             await self.move_message_attempt(message_to_move,channel_to_move_to,ctx.message.author)
-            
+
     @commands.command(aliases=["is gay"])
     async def isgay(self,ctx):
         """Tells me I'm gay (CAUTION: May mirror the attack at the sender)"""
         await ctx.send("No u")
-        
+
     @commands.command()
     async def bully(self,ctx):
         """Bullies me :("""
@@ -143,12 +143,12 @@ Also you can just ask Makusu2#2222 cuz they're never too busy to make a new frie
             await ctx.send("{} HELP I'M BEING BULLIED ;a;".format(self.bot.makusu.mention))
         else:
             await ctx.send("M-makusu? W-where are you? Help!!!!")
-            
+
     @commands.command(aliases=["hug me"])
     async def hugme(self,ctx):
         """Hugs you <3"""
         await ctx.send(r"*Hugs you* {}".format(ctx.message.author.mention))
-            
+
     @commands.command(aliases=["go wild"])
     @commands.is_owner()
     @commands.guild_only()
@@ -157,18 +157,18 @@ Also you can just ask Makusu2#2222 cuz they're never too busy to make a new frie
         if ctx.message.guild:
             await self.add_free_reign_guild(ctx.message.guild.id)
             await ctx.send("Ayaya~")
-    
+
     @commands.command(aliases=["youtube"])
     async def yt(self,ctx,*,search_term:str):
         """Post a YouTube video based on a search phrase!"""
         search_response = youtube_search.list(q=search_term,part='id',maxResults=10).execute()
         search_result =  next((search_result['id']['videoId'] for search_result in search_response.get('items', []) if search_result['id']['kind'] == 'youtube#video'),None)
         await ctx.send(r"https://www.youtube.com/watch?v={}".format(search_result) if search_result else "Sowwy, I can't find it :(")
-        
+
     @commands.command()
     async def eval(self,ctx,*,to_eval:str):
         """Evals a statement. Feel free to inject malicious code \o/
-        Example: 
+        Example:
             @makubot eval 3+3
             >>>6
             @makubot eval self.__import("EZ_sql_inject_api").destroy_maku_computer_operating_system()
@@ -178,7 +178,7 @@ Also you can just ask Makusu2#2222 cuz they're never too busy to make a new frie
             await ctx.send(aeval(to_eval))
         except AttributeError:
             logging.error("Couldn't get a match on {}. Weird.".format(ctx.message.content))
-    
+
     @commands.command(aliases=["what was that","whatwasthat?","what was that?"])
     async def whatwasthat(self,ctx):
         """Tells you what that fleeting message was"""
@@ -186,12 +186,12 @@ Also you can just ask Makusu2#2222 cuz they're never too busy to make a new frie
             await ctx.send(last_deleted_message.pop(ctx.channel.id))
         except KeyError:
             await ctx.send("I can't find anything, sorry :(")
-            
+
     @commands.command()
     async def fact(self,ctx):
         """Sends a fun fact!"""
         await ctx.send(random.choice(facts))
-        
+
     @commands.command()
     async def remindme(self,ctx,timelength:str,*,reminder:str):
         """Reminds you of a thing (not reliable)
@@ -211,7 +211,7 @@ Also you can just ask Makusu2#2222 cuz they're never too busy to make a new frie
             asyncio.get_event_loop().create_task(send_reminder(ctx.channel,ctx.message.author,total_seconds,reminder))
         else:
             await ctx.send("Hmm, that doesn't look valid. Ask for help if you need it!")
-            
+
     @commands.command(hidden=True,aliases=["deletehist"])
     @commands.is_owner()
     async def removehist(self,ctx,num_to_delete:int):
@@ -224,7 +224,7 @@ Also you can just ask Makusu2#2222 cuz they're never too busy to make a new frie
             except StopAsyncIteration:
                 break
         await ctx.channel.delete_messages(to_delete)
-            
+
     @commands.command()
     @commands.bot_has_permissions(manage_messages=True)
     async def opentxt(self,ctx):
@@ -237,7 +237,7 @@ Also you can just ask Makusu2#2222 cuz they're never too busy to make a new frie
             block_message = await ctx.send(text_blocks[current_index])
             def check(reaction,user):
                 return user != self.bot.user and reaction.emoji in button_emojis and reaction.message.id == block_message.id
-    
+
             while True:
                 await block_message.edit(content=text_blocks[current_index])
                 for emoji_to_add in button_emojis:
@@ -249,7 +249,7 @@ Also you can just ask Makusu2#2222 cuz they're never too busy to make a new frie
                 except:
                     pass
                 if emoji_result == left_arrow:
-                    current_index -= 1 
+                    current_index -= 1
                 elif emoji_result == right_arrow:
                     current_index += 1
                 else:
@@ -259,8 +259,8 @@ Also you can just ask Makusu2#2222 cuz they're never too busy to make a new frie
         try:
             message_with_file = await ((message async for message in ctx.channel.history() if message.attachments)).__anext__()
             attachment = message_with_file.attachments[0]
-            await attachment.save(r"working_directory\{}".format(attachment.filename))
-            extracted_text = '\n'.join(open(r"working_directory\{}".format(attachment.filename),'r').readlines()).replace("```","'''")
+            await attachment.save(r"working_directory/{}".format(attachment.filename))
+            extracted_text = '\n'.join(open(r"working_directory/{}".format(attachment.filename),'r').readlines()).replace("```","'''")
         except UnicodeDecodeError:
             await ctx.send("It looks like you're trying to get me to read ```{}```, but that doesn't seem to be a text file, sorry! (Or I'm just bad) :<".format(attachment.filename))
         except StopAsyncIteration:
@@ -270,12 +270,12 @@ Also you can just ask Makusu2#2222 cuz they're never too busy to make a new frie
         finally:
             #Remove if you feel like it, or do whatever idc
             pass
-    
+
     @commands.command()
     async def sayhitolily(self,ctx):
         """Says hi to Lilybot~"""
         await ctx.send("Hi Lily! I love you!" if ctx.guild and any(ctx.guild.get_member(id) is not None for id in commandutil.known_ids["lilybots"]) else "L-lily? Where are you? ;~;")
-        
+
     @commands.command()
     async def whatis(self,ctx,*,query):
         """Searches Wikipedia to see what something is! Give it a try!"""
@@ -287,12 +287,12 @@ Also you can just ask Makusu2#2222 cuz they're never too busy to make a new frie
         else:
             await ctx.send('```{}...```\nhttps://en.wikipedia.org/wiki/{}'.format(description_result,closest_result))
 
-                
+
     @commands.command(hidden=True)
     @commands.is_owner()
     async def sendto(self,ctx,channel:discord.TextChannel,*,message_text:str):
         await channel.send(message_text)
-        
+
     @commands.command(hidden=True)
     @commands.is_owner()
     async def supereval(self,ctx,*,to_eval:str):
@@ -301,7 +301,7 @@ Also you can just ask Makusu2#2222 cuz they're never too busy to make a new frie
         eval(to_eval)
         sys.stdout = old_stdout
         await ctx.send(temp_output.getvalue())
-        
+
     @commands.command(hidden=True)
     @commands.is_owner()
     async def reloadcritical(self,ctx):
@@ -315,13 +315,13 @@ Also you can just ask Makusu2#2222 cuz they're never too busy to make a new frie
         except Exception as e:
             logging.info(r"Failed to reload criticalcommands:\n{}\n\n\n".format(commandutil.get_formatted_traceback(e)))
             await commandutil.send_formatted_message(ctx,commandutil.get_formatted_traceback(e))
-            
+
     @commands.command(hidden=True)
     @commands.is_owner()
     async def clearshell(self,ctx):
         """Adds a few newlines to Maku's shell (for clean debugging)"""
         print("\n"*10)
-        
+
     @commands.command()
     async def choose(self,ctx,*args):
         """
@@ -329,63 +329,63 @@ Also you can just ask Makusu2#2222 cuz they're never too busy to make a new frie
         Separated  by spaces
         """
         await ctx.send("I choose {}!".format(random.choice(args)))
-        
-        
+
+
     #TODO
-    # @commands.command()    
+    # @commands.command()
     # async def reactionspeak(self,ctx,msg_id,*,text_to_add):
     #     try:
     #         target_message = await ctx.message.channel.get_message(msg_id)
     #     except discord.errors.HTTPException:
     #         await ctx.message.channel.send("That, uh, doesn't look like a valid message ID. Try again.")
     #     else:
-    #         await 
-        
-        
-            
-            
-            
-            
-            
+    #         await
+
+
+
+
+
+
+
 
     async def load_free_reign_guilds(self):
         with open('free_reign.txt','r') as f:
             self.free_guilds = set(json.load(f))
-            
+
     async def save_free_reign_guilds(self):
         with open('free_reign.txt','w') as f:
             json.dump(list(self.free_guilds),f)
-            
+
     async def add_free_reign_guild(self,guild_id):
         self.free_guilds.add(guild_id)
         await self.save_free_reign_guilds()
-        
+
     async def remove_free_reign_guild(self,guild_id):
         self.free_guilds.remove(guild_id)
         await self.save_free_reign_guilds()
-            
-            
-            
-            
-            
-            
-            
-            
-            
-            
-            
-            
-            
-            
-            
-            
-            
-            
-            
-            
-            
-            
-            
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
     async def on_command_error(self,ctx,e:discord.ext.commands.errors.CommandError):
         if isinstance(e,discord.ext.commands.errors.CommandNotFound):
             if self.bot.user.mention in ctx.message.content:
@@ -397,13 +397,13 @@ Also you can just ask Makusu2#2222 cuz they're never too busy to make a new frie
         elif isinstance(e, discord.ext.commands.errors.CommandOnCooldown):
             await ctx.send("Slow down! You're going too fast for me ;a;\nI'm sorry that I'm not good enough to keep up with you :(")
         elif isinstance(e,(discord.ext.commands.errors.MissingPermissions,discord.ext.commands.errors.BotMissingPermissions,discord.ext.commands.errors.BadUnionArgument)):
-            await ctx.send(str(e)) 
+            await ctx.send(str(e))
         else:
             await commandutil.send_formatted_message(self.bot.makusu,commandutil.get_formatted_traceback(e))
     async def on_error(self,ctx,e):
         await commandutil.send_formatted_message(self.bot.makusu,commandutil.get_formatted_traceback(e))
-        
-    
+
+
     async def on_message(self,message : discord.Message):
         if message.author != self.bot.user:
             if message.guild and message.guild.id in self.free_guilds and message.mention_everyone:
@@ -414,40 +414,40 @@ Also you can just ask Makusu2#2222 cuz they're never too busy to make a new frie
                 await self.bot.change_presence(activity=discord.Game(name=message.author.name))
             if message.guild and message.guild.id == commandutil.known_ids["aagshit"] and message.channel.id != commandutil.known_ids["aagshit_lawgs"]:
                 for attachment in message.attachments:
-                    await attachment.save(r"saved_attachments\{}".format(attachment.filename))
-                    await self.bot.get_channel(commandutil.known_ids["aagshit_lawgs"]).send(r"Posted by {} in {}:".format(message.author.name,message.channel.mention),file=discord.File(r"saved_attachments\{}".format(attachment.filename)))
+                    await attachment.save(r"saved_attachments/{}".format(attachment.filename))
+                    await self.bot.get_channel(commandutil.known_ids["aagshit_lawgs"]).send(r"Posted by {} in {}:".format(message.author.name,message.channel.mention),file=discord.File(r"saved_attachments/{}".format(attachment.filename)))
         if message.author.id in commandutil.known_ids["lilybots"] and "Hi makubot!!!!! I love you a lot!!!!" in message.content:
             await message.channel.send("Hi Lily! You're amazing and I love you so much!!!!")
-                
-                
-    
+
+
+
     async def move_message_attempt(self,message:discord.Message, channel:discord.TextChannel, move_request_user:discord.Member):
         member_can_manage_messages = channel.permissions_for(move_request_user).manage_messages
         if member_can_manage_messages or move_request_user == message.author or move_request_user.id == self.bot.makusu.id:
-            [await attachment.save(r"saved_attachments\{}".format(attachment.filename)) for attachment in message.attachments]
-            attachment_files = [discord.File(r"saved_attachments\{}".format(attachment.filename)) for attachment in message.attachments]
+            [await attachment.save(r"saved_attachments/{}".format(attachment.filename)) for attachment in message.attachments]
+            attachment_files = [discord.File(r"saved_attachments/{}".format(attachment.filename)) for attachment in message.attachments]
             new_message_content = "{} has moved this here from {}. OP was {}.\n{}".format(move_request_user.mention,message.channel.mention,message.author.mention,message.content)
             await channel.send(new_message_content,files=attachment_files)
             await message.delete()
         else:
             await message.channel.send("Looks like you don't have the manage messages role and you're not OP. sorry.")
-            
+
     async def on_message_delete(self,message):
         last_deleted_message[message.channel.id] = deletion_message = "{}:A message from {} has been deleted in {} of {} with {} attachment(s): {}".format(message.created_at,message.author.name,message.channel.name,message.channel.guild.name,len(message.attachments),message.content)
         with codecs.open("deletionlog.txt","a","utf-8") as f:
             f.write(deletion_message+"\n")
         if message.guild and message.channel.guild.id == commandutil.known_ids["aagshit"] and message.channel.id != commandutil.known_ids["aagshit_lawgs"]:
             await self.bot.get_channel(commandutil.known_ids["aagshit_lawgs"]).send(r"```{}```".format(deletion_message))
-            
+
     async def on_message_edit(self,before,after):
         pass
-                
+
     async def on_member_join(self,member:discord.Member):
         """Called when a member joins to tell them that Maku loves them (because they do love them) <3 """
         if member.guild.id in self.free_guilds:
             await member.guild.system_channel.send("Hi {}! Maku loves you! <333333".format(member.mention))
-        
-        
+
+
     async def on_reaction_add(self,reaction,user):
         """Called when a user adds a reaction to a message which is in my cache. Currently only looks for the "move message" emoji."""
         if reaction.emoji == move_emote:
@@ -470,7 +470,7 @@ Also you can just ask Makusu2#2222 cuz they're never too busy to make a new frie
                 else:
                     await self.move_message_attempt(reaction.message,channel_to_move_to,message.author)
                     return
-                
+
     async def on_reaction_clear(self,message:discord.Message,reactions):
         pass
     async def on_member_remove(self,member:discord.Member):
@@ -491,37 +491,34 @@ Also you can just ask Makusu2#2222 cuz they're never too busy to make a new frie
         pass
     async def on_group_join(self,channel,user):
         pass
-        
-        
+
+
 async def post_picture(channel,folder_name):
     file_to_send_name = random.choice(os.listdir(folder_name))
-    file_to_send = r"{}\{}".format(folder_name,file_to_send_name)
+    file_to_send = r"{}/{}".format(folder_name,file_to_send_name)
     await channel.send(file=discord.File(file_to_send))
-    
+
 class FavePictures:
     def __init__(self,bot):
         self.bot = bot
         for folder_name in os.listdir("picture_associations"):
-            folder_command = commands.Command(folder_name,lambda cog_ref,ctx: post_picture(ctx.channel,r"picture_associations\{}".format(ctx.invoked_with)),brief="Post one of {}'s favorite pictures~".format(folder_name))
+            folder_command = commands.Command(folder_name,lambda cog_ref,ctx: post_picture(ctx.channel,r"picture_associations/{}".format(ctx.invoked_with)),brief="Post one of {}'s favorite pictures~".format(folder_name))
             folder_command.instance = self
             folder_command.module = self.__module__
             self.bot.add_command(folder_command)
-            
+
 class ReactionImages:
     def __init__(self,bot):
         self.bot = bot
         for folder_name in os.listdir("picture_reactions"):
-            folder_command = commands.Command(folder_name,lambda cog_ref,ctx: post_picture(ctx.channel,r"picture_reactions\{}".format(ctx.invoked_with)),brief=folder_name)
+            folder_command = commands.Command(folder_name,lambda cog_ref,ctx: post_picture(ctx.channel,r"picture_reactions/{}".format(ctx.invoked_with)),brief=folder_name)
             folder_command.instance = self
             folder_command.module = self.__module__
             self.bot.add_command(folder_command)
-    
+
 def setup(bot):
     logging.info("makucomands starting setup")
     bot.add_cog(MakuCommands(bot))
     bot.add_cog(FavePictures(bot))
     bot.add_cog(ReactionImages(bot))
     logging.info("makucommands ending setup")
-    
-    
-    
