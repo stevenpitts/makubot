@@ -1,15 +1,7 @@
 #Token (Secret)
-tokens.py
+project/tokens.py
 
-#free_reign
-free_reign.txt
-
-saved_attachments/
-deletionlog.txt
-working_directory/
-
-picture_associations/
-picture_reactions/
+data/
 
 # Byte-compiled / optimized / DLL files
 __pycache__/

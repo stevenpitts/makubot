@@ -1,0 +1,21 @@
+[[source]]
+name = "pypi"
+url = "https://pypi.org/simple"
+verify_ssl = true
+
+[dev-packages]
+flake8 = "*"
+
+[packages]
+flake8 = "*"
+asteval = "*"
+discord = "*"
+wikipedia  "*"
+
+[requires]
+python_version = "3.7"
+
+[scripts]
+start = "python -m project real"
+test = "python -m project test"
+lint = "python -m flake8"

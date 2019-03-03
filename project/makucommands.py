@@ -4,7 +4,6 @@ Also used to reload criticalcommands.
 '''
 import random
 import sys
-from pathlib import path
 import asyncio
 import os
 import re
@@ -25,16 +24,6 @@ from discord.ext.commands.errors import (CommandError, CommandNotFound,
 import wikipedia
 import tokens
 import commandutil
-
-
-SCRIPT_DIR = Path(__file__).parent
-PARENT_DIR = SCRIPT_DIR.parent
-DATA_DIR = PARENT_DIR / 'data'
-PICTURE_ASSOCIATIONS_DIR = DATA_DIR / 'picture_associations'
-PICTURE_REACTIONS_DIR = DATA_DIR / 'picture_reactions'
-SAVED_ATTACHMENTS_DIR = DATA_DIR / 'saved_attachments'
-WORKING_DIR = DATA_DIR / 'working_directory'
-
 
 
 FACTS = '''Geese are NEAT
@@ -342,9 +331,9 @@ Also you can just ask Makusu2#2222 cuz they love making new friends <333
                                   if message.attachments))
             message_with_file = await previous_messages.__anext__()
             attachment = message_with_file.attachments[0]
-            await attachment.save(WORKING_DIR
-                                  / attachment.filename)
-            filename_path = WORKING_DIR / attachment.filename
+            await attachment.save(r'working_directory\{}'
+                                  .format(attachment.filename))
+            filename_path = r'working_directory\{}'.format(attachment.filename)
             with open(filename_path, 'r') as read_file:
                 extracted_text = '\n'.join(read_file.readlines())
             extracted_text = extracted_text.replace("```", "'''")
@@ -513,14 +502,14 @@ Also you can just ask Makusu2#2222 cuz they love making new friends <333
             if should_be_logged(message):
                 for attachment in message.attachments:
                     await attachment.save(
-                        SAVED_ATTACHMENTS_DIR / attachment.filename)
+                        r'saved_attachments\{}'.format(attachment.filename))
                     aagshit_lawgs_channel = await self.bot.get_channel(
                         commandutil.known_ids['aagshit_lawgs'])
                     aagshit_lawgs_channel.send(
                         rf'Posted by {message.author.name} \
                         in {message.channel.mention}:',
-                        file=discord.File(SAVED_ATTACHMENTS_DIR
-                                          / attachment.filename))
+                        file=discord.File(r'saved_attachments\{}'
+                                          .format(attachment.filename)))
         lily_is_greeting_makubot = (
             message.author.id in commandutil.known_ids['lilybots']
             and 'Hi makubot!' in message.content)
@@ -543,10 +532,10 @@ Also you can just ask Makusu2#2222 cuz they love making new friends <333
 
         if should_get_moved:
             for attachment in message.attachments:
-                await attachment.save(SAVED_ATTACHMENTS_DIR
-                                      / attachment.filename)
+                await attachment.save(r'saved_attachments\{}'.format(
+                                         attachment.filename))
             attachment_files = [
-                discord.File(SAVED_ATTACHMENTS_DIR / attachment.filename)
+                discord.File(rf'saved_attachments/{attachment.filename}')
                 for attachment in message.attachments]
             new_message_content = '{} has moved this here from {}. OP was {}.\
                                    \n{}'.format(move_request_user.mention,
@@ -637,12 +626,12 @@ async def post_picture(channel, folder_name):
 class FavePictures:
 
     def folder_func(cog_ref, ctx):
-        true_path = PICTURE_ASSOCIATIONS_DIR / ctx.invoked_with
+        true_path = r'picture_associations\{}'.format(ctx.invoked_with)
         return post_picture(ctx.channel, true_path)
 
     def __init__(self, bot):
         self.bot = bot
-        for folder_name in os.listdir(PICTURE_ASSOCIATIONS_DIR):
+        for folder_name in os.listdir('picture_associations'):
             folder_brief = f"Post one of {folder_name}'s favorite pictures~"
             folder_command = commands.Command(folder_name,
                                               FavePictures.folder_func,
@@ -655,13 +644,13 @@ class FavePictures:
 class ReactionImages:
 
     def folder_func(cog_ref, ctx):
-        true_path = PICTURE_REACTIONS_DIR / ctx.invoked_with
+        true_path = r'picture_reactions\{}'.format(ctx.invoked_with)
         asyncio.get_event_loop().create_task(post_picture(ctx.channel,
                                                           true_path))
 
     def __init__(self, bot):
         self.bot = bot
-        for folder_name in os.listdir(PICTURE_REACTIONS_DIR):
+        for folder_name in os.listdir('picture_reactions'):
             folder_command = commands.Command(folder_name,
                                               ReactionImages.folder_func,
                                               brief=folder_name)
