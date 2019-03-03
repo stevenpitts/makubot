@@ -1,13 +1,14 @@
-"""
+'''
 Main module for makubot.
 This module should never have to be reloaded.
 All reloading should take place in makucommands,
 criticalcommands, and commandutil.
-"""
+'''
 import logging
 import discord
 from discord.ext import commands
 import tokens
+import sys
 logging.basicConfig(filename='makubot.log', level=logging.INFO)
 
 
@@ -33,8 +34,13 @@ class MakuBot(commands.Bot):
         print('Logged in as {} with ID {}'
               .format(self.user.name, self.user.id))
         await self.change_presence(activity=discord.Game(
-            name=r"SmugBot is being tsun to me :<"))
+            name=r'SmugBot is being tsun to me :<'))
 
 
-if __name__ == "__main__":
-    MakuBot().run(tokens.makubotToken)
+if __name__ == '__main__':
+    if bool('test' in sys.argv) == bool('real' in sys.argv):
+        raise ValueError(
+            'You must pass only one of "test" or "real" in args.')
+    token = (tokens.makumistakeToken if 'test' in sys.argv
+             else tokens.makubotToken)
+    MakuBot().run(token)

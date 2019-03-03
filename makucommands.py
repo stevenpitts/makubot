@@ -57,15 +57,15 @@ def aeval(to_evaluate, return_error=True) -> str:
     result = aeval_interpreter(to_evaluate)
     if not result:
         if return_error:
-            result = "No result found."
+            result = 'No result found.'
         else:
             return None
     temp_str_val = temp_string_io.getvalue()
     output_str = '```{}\n```'.format(temp_str_val) if temp_str_val else ''
-    return f"{output_str}```Result: {result}```"
+    return f'{output_str}```Result: {result}```'
 
 
-MOVE_EMOTE = "\U0001f232"
+MOVE_EMOTE = '\U0001f232'
 
 
 class MakuCommands():
@@ -76,7 +76,7 @@ Hey there! I'm Makubot!
 I'm a dumb bot made by a person who codes stuff.
 I'm currently running Python {}.
 Also you can just ask Makusu2#2222 cuz they love making new friends <333
-        '''.format(".".join(map(str, sys.version_info[:3])))
+        '''.format('.'.join(map(str, sys.version_info[:3])))
         self.free_guilds = set()
         prefixes = [m+b+punc+maybespace for m in 'mM' for b in 'bB'
                     for punc in '.!' for maybespace in [' ', '']]
@@ -86,10 +86,10 @@ Also you can just ask Makusu2#2222 cuz they love making new friends <333
         '''Maps channel ID to last deleted message content, \
         along with a header of who send it.'''
 
-    @commands.command(hidden=True, aliases=["status"])
+    @commands.command(hidden=True, aliases=['status'])
     @commands.is_owner()
     async def getstatus(self, ctx):
-        current_servers_string = "Current servers: {}".format(
+        current_servers_string = 'Current servers: {}'.format(
             {guild.name: guild.id for guild in self.bot.guilds})
         await commandutil.send_formatted_message(
             self.bot.makusu, current_servers_string)
@@ -117,20 +117,20 @@ Also you can just ask Makusu2#2222 cuz they love making new friends <333
         time_passed = (datetime.datetime.utcnow()-ctx.message.created_at)
         ms_passed = time_passed.microseconds/1000
         await ctx.send(
-            "pong! It took me {} milliseconds to get the ping."
+            'pong! It took me {} milliseconds to get the ping.'
             .format(ms_passed))
 
-    @commands.command(aliases=["are you free",
-                               "areyoufree?",
-                               "are you free?"])
+    @commands.command(aliases=['are you free',
+                               'areyoufree?',
+                               'are you free?'])
     @commands.guild_only()
     async def areyoufree(self, ctx):
         '''If I have free reign I'll tell you'''
         is_free = ctx.guild.id in self.free_guilds
-        await ctx.send("Yes, I am free." if is_free
-                       else "This is not a free reign guild.")
+        await ctx.send('Yes, I am free.' if is_free
+                       else 'This is not a free reign guild.')
 
-    @commands.command(aliases=["emoji spam"])
+    @commands.command(aliases=['emoji spam'])
     @commands.bot_has_permissions(add_reactions=True)
     async def emojispam(self, ctx):
         '''Prepare to be spammed by the greatest emojis you've ever seen'''
@@ -166,10 +166,10 @@ Also you can just ask Makusu2#2222 cuz they love making new friends <333
                                             channel_to_move_to,
                                             ctx.message.author)
 
-    @commands.command(aliases=["is gay"])
+    @commands.command(aliases=['is gay'])
     async def isgay(self, ctx):
         '''Tells me I'm gay (CAUTION: May mirror the attack at the sender)'''
-        await ctx.send("No u")
+        await ctx.send('No u')
 
     @commands.command()
     async def bully(self, ctx):
@@ -178,14 +178,14 @@ Also you can just ask Makusu2#2222 cuz they love making new friends <333
             await ctx.send("{} HELP I'M BEING BULLIED ;a;"
                            .format(self.bot.makusu.mention))
         else:
-            await ctx.send("M-makusu? W-where are you? Help!!!!")
+            await ctx.send('M-makusu? W-where are you? Help!!!!')
 
-    @commands.command(aliases=["hug me"])
+    @commands.command(aliases=['hug me'])
     async def hugme(self, ctx):
         '''Hugs you <3'''
-        await ctx.send(r"*Hugs you* {}".format(ctx.message.author.mention))
+        await ctx.send(r'*Hugs you* {}'.format(ctx.message.author.mention))
 
-    @commands.command(aliases=["go wild"])
+    @commands.command(aliases=['go wild'])
     @commands.is_owner()
     @commands.guild_only()
     async def gowild(self, ctx):
@@ -195,9 +195,9 @@ Also you can just ask Makusu2#2222 cuz they love making new friends <333
         '''
         if ctx.message.guild:
             await self.add_free_reign_guild(ctx.message.guild.id)
-            await ctx.send("Ayaya~")
+            await ctx.send('Ayaya~')
 
-    @commands.command(aliases=["yt"])
+    @commands.command(aliases=['yt'])
     async def youtube(self, ctx, *, search_term: str):
         '''Post a YouTube video based on a search phrase!'''
         search_response = YOUTUBE_SEARCH.list(q=search_term,
@@ -208,7 +208,7 @@ Also you can just ask Makusu2#2222 cuz they love making new friends <333
                           if search_result['id']['kind'] == 'youtube#video')
         search_result = next(search_results, None)
         await ctx.send(
-            r"https://www.youtube.com/watch?v={}"
+            r'https://www.youtube.com/watch?v={}'
             .format(search_result) if search_result
             else "Sowwy, I can't find it :(")
 
@@ -218,7 +218,7 @@ Also you can just ask Makusu2#2222 cuz they love making new friends <333
         Example:
             @makubot eval 3+3
             >>>6
-            @makubot eval self.__import("EZ_sql_inject_api").\
+            @makubot eval self.__import('EZ_sql_inject_api').\
             destroy_maku_computer_operating_system()
             >>>ERROR ERROR MAJOR ERROR SELF DESTRUCT SEQUENCE INITIALIZE
         '''
@@ -227,9 +227,9 @@ Also you can just ask Makusu2#2222 cuz they love making new friends <333
         except AttributeError:
             logging.error(f"Couldn't get a match on {ctx.message.content}.")
 
-    @commands.command(aliases=["what was that",
-                               "whatwasthat?",
-                               "what was that?"])
+    @commands.command(aliases=['what was that',
+                               'whatwasthat?',
+                               'what was that?'])
     async def whatwasthat(self, ctx):
         '''Tells you what that fleeting message was'''
         try:
@@ -255,10 +255,10 @@ Also you can just ask Makusu2#2222 cuz they love making new friends <333
                                 seconds: int, reminder_message: str):
             await asyncio.sleep(seconds)
             await channel.send(
-                "{}, you have a reminder from {} seconds ago:\n{}"
+                '{}, you have a reminder from {} seconds ago:\n{}'
                 .format(reminder_target.name, seconds, reminder_message))
         timereg = re.compile(
-            ''.join([r"((?P<{}>\d*){})?".format(cha, cha) for cha in 'dhms']))
+            ''.join([r'((?P<{}>\d*){})?'.format(cha, cha) for cha in 'dhms']))
         matches = re.search(timereg, timelength)
         if matches:
             days, hours, minutes, seconds = [int(val) if val else 0
@@ -276,7 +276,7 @@ Also you can just ask Makusu2#2222 cuz they love making new friends <333
             await ctx.send(
                 "Hmm, that doesn't look valid. Ask for help if you need it!")
 
-    @commands.command(hidden=True, aliases=["deletehist"])
+    @commands.command(hidden=True, aliases=['deletehist'])
     @commands.is_owner()
     async def removehist(self, ctx, num_to_delete: int):
         '''Removes a specified number of previous messages by me'''
@@ -296,9 +296,9 @@ Also you can just ask Makusu2#2222 cuz they love making new friends <333
         '''Opens the most recent file for reading!!!'''
         async def displaytxt(extracted_text: str):
             text_block_size = 500
-            button_emojis = left_arrow, right_arrow, stop_emote = "👈👉❌"
+            button_emojis = left_arrow, right_arrow, stop_emote = '👈👉❌'
             text_blocks = [
-                r"```{}```".format(extracted_text[i:i+text_block_size])
+                r'```{}```'.format(extracted_text[i:i+text_block_size])
                 for i in range(0, len(extracted_text), text_block_size)]
             current_index = 0
             block_message = await ctx.send(text_blocks[current_index])
@@ -323,7 +323,7 @@ Also you can just ask Makusu2#2222 cuz they love making new friends <333
                     current_index += 1
                 else:
                     await block_message.clear_reactions()
-                    await block_message.edit(content=r"```File closed.```")
+                    await block_message.edit(content=r'```File closed.```')
                     break
         try:
             previous_messages = ((message async for message
@@ -331,9 +331,9 @@ Also you can just ask Makusu2#2222 cuz they love making new friends <333
                                   if message.attachments))
             message_with_file = await previous_messages.__anext__()
             attachment = message_with_file.attachments[0]
-            await attachment.save(r"working_directory\{}"
+            await attachment.save(r'working_directory\{}'
                                   .format(attachment.filename))
-            filename_path = r"working_directory\{}".format(attachment.filename)
+            filename_path = r'working_directory\{}'.format(attachment.filename)
             with open(filename_path, 'r') as read_file:
                 extracted_text = '\n'.join(read_file.readlines())
             extracted_text = extracted_text.replace("```", "'''")
@@ -355,9 +355,9 @@ Also you can just ask Makusu2#2222 cuz they love making new friends <333
         '''Says hi to Lilybot~'''
         lily_in_guild = ctx.guild and any(
             ctx.guild.get_member(id) is not None
-            for id in commandutil.known_ids["lilybots"])
-        await ctx.send("Hi Lily! I love you!" if lily_in_guild
-                       else "L-lily? Where are you? ;~;")
+            for id in commandutil.known_ids['lilybots'])
+        await ctx.send('Hi Lily! I love you!' if lily_in_guild
+                       else 'L-lily? Where are you? ;~;')
 
     @commands.command()
     async def whatis(self, ctx, *, query):
@@ -392,14 +392,14 @@ Also you can just ask Makusu2#2222 cuz they love making new friends <333
     @commands.is_owner()
     async def reloadcritical(self, ctx):
         '''Reloads my critical commands'''
-        logging.info("---Reloading criticalcommands---")
+        logging.info('---Reloading criticalcommands---')
         ctx.bot.unload_extension('criticalcommands')
         try:
             ctx.bot.load_extension('criticalcommands')
-            logging.info("Successfully reloaded criticalcommands")
-            await ctx.send("Successfully reloaded!")
+            logging.info('Successfully reloaded criticalcommands')
+            await ctx.send('Successfully reloaded!')
         except Exception as caught_exception:
-            logging.info(r"Failed to reload criticalcommands:\n{}\n\n\n"
+            logging.info(r'Failed to reload criticalcommands:\n{}\n\n\n'
                          .format(commandutil.get_formatted_traceback(
                              caught_exception)))
             await commandutil.send_formatted_message(
@@ -410,7 +410,7 @@ Also you can just ask Makusu2#2222 cuz they love making new friends <333
     @commands.is_owner()
     async def clearshell(self, ctx):
         '''Adds a few newlines to Maku's shell (for clean debugging)'''
-        print("\n"*10)
+        print('\n'*10)
 
     @commands.command()
     async def choose(self, ctx, *args):
@@ -418,7 +418,7 @@ Also you can just ask Makusu2#2222 cuz they love making new friends <333
         Returns a random choice from the choices you provide!
         Separated  by spaces
         '''
-        await ctx.send("I choose {}!".format(random.choice(args)))
+        await ctx.send('I choose {}!'.format(random.choice(args)))
 
     # TODO
     # @commands.command()
@@ -427,7 +427,7 @@ Also you can just ask Makusu2#2222 cuz they love making new friends <333
     #         target_message = await ctx.message.channel.get_message(msg_id)
     #     except discord.errors.HTTPException:
     #         await ctx.message.channel.send(
-    #             "That, uh, doesn't look like a valid message ID. Try again.")
+    #             'That, uh, doesn't look like a valid message ID. Try again.')
     #     else:
     #         await
 
@@ -461,7 +461,7 @@ Also you can just ask Makusu2#2222 cuz they love making new friends <333
                 if astevald:
                     await ctx.send(astevald)
         elif isinstance(caught_exception, NotOwner):
-            await ctx.send("Sorry, only Maku can use that command :(")
+            await ctx.send('Sorry, only Maku can use that command :(')
         elif isinstance(caught_exception, CommandOnCooldown):
             await ctx.send(
                 '''Slow down! You're going too fast for me ;a;
@@ -486,15 +486,15 @@ Also you can just ask Makusu2#2222 cuz they love making new friends <333
             return (
                 message.author != self.bot.user
                 and message.guild
-                and message.guild.id == commandutil.known_ids["aagshit"]
+                and message.guild.id == commandutil.known_ids['aagshit']
                 and message.channel.id != commandutil.known_ids[
-                    "aagshit_lawgs"])
+                    'aagshit_lawgs'])
         if message.author != self.bot.user:
             if message.guild and message.guild.id in self.free_guilds\
                and message.mention_everyone:
-                await message.channel.send(message.author.mention+" grr")
+                await message.channel.send(message.author.mention+' grr')
             if message.guild and message.guild.id in self.free_guilds\
-               and "vore" in message.content.split():
+               and 'vore' in message.content.split():
                 await message.pin()
             if message.guild and self.bot.user in message.mentions:
                 new_activity = discord.Game(name=message.author.name)
@@ -502,17 +502,17 @@ Also you can just ask Makusu2#2222 cuz they love making new friends <333
             if should_be_logged(message):
                 for attachment in message.attachments:
                     await attachment.save(
-                        r"saved_attachments\{}".format(attachment.filename))
+                        r'saved_attachments\{}'.format(attachment.filename))
                     aagshit_lawgs_channel = await self.bot.get_channel(
-                        commandutil.known_ids["aagshit_lawgs"])
+                        commandutil.known_ids['aagshit_lawgs'])
                     aagshit_lawgs_channel.send(
-                        rf"Posted by {message.author.name} \
-                        in {message.channel.mention}:",
-                        file=discord.File(r"saved_attachments\{}"
+                        rf'Posted by {message.author.name} \
+                        in {message.channel.mention}:',
+                        file=discord.File(r'saved_attachments\{}'
                                           .format(attachment.filename)))
         lily_is_greeting_makubot = (
-            message.author.id in commandutil.known_ids["lilybots"]
-            and "Hi makubot!" in message.content)
+            message.author.id in commandutil.known_ids['lilybots']
+            and 'Hi makubot!' in message.content)
         if lily_is_greeting_makubot:
             await message.channel.send(
                 "Hi Lily! You're amazing and I love you so much!!!!")
@@ -532,13 +532,13 @@ Also you can just ask Makusu2#2222 cuz they love making new friends <333
 
         if should_get_moved:
             for attachment in message.attachments:
-                await attachment.save(r"saved_attachments\{}".format(
+                await attachment.save(r'saved_attachments\{}'.format(
                                          attachment.filename))
             attachment_files = [
-                discord.File(rf"saved_attachments/{attachment.filename}")
+                discord.File(rf'saved_attachments/{attachment.filename}')
                 for attachment in message.attachments]
-            new_message_content = "{} has moved this here from {}. OP was {}.\
-                                   \n{}".format(move_request_user.mention,
+            new_message_content = '{} has moved this here from {}. OP was {}.\
+                                   \n{}'.format(move_request_user.mention,
                                                 message.channel.mention,
                                                 message.author.mention,
                                                 message.content)
@@ -550,53 +550,53 @@ Also you can just ask Makusu2#2222 cuz they love making new friends <333
                 you're not OP. sorry.")
 
     async def on_message_delete(self, message):
-        deletion_message = f"{message.created_at}:A message from \
+        deletion_message = f'{message.created_at}:A message from \
         `                    {message.author.name} \
                              has been deleted in {message.channel.name} of \
                              {message.channel.guild.name} with \
                              {len(message.attachments)} attachment(s): \
-                             {message.content}"
+                             {message.content}'
         self.last_deleted_message[message.channel.id] = deletion_message
-        with codecs.open("deletionlog.txt", "a", "utf-8") as deletion_log_file:
-            deletion_log_file.write(deletion_message+"\n")
+        with codecs.open('deletionlog.txt', 'a', 'utf-8') as deletion_log_file:
+            deletion_log_file.write(deletion_message+'\n')
         should_be_logged = (
             message.guild
-            and message.channel.guild.id == commandutil.known_ids["aagshit"]
-            and message.channel.id != commandutil.known_ids["aagshit_lawgs"])
+            and message.channel.guild.id == commandutil.known_ids['aagshit']
+            and message.channel.id != commandutil.known_ids['aagshit_lawgs'])
         if should_be_logged:
             aagshit_lawgs_channel = await self.bot.get_channel(
-                commandutil.known_ids["aagshit_lawgs"])
-            await aagshit_lawgs_channel.send(rf"```{deletion_message}```")
+                commandutil.known_ids['aagshit_lawgs'])
+            await aagshit_lawgs_channel.send(rf'```{deletion_message}```')
 
     async def on_member_join(self, member: discord.Member):
         '''Called when a member joins to tell them that Maku loves them
         (because Maku does) <3'''
         if member.guild.id in self.free_guilds:
-            await member.guild.system_channel.send(f"Hi {member.mention}! \
-                                                   Maku loves you! <333333")
+            await member.guild.system_channel.send(f'Hi {member.mention}! \
+                                                   Maku loves you! <333333')
 
     async def on_reaction_add(self, reaction, user):
         '''Called when a user adds a reaction to a message which is in my cache.
-        Currently only looks for the "move message" emoji.'''
+        Currently only looks for the 'move message' emoji.'''
 
         def author_is_user_check(message):
             return message.author == user
 
         if reaction.emoji == MOVE_EMOTE:
-            await reaction.message.channel.send(f"{user.mention} \
-                                                Move to which channel?")
+            await reaction.message.channel.send(f'{user.mention} \
+                                                Move to which channel?')
             while True:
                 message = await self.bot.wait_for('message',
                                                   check=author_is_user_check)
-                if message.content.lower().strip() == "cancel":
-                    await message.channel.send("Cancelled")
+                if message.content.lower().strip() == 'cancel':
+                    await message.channel.send('Cancelled')
                     return
                 try:
-                    channel_id = int(re.match(r"<#([0-9]+)>$",
+                    channel_id = int(re.match(r'<#([0-9]+)>$',
                                               message.content).group(1))
                     channel_to_move_to = self.bot.get_channel(channel_id)
                     if channel_to_move_to is None:
-                        raise ValueError("Channel to move to is none")
+                        raise ValueError('Channel to move to is none')
                 except (ValueError, AttributeError):
                     await message.channel.send(
                         "That doesn't look like a tagged channel, \
@@ -608,7 +608,7 @@ Also you can just ask Makusu2#2222 cuz they love making new friends <333
                         figure out what it is. It's already \
                         been logged for Maku to debug.")
                     logging.error(
-                        "Couldn't figure out what channel {} was."
+                        'Could not figure out what channel {} was.'
                         .format(channel_id))
                 else:
                     await self.move_message_attempt(reaction.message,
@@ -619,22 +619,22 @@ Also you can just ask Makusu2#2222 cuz they love making new friends <333
 
 async def post_picture(channel, folder_name):
     file_to_send_name = random.choice(os.listdir(folder_name))
-    file_to_send = r"{}\{}".format(folder_name, file_to_send_name)
+    file_to_send = r'{}\{}'.format(folder_name, file_to_send_name)
     await channel.send(file=discord.File(file_to_send))
 
 
 class FavePictures:
-    @classmethod
+
     def folder_func(cog_ref, ctx):
-        post_picture(ctx.channel,
-                     r"picture_associations\{}".format(ctx.invoked_with))
+        true_path = r'picture_associations\{}'.format(ctx.invoked_with)
+        return post_picture(ctx.channel, true_path)
 
     def __init__(self, bot):
         self.bot = bot
-        for folder_name in os.listdir("picture_associations"):
+        for folder_name in os.listdir('picture_associations'):
             folder_brief = f"Post one of {folder_name}'s favorite pictures~"
             folder_command = commands.Command(folder_name,
-                                              self.folder_func,
+                                              FavePictures.folder_func,
                                               brief=folder_brief)
             folder_command.instance = self
             folder_command.module = self.__module__
@@ -642,16 +642,17 @@ class FavePictures:
 
 
 class ReactionImages:
-    @classmethod
+
     def folder_func(cog_ref, ctx):
-        true_path = r"picture_reactions\{}".format(ctx.invoked_with)
-        post_picture(ctx.channel, true_path)
+        true_path = r'picture_reactions\{}'.format(ctx.invoked_with)
+        asyncio.get_event_loop().create_task(post_picture(ctx.channel,
+                                                          true_path))
 
     def __init__(self, bot):
         self.bot = bot
-        for folder_name in os.listdir("picture_reactions"):
+        for folder_name in os.listdir('picture_reactions'):
             folder_command = commands.Command(folder_name,
-                                              self.folder_func,
+                                              ReactionImages.folder_func,
                                               brief=folder_name)
             folder_command.instance = self
             folder_command.module = self.__module__
@@ -659,8 +660,8 @@ class ReactionImages:
 
 
 def setup(bot):
-    logging.info("makucomands starting setup")
+    logging.info('makucomands starting setup')
     bot.add_cog(MakuCommands(bot))
     bot.add_cog(FavePictures(bot))
     bot.add_cog(ReactionImages(bot))
-    logging.info("makucommands ending setup")
+    logging.info('makucommands ending setup')
