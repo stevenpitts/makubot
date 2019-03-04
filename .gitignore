@@ -1,7 +1,7 @@
 #Token (Secret)
-project/tokens.py
+#project/tokens.py
 
-data/
+#data/
 
 # Byte-compiled / optimized / DLL files
 __pycache__/

@@ -56,7 +56,8 @@ Oh dang is that a gun -Uncle Ben
 With great power comes great responsibility -Uncle Ben'''.split('\n')
 
 
-YOUTUBE_SEARCH = build('youtube', 'v3', developerKey=tokens.googleAPI).search()
+YOUTUBE_SEARCH = None if tokens.googleAPI is None else build(
+    'youtube', 'v3', developerKey=tokens.googleAPI).search()
 
 
 def aeval(to_evaluate, return_error=True) -> str:
@@ -212,6 +213,9 @@ Also you can just ask Makusu2#2222 cuz they love making new friends <333
     @commands.command(aliases=['yt'])
     async def youtube(self, ctx, *, search_term: str):
         '''Post a YouTube video based on a search phrase!'''
+        if YOUTUBE_SEARCH is None:
+            await ctx.send('Sorry, I\'m missing the google API key!')
+            return
         search_response = YOUTUBE_SEARCH.list(q=search_term,
                                               part='id',
                                               maxResults=10).execute()

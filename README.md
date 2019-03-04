@@ -10,7 +10,8 @@ I’m Makubot! I’m a dumb bot made by a person who codes stuff.
 
 ## Setup & Installation
 
-
+You must enter at least one of `testToken` or `realToken` in project/tokens.py.
+In order to use YouTube services, you must set `googleAPI` to a Google API token  in project/tokens.py.
 To set up the pipenv environment, run `pipenv install --dev` and then `pipenv run start`.
 If you encounter any issues with these commands, please submit an issue!
-You can also run `project/__main__.py` instead, if you want to set up your environment manually.
+You can also run `project/__main__.py` instead, if you have set up your environment manually.

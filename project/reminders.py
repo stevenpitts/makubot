@@ -27,34 +27,36 @@ class ReminderCommands(discord.ext.commands.Cog):
 
     @commands.command()
     async def remindme(self, ctx, timelength: str, *, reminder: str):
-        '''Reminds you of a thing (not reliable)
+        '''Reminds you of a thing!
 Usage:
     remindme [<days>d][<hours>h] [<minutes>m][<seconds>s] <reminder message>
 Example: remindme 1d2h9s do laundry
-Do not rely on me to remind you for long periods of time! Yet.
-Eventually I'll be run on a VPS :3
         '''
-        # TODO cleanup
-        timereg = re.compile(
-            ''.join([r'((?P<{}>\d*){})?'.format(cha, cha) for cha in 'dhms']))
-        matches = re.search(timereg, timelength)
-        if not timelength.isnumeric() and not matches:
+        def get_num_seconds(timelength):
+            if timelength.isnumeric():
+                return int(timelength)
+            timereg = re.compile(''.join([
+                r'((?P<{}>\d*){})?'.format(cha, cha) for cha in 'dhms']))
+            matches = re.search(timereg, timelength)
+            if matches:
+                days, hours, minutes, seconds = [int(val) if val else 0
+                                                 for val
+                                                 in matches.group(*'dhms')]
+                return days*86400 + hours*3600 + minutes*60 + seconds
+            return None
+
+        total_seconds = get_num_seconds(timelength)
+        if total_seconds is None:
             await ctx.send(
                 "Hmm, that doesn't look valid. Ask for help if you need it!")
             return
-        if timelength.isnumeric():
-            total_seconds = int(timelength)
         else:
-            days, hours, minutes, seconds = [int(val) if val else 0
-                                             for val
-                                             in matches.group(*'dhms')]
-            total_seconds = days*86400 + hours*3600 + minutes*60 + seconds
-        await ctx.send(
-            "Coolio I'll remind you in {} seconds".format(total_seconds))
-        reminder_time = time.time() + total_seconds
-        await self.add_reminder(reminder_time, total_seconds,
-                                ctx.message.author, ctx.channel,
-                                reminder)
+            await ctx.send(
+                "Coolio I'll remind you in {} seconds".format(total_seconds))
+            reminder_time = time.time() + total_seconds
+            await self.add_reminder(reminder_time, total_seconds,
+                                    ctx.message.author, ctx.channel,
+                                    reminder)
 
     def save_reminders(self):
         serializable_reminders = [reminder.as_serializable()
