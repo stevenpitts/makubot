@@ -1,8 +1,11 @@
 # Project Information
 
 I’m Makubot! I’m a dumb bot made by a person who codes stuff.
+
 [Botlist link](https://discord.bots.gg/bots/363924877981253633)
+
 [Invite Link](https://discordapp.com/oauth2/authorize?&client_id=363924877981253633&scope=bot&permissions=0)
+
 [Support Server Invite](https://discordapp.com/invite/7sFbA4W)
 
 ## Setup & Installation
