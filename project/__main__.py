@@ -1,3 +1,9 @@
+if not os.path.isfile(str(SCRIPT_DIR / 'tokens.py')):
+    with open(str(SCRIPT_DIR / 'tokens.py'), 'w') as f:
+        f.write('realToken = None\ntestToken = None\ngoogleAPI = None')
+
+
+
 from . import tokens
 from . import makubot
 import sys
@@ -13,6 +19,15 @@ for data_dir_folder in ['picture_associations',
                         'saved_attachments',
                         'working_directory']:
     os.makedirs(str(DATA_DIR / data_dir_folder), exist_ok=True)
+
+default_text = {'reminders.txt': '[]',
+                'makubot.log': '',
+                'free_reign.txt': '[]',
+                'deletion_log.txt': ''}
+for filename, to_write in default_text.items():
+    if not os.path.isfile(str(DATA_DIR / filename)):
+        with open(str(DATA_DIR / filename), 'w') as f:
+            f.write(to_write)
 
 if bool('test' in sys.argv) == bool('real' in sys.argv):
     raise ValueError('You must pass only one of "test" or "real" in args.')
