@@ -4,12 +4,12 @@ even in the event that makucommands become unusable.
 This can happen if, for example, makucommands is reloaded with a syntax error.
 '''
 import discord
-import commandutil
+from . import commandutil
 import importlib
 import logging
 
 
-class CriticalCommands:
+class CriticalCommands(discord.ext.commands.Cog):
     def __init__(self, bot):
         self.bot = bot
 
@@ -21,9 +21,9 @@ class CriticalCommands:
         '''
         logging.info('---Reloading makucommands and commandutil---')
         importlib.reload(commandutil)
-        ctx.bot.unload_extension('makucommands')
+        ctx.bot.unload_extension('project.makucommands')
         try:
-            ctx.bot.load_extension('makucommands')
+            ctx.bot.load_extension('project.makucommands')
             logging.info('Successfully reloaded makucommands')
             await ctx.send('Successfully reloaded!')
         except Exception as e:

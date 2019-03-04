@@ -8,14 +8,15 @@ flake8 = "*"
 
 [packages]
 flake8 = "*"
+discord-py = {git = "https://github.com/Rapptz/discord.py",ref = "rewrite"}
 asteval = "*"
-discord = "*"
-wikipedia  "*"
+wikipedia = "*"
+google-api-python-client = "*"
 
 [requires]
 python_version = "3.7"
 
 [scripts]
-start = "python -m project real"
+real = "python -m project real"
 test = "python -m project test"
-lint = "python -m flake8"
+lint = "python -m flake8 project"

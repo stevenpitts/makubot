@@ -7,8 +7,7 @@ criticalcommands, and commandutil.
 import logging
 import discord
 from discord.ext import commands
-import tokens
-import sys
+from pathlib import Path
 
 
 SCRIPT_DIR = Path(__file__).parent
@@ -28,8 +27,8 @@ class MakuBot(commands.Bot):
                               case_insensitive=True,
                               owner_id=203285581004931072)
         self.makusu = None
-        self.load_extension('criticalcommands')
-        self.load_extension('makucommands')
+        self.load_extension('project.criticalcommands')
+        self.load_extension('project.makucommands')
 
     async def on_ready(self):
         '''

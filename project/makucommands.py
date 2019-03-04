@@ -4,6 +4,7 @@ Also used to reload criticalcommands.
 '''
 import random
 import sys
+from pathlib import Path
 import asyncio
 import os
 import re
@@ -22,8 +23,18 @@ from discord.ext.commands.errors import (CommandError, CommandNotFound,
                                          BotMissingPermissions,
                                          BadUnionArgument)
 import wikipedia
-import tokens
-import commandutil
+from . import tokens
+from . import commandutil
+
+
+SCRIPT_DIR = Path(__file__).parent
+PARENT_DIR = SCRIPT_DIR.parent
+DATA_DIR = PARENT_DIR / 'data'
+PICTURE_ASSOCIATIONS_DIR = DATA_DIR / 'picture_associations'
+PICTURE_REACTIONS_DIR = DATA_DIR / 'picture_reactions'
+SAVED_ATTACHMENTS_DIR = DATA_DIR / 'saved_attachments'
+WORKING_DIR = DATA_DIR / 'working_directory'
+DELETION_LOG_DIR = DATA_DIR / 'deletion_log.txt'
 
 
 FACTS = '''Geese are NEAT
@@ -68,7 +79,7 @@ def aeval(to_evaluate, return_error=True) -> str:
 MOVE_EMOTE = '\U0001f232'
 
 
-class MakuCommands():
+class MakuCommands(discord.ext.commands.Cog):
     def __init__(self, bot):
         self.bot = bot
         self.bot.description = '''
@@ -98,20 +109,20 @@ Also you can just ask Makusu2#2222 cuz they love making new friends <333
     @commands.cooldown(1, 1, type=commands.BucketType.user)
     async def ping(self, ctx):
         '''
-        Pong was the first commercially successful video game, \
-        which helped to establish the video game industry along with \
-        the first home console, the Magnavox Odyssey. Soon after its \
-        release, several companies began producing games that copied \
-        its gameplay, and eventually released new types of games. \
-        As a result, Atari encouraged its staff to produce more \
-        innovative games. The company released several sequels \
-        which built upon the original's gameplay by adding new features. \
-        During the 1975 Christmas season, Atari released a home version of \
-        Pong exclusively through Sears retail stores. It also was a \
+        Pong was the first commercially successful video game,
+        which helped to establish the video game industry along with
+        the first home console, the Magnavox Odyssey. Soon after its
+        release, several companies began producing games that copied
+        its gameplay, and eventually released new types of games.
+        As a result, Atari encouraged its staff to produce more
+        innovative games. The company released several sequels
+        which built upon the original's gameplay by adding new features.
+        During the 1975 Christmas season, Atari released a home version of
+        Pong exclusively through Sears retail stores. It also was a
         commercial success and led to numerous copies.
-        The game has been remade on numerous home and portable platforms \
+        The game has been remade on numerous home and portable platforms
         following its release. Pong is part of the permanent collection
-        of the Smithsonian Institution in Washington, D.C. \
+        of the Smithsonian Institution in Washington, D.C.
         due to its cultural impact.
         '''
         time_passed = (datetime.datetime.utcnow()-ctx.message.created_at)
@@ -218,8 +229,8 @@ Also you can just ask Makusu2#2222 cuz they love making new friends <333
         Example:
             @makubot eval 3+3
             >>>6
-            @makubot eval self.__import('EZ_sql_inject_api').\
-            destroy_maku_computer_operating_system()
+            @makubot eval self.__import__(
+                'EZ_sql_inject_api').destroy_maku_computer_operating_system()
             >>>ERROR ERROR MAJOR ERROR SELF DESTRUCT SEQUENCE INITIALIZE
         '''
         try:
@@ -245,11 +256,11 @@ Also you can just ask Makusu2#2222 cuz they love making new friends <333
     @commands.command()
     async def remindme(self, ctx, timelength: str, *, reminder: str):
         '''Reminds you of a thing (not reliable)
-        Usage: remindme [<days>d][<hours>h][<minutes>m][<seconds>s] \
-        <reminder message>
-        Example: remindme 1d2h9s do laundry
-        Do not rely on me to remind you for long periods of time! Yet. \
-        Eventually I'll be run on a VPS :3
+Usage:
+    remindme [<days>d][<hours>h] [<minutes>m][<seconds>s] <reminder message>
+Example: remindme 1d2h9s do laundry
+Do not rely on me to remind you for long periods of time! Yet.
+Eventually I'll be run on a VPS :3
         '''
         async def send_reminder(channel, reminder_target: discord.Member,
                                 seconds: int, reminder_message: str):
@@ -331,9 +342,9 @@ Also you can just ask Makusu2#2222 cuz they love making new friends <333
                                   if message.attachments))
             message_with_file = await previous_messages.__anext__()
             attachment = message_with_file.attachments[0]
-            await attachment.save(r'working_directory\{}'
-                                  .format(attachment.filename))
-            filename_path = r'working_directory\{}'.format(attachment.filename)
+            await attachment.save(str(WORKING_DIR
+                                      / attachment.filename))
+            filename_path = WORKING_DIR / attachment.filename
             with open(filename_path, 'r') as read_file:
                 extracted_text = '\n'.join(read_file.readlines())
             extracted_text = extracted_text.replace("```", "'''")
@@ -384,24 +395,29 @@ Also you can just ask Makusu2#2222 cuz they love making new friends <333
     async def supereval(self, ctx, *, to_eval: str):
         old_stdout = sys.stdout
         sys.stdout = temp_output = StringIO()
-        eval(to_eval)
+        eval_result = eval(to_eval) or ''
         sys.stdout = old_stdout
-        await ctx.send(temp_output.getvalue())
+        eval_output = temp_output.getvalue() or ''
+        if eval_result or eval_output:
+            await ctx.send(f'{eval_output}\n```{eval_result}```'.strip())
+        else:
+            await ctx.send("Hmm, I didn't get any output for that ;~;")
 
     @commands.command(hidden=True)
     @commands.is_owner()
     async def reloadcritical(self, ctx):
         '''Reloads my critical commands'''
         logging.info('---Reloading criticalcommands---')
-        ctx.bot.unload_extension('criticalcommands')
+        ctx.bot.unload_extension('project.criticalcommands')
         try:
-            ctx.bot.load_extension('criticalcommands')
+            ctx.bot.load_extension('project.criticalcommands')
             logging.info('Successfully reloaded criticalcommands')
             await ctx.send('Successfully reloaded!')
         except Exception as caught_exception:
-            logging.info(r'Failed to reload criticalcommands:\n{}\n\n\n'
-                         .format(commandutil.get_formatted_traceback(
-                             caught_exception)))
+            logging.info(
+                r'Failed to reload criticalcommands:\n{}\n\n\n'
+                .format(commandutil.get_formatted_traceback(
+                    caught_exception)))
             await commandutil.send_formatted_message(
                 ctx,
                 commandutil.get_formatted_traceback(caught_exception))
@@ -420,25 +436,14 @@ Also you can just ask Makusu2#2222 cuz they love making new friends <333
         '''
         await ctx.send('I choose {}!'.format(random.choice(args)))
 
-    # TODO
-    # @commands.command()
-    # async def reactionspeak(self,ctx,msg_id,*,text_to_add):
-    #     try:
-    #         target_message = await ctx.message.channel.get_message(msg_id)
-    #     except discord.errors.HTTPException:
-    #         await ctx.message.channel.send(
-    #             'That, uh, doesn't look like a valid message ID. Try again.')
-    #     else:
-    #         await
-
     async def load_free_reign_guilds(self):
         '''Loads free reign guilds from free_reign.txt'''
-        with open('free_reign.txt', 'r') as open_file:
+        with open(DATA_DIR / 'free_reign.txt', 'r') as open_file:
             self.free_guilds = set(json.load(open_file))
 
     async def save_free_reign_guilds(self):
         '''Saves free reign guilds to free_reign.txt'''
-        with open('free_reign.txt', 'w') as open_file:
+        with open(DATA_DIR / 'free_reign.txt', 'w') as open_file:
             json.dump(list(self.free_guilds), open_file)
 
     async def add_free_reign_guild(self, guild_id):
@@ -451,6 +456,7 @@ Also you can just ask Makusu2#2222 cuz they love making new friends <333
         self.free_guilds.remove(guild_id)
         await self.save_free_reign_guilds()
 
+    @commands.Cog.listener()
     async def on_command_error(self, ctx,
                                caught_exception: CommandError):
         if isinstance(caught_exception, CommandNotFound):
@@ -464,8 +470,10 @@ Also you can just ask Makusu2#2222 cuz they love making new friends <333
             await ctx.send('Sorry, only Maku can use that command :(')
         elif isinstance(caught_exception, CommandOnCooldown):
             await ctx.send(
-                '''Slow down! You're going too fast for me ;a;
-                I'm sorry that I'm not good enough to keep up with you :(''')
+                '''
+                Slow down! You're going too fast for me ;a;
+                I'm sorry that I'm not good enough to keep up with you :(
+                ''')
         elif isinstance(caught_exception, (
                 MissingPermissions,
                 BotMissingPermissions,
@@ -476,11 +484,13 @@ Also you can just ask Makusu2#2222 cuz they love making new friends <333
                 self.bot.makusu,
                 commandutil.get_formatted_traceback(caught_exception))
 
+    @commands.Cog.listener()
     async def on_error(self, ctx, caught_exception):
         await commandutil.send_formatted_message(
             self.bot.makusu,
             commandutil.get_formatted_traceback(caught_exception))
 
+    @commands.Cog.listener()
     async def on_message(self, message: discord.Message):
         def should_be_logged(message):
             return (
@@ -502,14 +512,17 @@ Also you can just ask Makusu2#2222 cuz they love making new friends <333
             if should_be_logged(message):
                 for attachment in message.attachments:
                     await attachment.save(
-                        r'saved_attachments\{}'.format(attachment.filename))
-                    aagshit_lawgs_channel = await self.bot.get_channel(
+                        str(SAVED_ATTACHMENTS_DIR / attachment.filename))
+                    aagshit_lawgs_channel = self.bot.get_channel(
                         commandutil.known_ids['aagshit_lawgs'])
-                    aagshit_lawgs_channel.send(
-                        rf'Posted by {message.author.name} \
-                        in {message.channel.mention}:',
-                        file=discord.File(r'saved_attachments\{}'
-                                          .format(attachment.filename)))
+                    try:
+                        await aagshit_lawgs_channel.send(
+                            rf'Posted by {message.author.name} '
+                            'in {message.channel.mention}:',
+                            file=discord.File(str(SAVED_ATTACHMENTS_DIR
+                                                  / attachment.filename)))
+                    except discord.errors.Forbidden:
+                        print("Unable to log message due to permission error")
         lily_is_greeting_makubot = (
             message.author.id in commandutil.known_ids['lilybots']
             and 'Hi makubot!' in message.content)
@@ -532,10 +545,10 @@ Also you can just ask Makusu2#2222 cuz they love making new friends <333
 
         if should_get_moved:
             for attachment in message.attachments:
-                await attachment.save(r'saved_attachments\{}'.format(
-                                         attachment.filename))
+                await attachment.save(SAVED_ATTACHMENTS_DIR
+                                      / attachment.filename)
             attachment_files = [
-                discord.File(rf'saved_attachments/{attachment.filename}')
+                discord.File(SAVED_ATTACHMENTS_DIR / attachment.filename)
                 for attachment in message.attachments]
             new_message_content = '{} has moved this here from {}. OP was {}.\
                                    \n{}'.format(move_request_user.mention,
@@ -549,25 +562,26 @@ Also you can just ask Makusu2#2222 cuz they love making new friends <333
                 "Looks like you don't have the manage messages role and \
                 you're not OP. sorry.")
 
+    @commands.Cog.listener()
     async def on_message_delete(self, message):
-        deletion_message = f'{message.created_at}:A message from \
-        `                    {message.author.name} \
-                             has been deleted in {message.channel.name} of \
-                             {message.channel.guild.name} with \
-                             {len(message.attachments)} attachment(s): \
-                             {message.content}'
+        deletion_message = (
+            f'{message.created_at}:A message from {message.author.name} '
+            f'has been deleted in {message.channel.name} of '
+            f'{message.channel.guild.name} with {len(message.attachments)} '
+            f'attachment(s): {message.content}')
         self.last_deleted_message[message.channel.id] = deletion_message
-        with codecs.open('deletionlog.txt', 'a', 'utf-8') as deletion_log_file:
+        with codecs.open(DELETION_LOG_DIR, 'a', 'utf-8') as deletion_log_file:
             deletion_log_file.write(deletion_message+'\n')
         should_be_logged = (
             message.guild
             and message.channel.guild.id == commandutil.known_ids['aagshit']
             and message.channel.id != commandutil.known_ids['aagshit_lawgs'])
         if should_be_logged:
-            aagshit_lawgs_channel = await self.bot.get_channel(
+            aagshit_lawgs_channel = self.bot.get_channel(
                 commandutil.known_ids['aagshit_lawgs'])
             await aagshit_lawgs_channel.send(rf'```{deletion_message}```')
 
+    @commands.Cog.listener()
     async def on_member_join(self, member: discord.Member):
         '''Called when a member joins to tell them that Maku loves them
         (because Maku does) <3'''
@@ -575,6 +589,7 @@ Also you can just ask Makusu2#2222 cuz they love making new friends <333
             await member.guild.system_channel.send(f'Hi {member.mention}! \
                                                    Maku loves you! <333333')
 
+    @commands.Cog.listener()
     async def on_reaction_add(self, reaction, user):
         '''Called when a user adds a reaction to a message which is in my cache.
         Currently only looks for the 'move message' emoji.'''
@@ -583,8 +598,8 @@ Also you can just ask Makusu2#2222 cuz they love making new friends <333
             return message.author == user
 
         if reaction.emoji == MOVE_EMOTE:
-            await reaction.message.channel.send(f'{user.mention} \
-                                                Move to which channel?')
+            await reaction.message.channel.send(
+                f'{user.mention} Move to which channel?')
             while True:
                 message = await self.bot.wait_for('message',
                                                   check=author_is_user_check)
@@ -599,14 +614,14 @@ Also you can just ask Makusu2#2222 cuz they love making new friends <333
                         raise ValueError('Channel to move to is none')
                 except (ValueError, AttributeError):
                     await message.channel.send(
-                        "That doesn't look like a tagged channel, \
-                        try again. (You do not need to readd the \
-                        reaction. Say 'cancel' to cancel the move request.)")
+                        'That does not look like a tagged channel, '
+                        'try again. (You do not need to readd the '
+                        'reaction. Say "cancel" to cancel the move request.)')
                 except TypeError:
                     await message.channel.send(
-                        "Hmmm, that looks like a channel but I can't \
-                        figure out what it is. It's already \
-                        been logged for Maku to debug.")
+                        'Hmmm, that looks like a channel but I am unable '
+                        'to figure out what it is. It has already '
+                        'been logged for Maku to debug.')
                     logging.error(
                         'Could not figure out what channel {} was.'
                         .format(channel_id))
@@ -623,40 +638,58 @@ async def post_picture(channel, folder_name):
     await channel.send(file=discord.File(file_to_send))
 
 
-class FavePictures:
+fave_pictures_commands = []
+reaction_images_commands = []
 
-    def folder_func(cog_ref, ctx):
-        true_path = r'picture_associations\{}'.format(ctx.invoked_with)
-        return post_picture(ctx.channel, true_path)
+
+class FavePictures(discord.ext.commands.Cog):
+
+    async def folder_func(ctx):
+        true_path = PICTURE_ASSOCIATIONS_DIR / ctx.invoked_with
+        await post_picture(ctx.channel, true_path)
 
     def __init__(self, bot):
         self.bot = bot
-        for folder_name in os.listdir('picture_associations'):
+        for folder_name in os.listdir(PICTURE_ASSOCIATIONS_DIR):
+            fave_pictures_commands.append(folder_name)
             folder_brief = f"Post one of {folder_name}'s favorite pictures~"
-            folder_command = commands.Command(folder_name,
-                                              FavePictures.folder_func,
-                                              brief=folder_brief)
+            folder_command = commands.Command(FavePictures.folder_func,
+                                              brief=folder_brief,
+                                              name=folder_name,
+                                              hidden=True)
             folder_command.instance = self
             folder_command.module = self.__module__
             self.bot.add_command(folder_command)
 
 
-class ReactionImages:
+class ReactionImages(discord.ext.commands.Cog):
 
-    def folder_func(cog_ref, ctx):
-        true_path = r'picture_reactions\{}'.format(ctx.invoked_with)
-        asyncio.get_event_loop().create_task(post_picture(ctx.channel,
-                                                          true_path))
+    async def folder_func(ctx):
+        true_path = PICTURE_REACTIONS_DIR / ctx.invoked_with
+        await post_picture(ctx.channel, true_path)
 
     def __init__(self, bot):
         self.bot = bot
-        for folder_name in os.listdir('picture_reactions'):
-            folder_command = commands.Command(folder_name,
-                                              ReactionImages.folder_func,
-                                              brief=folder_name)
+        for folder_name in os.listdir(PICTURE_REACTIONS_DIR):
+            reaction_images_commands.append(folder_name)
+            folder_command = commands.Command(ReactionImages.folder_func,
+                                              name=folder_name,
+                                              brief=folder_name,
+                                              hidden=True)
             folder_command.instance = self
             folder_command.module = self.__module__
             self.bot.add_command(folder_command)
+
+
+class CustomFormatter(discord.ext.commands.formatter.HelpFormatter):
+    async def format(self):
+        default_help_text = await super(CustomFormatter, self).format()
+        people_desc = ', '.join(fave_pictures_commands)
+        reaction_desc = ', '.join(reaction_images_commands)
+        full_help = ['\n'.join(default_help_text + [
+            '```Favorite people commands: {}```'.format(people_desc),
+            '```Reaction image commands: {}```'.format(reaction_desc)])]
+        return full_help
 
 
 def setup(bot):
@@ -664,4 +697,5 @@ def setup(bot):
     bot.add_cog(MakuCommands(bot))
     bot.add_cog(FavePictures(bot))
     bot.add_cog(ReactionImages(bot))
+    bot.formatter = CustomFormatter()
     logging.info('makucommands ending setup')

@@ -1,5 +1,5 @@
-import tokens
-import makubot
+from . import tokens
+from . import makubot
 import sys
 
 if bool('test' in sys.argv) == bool('real' in sys.argv):
