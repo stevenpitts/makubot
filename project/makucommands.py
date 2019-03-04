@@ -687,9 +687,9 @@ class CustomFormatter(discord.ext.commands.formatter.HelpFormatter):
         default_help_text = await super(CustomFormatter, self).format()
         people_desc = ', '.join(fave_pictures_commands)
         reaction_desc = ', '.join(reaction_images_commands)
-        full_help = ['\n'.join(default_help_text + [
+        full_help = default_help_text + [
             '```Favorite people commands: {}```'.format(people_desc),
-            '```Reaction image commands: {}```'.format(reaction_desc)])]
+            '```Reaction image commands: {}```'.format(reaction_desc)]
         return full_help
 
 
