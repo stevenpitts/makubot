@@ -27,7 +27,10 @@ class MakuBot(commands.Bot):
                               case_insensitive=True,
                               owner_id=203285581004931072)
         self.makusu = None
+        self.shared = {}
         self.load_extension('project.criticalcommands')
+        self.load_extension('project.reminders')
+        self.load_extension('project.picturecommands')
         self.load_extension('project.makucommands')
 
     async def on_ready(self):
@@ -38,4 +41,4 @@ class MakuBot(commands.Bot):
         print('Logged in as {} with ID {}'
               .format(self.user.name, self.user.id))
         await self.change_presence(activity=discord.Game(
-            name=r'SmugBot is being tsun to me :<'))
+            name=r'Lilybot is being tsun to me :<'))
