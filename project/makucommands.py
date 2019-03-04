@@ -3,6 +3,7 @@ Module containing the majority of the basic commands makubot can execute.
 Also used to reload criticalcommands.
 '''
 import random
+from queue import PriorityQueue
 import sys
 from pathlib import Path
 import asyncio
@@ -25,6 +26,7 @@ from discord.ext.commands.errors import (CommandError, CommandNotFound,
 import wikipedia
 from . import tokens
 from . import commandutil
+import time
 
 
 SCRIPT_DIR = Path(__file__).parent
@@ -36,6 +38,7 @@ SAVED_ATTACHMENTS_DIR = DATA_DIR / 'saved_attachments'
 WORKING_DIR = DATA_DIR / 'working_directory'
 DELETION_LOG_PATH = DATA_DIR / 'deletion_log.txt'
 FREE_REIGN_PATH = DATA_DIR / 'free_reign.txt'
+REMINDERS_PATH = DATA_DIR / 'reminders.txt'
 
 
 FACTS = '''Geese are NEAT
@@ -90,13 +93,20 @@ I'm currently running Python {}.
 Also you can just ask Makusu2#2222 cuz they love making new friends <333
         '''.format('.'.join(map(str, sys.version_info[:3])))
         self.free_guilds = set()
+        self.reminders = [] # PriorityQueue()
+        self.next_reminder_index = None
         prefixes = [m+b+punc+maybespace for m in 'mM' for b in 'bB'
                     for punc in '.!' for maybespace in [' ', '']]
         self.bot.command_prefix = commands.when_mentioned_or(*prefixes)
-        asyncio.get_event_loop().create_task(self.load_free_reign_guilds())
         self.last_deleted_message = {}
         '''Maps channel ID to last deleted message content, \
         along with a header of who send it.'''
+
+    @commands.Cog.listener()
+    async def on_ready(self):
+        self.load_free_reign_guilds()
+        asyncio.get_event_loop().create_task(self.load_reminders())
+        asyncio.get_event_loop().create_task(self.keep_checking_reminders())
 
     @commands.command(hidden=True, aliases=['status'])
     @commands.is_owner()
@@ -263,30 +273,27 @@ Example: remindme 1d2h9s do laundry
 Do not rely on me to remind you for long periods of time! Yet.
 Eventually I'll be run on a VPS :3
         '''
-        async def send_reminder(channel, reminder_target: discord.Member,
-                                seconds: int, reminder_message: str):
-            await asyncio.sleep(seconds)
-            await channel.send(
-                '{}, you have a reminder from {} seconds ago:\n{}'
-                .format(reminder_target.name, seconds, reminder_message))
+        # TODO cleanup
         timereg = re.compile(
             ''.join([r'((?P<{}>\d*){})?'.format(cha, cha) for cha in 'dhms']))
         matches = re.search(timereg, timelength)
-        if matches:
+        if not timelength.isnumeric() and not matches:
+            await ctx.send(
+                "Hmm, that doesn't look valid. Ask for help if you need it!")
+            return
+        if timelength.isnumeric():
+            total_seconds = int(timelength)
+        else:
             days, hours, minutes, seconds = [int(val) if val else 0
                                              for val
                                              in matches.group(*'dhms')]
             total_seconds = days*86400 + hours*3600 + minutes*60 + seconds
-            await ctx.send(
-                "Coolio I'll remind you in {} seconds".format(total_seconds))
-            asyncio.get_event_loop().create_task(
-                send_reminder(ctx.channel,
-                              ctx.message.author,
-                              total_seconds,
-                              reminder))
-        else:
-            await ctx.send(
-                "Hmm, that doesn't look valid. Ask for help if you need it!")
+        await ctx.send(
+            "Coolio I'll remind you in {} seconds".format(total_seconds))
+        reminder_time = time.time() + total_seconds
+        await self.add_reminder(reminder_time, total_seconds,
+                                ctx.message.author, ctx.channel,
+                                reminder)
 
     @commands.command(hidden=True, aliases=['deletehist'])
     @commands.is_owner()
@@ -437,25 +444,76 @@ Eventually I'll be run on a VPS :3
         '''
         await ctx.send('I choose {}!'.format(random.choice(args)))
 
-    async def load_free_reign_guilds(self):
+    def get_next_reminder_index(self):
+        def reminder_wait(index):
+            return self.reminders[index].remind_time
+        return min(range(len(self.reminders)),
+                   key=reminder_wait,
+                   default=None)
+
+    async def load_reminders(self):
+        with open(REMINDERS_PATH, 'r') as open_file:
+            self.reminders = [await Reminder.from_bot_and_serializable(
+                self.bot, data) for data in json.load(open_file)]
+        self.next_reminder_index = self.get_next_reminder_index()
+
+    def save_reminders(self):
+        serializable_reminders = [reminder.as_serializable() for reminder in self.reminders]
+        with open(REMINDERS_PATH, 'w') as open_file:
+            json.dump(serializable_reminders, open_file)
+
+    async def keep_checking_reminders(self):
+        while True:
+            reminder = self.reminders.pop
+            ready_to_send = (self.next_reminder_index is not None
+                             and time.time()
+                             > self.peek_reminder().remind_time)
+            if ready_to_send:
+                next_reminder = await self.pop_reminder()
+                message = ('{}, you have a message from {} seconds ago: {}'
+                           .format(next_reminder.user.mention,
+                           next_reminder.reminder_delay,
+                           next_reminder.reminder_message))
+                await next_reminder.channel.send(message)
+            await asyncio.sleep(1)
+
+
+
+    async def add_reminder(self, remind_time, reminder_delay,
+                           user, channel, reminder_message):
+        self.reminders.append(Reminder(self.bot, remind_time, reminder_delay,user,
+                                  channel, reminder_message))
+        self.next_reminder_index = self.get_next_reminder_index()
+        self.save_reminders()
+
+    def peek_reminder(self):
+        return self.reminders[self.next_reminder_index]
+
+    async def pop_reminder(self):
+        popped_reminder = self.reminders.pop(self.next_reminder_index)
+        self.next_reminder_index = self.get_next_reminder_index()
+        self.save_reminders()
+        return popped_reminder
+
+    def load_free_reign_guilds(self):
         '''Loads free reign guilds from FREE_REIGN_PATH'''
         with open(FREE_REIGN_PATH, 'r') as open_file:
             self.free_guilds = set(json.load(open_file))
 
-    async def save_free_reign_guilds(self):
+    def save_free_reign_guilds(self):
         '''Saves free reign guilds to FREE_REIGN_PATH'''
         with open(FREE_REIGN_PATH, 'w') as open_file:
             json.dump(list(self.free_guilds), open_file)
 
-    async def add_free_reign_guild(self, guild_id):
+    def add_free_reign_guild(self, guild_id):
         '''Adds a given guild ID to free reign guilds and saves it'''
         self.free_guilds.add(guild_id)
-        await self.save_free_reign_guilds()
+        self.save_free_reign_guilds()
 
-    async def remove_free_reign_guild(self, guild_id):
+    def remove_free_reign_guild(self, guild_id):
         '''Removes a given guild ID from free reign guilds and saves it'''
         self.free_guilds.remove(guild_id)
-        await self.save_free_reign_guilds()
+        self.save_free_reign_guilds()
 
     @commands.Cog.listener()
     async def on_command_error(self, ctx,
@@ -631,6 +689,31 @@ Eventually I'll be run on a VPS :3
                                                     channel_to_move_to,
                                                     message.author)
                     return
+
+
+class Reminder:
+    def __init__(self, bot, remind_time, reminder_delay, user: discord.User,
+                 channel: discord.TextChannel, reminder_message):
+        self.remind_time = remind_time
+        self.reminder_delay = reminder_delay
+        self.user = user
+        self.channel = channel
+        self.reminder_message = reminder_message
+
+    @classmethod
+    async def from_bot_and_serializable(cls, bot, data):
+        return cls(bot, data['remind_time'], data['reminder_delay'],
+                   await bot.get_user_info(data['user_id']),
+                   bot.get_channel(data['channel_id']),
+                   data['reminder_message'])
+
+
+    def as_serializable(self):
+        return {'remind_time': self.remind_time,
+                'reminder_delay': self.reminder_delay,
+                'user_id': self.user.id,
+                'channel_id': self.channel.id,
+                'reminder_message': self.reminder_message}
 
 
 async def post_picture(channel, folder_name):
