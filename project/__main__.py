@@ -1,18 +1,18 @@
-if not os.path.isfile(str(SCRIPT_DIR / 'tokens.py')):
-    with open(str(SCRIPT_DIR / 'tokens.py'), 'w') as f:
-        f.write('realToken = None\ntestToken = None\ngoogleAPI = None')
-
-
-
-from . import tokens
 from . import makubot
 import sys
 import os
 from pathlib import Path
-
+try:
+    from . import tokens
+except ImportError:
+    if not os.path.isfile(str(Path(__file__).parent / 'tokens.py')):
+        with open(str(Path(__file__).parent / 'tokens.py'), 'w') as f:
+            f.write('realToken = None\ntestToken = None\ngoogleAPI = None\n')
+    from . import tokens
 SCRIPT_DIR = Path(__file__).parent
 PARENT_DIR = SCRIPT_DIR.parent
 DATA_DIR = PARENT_DIR / 'data'
+
 
 for data_dir_folder in ['picture_associations',
                         'picture_reactions',
