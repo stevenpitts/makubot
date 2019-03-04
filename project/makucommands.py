@@ -34,7 +34,8 @@ PICTURE_ASSOCIATIONS_DIR = DATA_DIR / 'picture_associations'
 PICTURE_REACTIONS_DIR = DATA_DIR / 'picture_reactions'
 SAVED_ATTACHMENTS_DIR = DATA_DIR / 'saved_attachments'
 WORKING_DIR = DATA_DIR / 'working_directory'
-DELETION_LOG_DIR = DATA_DIR / 'deletion_log.txt'
+DELETION_LOG_PATH = DATA_DIR / 'deletion_log.txt'
+FREE_REIGN_PATH = DATA_DIR / 'free_reign.txt'
 
 
 FACTS = '''Geese are NEAT
@@ -437,13 +438,13 @@ Eventually I'll be run on a VPS :3
         await ctx.send('I choose {}!'.format(random.choice(args)))
 
     async def load_free_reign_guilds(self):
-        '''Loads free reign guilds from free_reign.txt'''
-        with open(DATA_DIR / 'free_reign.txt', 'r') as open_file:
+        '''Loads free reign guilds from FREE_REIGN_PATH'''
+        with open(FREE_REIGN_PATH, 'r') as open_file:
             self.free_guilds = set(json.load(open_file))
 
     async def save_free_reign_guilds(self):
-        '''Saves free reign guilds to free_reign.txt'''
-        with open(DATA_DIR / 'free_reign.txt', 'w') as open_file:
+        '''Saves free reign guilds to FREE_REIGN_PATH'''
+        with open(FREE_REIGN_PATH, 'w') as open_file:
             json.dump(list(self.free_guilds), open_file)
 
     async def add_free_reign_guild(self, guild_id):
@@ -570,7 +571,7 @@ Eventually I'll be run on a VPS :3
             f'{message.channel.guild.name} with {len(message.attachments)} '
             f'attachment(s): {message.content}')
         self.last_deleted_message[message.channel.id] = deletion_message
-        with codecs.open(DELETION_LOG_DIR, 'a', 'utf-8') as deletion_log_file:
+        with codecs.open(DELETION_LOG_PATH, 'a', 'utf-8') as deletion_log_file:
             deletion_log_file.write(deletion_message+'\n')
         should_be_logged = (
             message.guild
