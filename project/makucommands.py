@@ -93,8 +93,7 @@ I'm currently running Python {}.
 Also you can just ask Makusu2#2222 cuz they love making new friends <333
         '''.format('.'.join(map(str, sys.version_info[:3])))
         self.free_guilds = set()
-        self.reminders = [] # PriorityQueue()
-        self.next_reminder_index = None
+        self.reminders = PriorityQueue()
         prefixes = [m+b+punc+maybespace for m in 'mM' for b in 'bB'
                     for punc in '.!' for maybespace in [' ', '']]
         self.bot.command_prefix = commands.when_mentioned_or(*prefixes)
@@ -444,56 +443,41 @@ Eventually I'll be run on a VPS :3
         '''
         await ctx.send('I choose {}!'.format(random.choice(args)))
 
-    def get_next_reminder_index(self):
-        def reminder_wait(index):
-            return self.reminders[index].remind_time
-        return min(range(len(self.reminders)),
-                   key=reminder_wait,
-                   default=None)
-
     async def load_reminders(self):
         with open(REMINDERS_PATH, 'r') as open_file:
-            self.reminders = [await Reminder.from_bot_and_serializable(
-                self.bot, data) for data in json.load(open_file)]
-        self.next_reminder_index = self.get_next_reminder_index()
+            self.reminders = PriorityQueue()
+            for data in json.load(open_file):
+                self.reminders.put(
+                    await Reminder.from_bot_and_serializable(self.bot, data))
 
     def save_reminders(self):
-        serializable_reminders = [reminder.as_serializable() for reminder in self.reminders]
+        serializable_reminders = [reminder.as_serializable() for reminder in self.reminders.queue]
         with open(REMINDERS_PATH, 'w') as open_file:
             json.dump(serializable_reminders, open_file)
 
     async def keep_checking_reminders(self):
         while True:
-            reminder = self.reminders.pop
-            ready_to_send = (self.next_reminder_index is not None
-                             and time.time()
-                             > self.peek_reminder().remind_time)
-            if ready_to_send:
-                next_reminder = await self.pop_reminder()
-                message = ('{}, you have a message from {} seconds ago: {}'
-                           .format(next_reminder.user.mention,
-                           next_reminder.reminder_delay,
-                           next_reminder.reminder_message))
-                await next_reminder.channel.send(message)
+            if not self.reminders.empty():
+                next_reminder = self.reminders.get()
+                ready_to_send = next_reminder.ready_to_send()
+                if ready_to_send:
+                    self.save_reminders()
+                    await next_reminder.channel.send(
+                        '{}, you have a message from {} seconds ago: {}'
+                        .format(next_reminder.user.mention,
+                                next_reminder.reminder_delay,
+                                next_reminder.reminder_message))
+                else:
+                    self.reminders.put(next_reminder)
             await asyncio.sleep(1)
 
 
 
     async def add_reminder(self, remind_time, reminder_delay,
                            user, channel, reminder_message):
-        self.reminders.append(Reminder(self.bot, remind_time, reminder_delay,user,
-                                  channel, reminder_message))
-        self.next_reminder_index = self.get_next_reminder_index()
+        self.reminders.put(Reminder(self.bot, remind_time, reminder_delay,
+                                    user, channel, reminder_message))
         self.save_reminders()
-
-    def peek_reminder(self):
-        return self.reminders[self.next_reminder_index]
-
-    async def pop_reminder(self):
-        popped_reminder = self.reminders.pop(self.next_reminder_index)
-        self.next_reminder_index = self.get_next_reminder_index()
-        self.save_reminders()
-        return popped_reminder
 
     def load_free_reign_guilds(self):
         '''Loads free reign guilds from FREE_REIGN_PATH'''
@@ -714,6 +698,15 @@ class Reminder:
                 'user_id': self.user.id,
                 'channel_id': self.channel.id,
                 'reminder_message': self.reminder_message}
+
+    def ready_to_send(self):
+        return self.remind_time < time.time()
+
+    def __eq__(self, other):
+        return self.remind_time == other.remind_time
+
+    def __lt__(self,other):
+        return self.remind_time < other.remind_time
 
 
 async def post_picture(channel, folder_name):
