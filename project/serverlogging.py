@@ -29,33 +29,20 @@ class ServerLogging(discord.ext.commands.Cog):
             await ctx.send("I can't find anything, sorry :(")
 
     @commands.Cog.listener()
-    async def on_message(self, message: discord.Message):
-        should_be_logged = (
-            message.author != self.bot.user
-            and message.guild
-            and message.guild.id == commandutil.known_ids['aagshit']
-            and message.channel.id != commandutil.known_ids['aagshit_lawgs'])
-        if should_be_logged:
-            for attachment in message.attachments:
-                await attachment.save(
-                    str(SAVED_ATTACHMENTS_DIR / attachment.filename))
-                aagshit_lawgs_channel = self.bot.get_channel(
-                    commandutil.known_ids['aagshit_lawgs'])
-                try:
-                    await aagshit_lawgs_channel.send(
-                        rf'Posted by {message.author.name} '
-                        'in {message.channel.mention}:',
-                        file=discord.File(str(SAVED_ATTACHMENTS_DIR
-                                              / attachment.filename)))
-                except discord.errors.Forbidden:
-                    print("Unable to log message due to permission error")
-
-    @commands.Cog.listener()
     async def on_message_delete(self, message):
         guild_description = (message.channel.guild.name if
                              isinstance(message.channel,
                                         discord.abc.GuildChannel)
                              else "DMs")
+        attachment_files = []
+        for attachment in message.attachments:
+            attachment.url = attachment.proxy_url  # Cheating or clever?
+            filepath = str(SAVED_ATTACHMENTS_DIR / attachment.filename)
+            try:
+                await attachment.save(filepath)
+                attachment_files.append(discord.File(filepath))
+            except discord.errors.Forbidden:
+                pass
         deletion_message = (
             f'{message.created_at}: A message from {message.author.name} '
             f'has been deleted in {message.channel} of {guild_description} '
@@ -64,13 +51,14 @@ class ServerLogging(discord.ext.commands.Cog):
         with codecs.open(DELETION_LOG_PATH, 'a', 'utf-8') as deletion_log_file:
             deletion_log_file.write(deletion_message+'\n')
         should_be_logged = (
-            message.guild
+            message.author != self.bot.user and message.guild
             and message.channel.guild.id == commandutil.known_ids['aagshit']
             and message.channel.id != commandutil.known_ids['aagshit_lawgs'])
         if should_be_logged:
             aagshit_lawgs_channel = self.bot.get_channel(
                 commandutil.known_ids['aagshit_lawgs'])
-            await aagshit_lawgs_channel.send(rf'```{deletion_message}```')
+            await aagshit_lawgs_channel.send(rf'```{deletion_message}```',
+                                             files=attachment_files)
 
 
 def setup(bot):
