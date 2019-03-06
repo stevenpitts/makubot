@@ -52,13 +52,14 @@ class ServerLogging(discord.ext.commands.Cog):
 
     @commands.Cog.listener()
     async def on_message_delete(self, message):
-        if isinstance(message.channel, discord.DMChannel):
-            return
+        guild_description = (message.channel.guild.name if
+                             isinstance(message.channel,
+                                        discord.abc.GuildChannel)
+                             else "DMs")
         deletion_message = (
-            f'{message.created_at}:A message from {message.author.name} '
-            f'has been deleted in {message.channel.name} of '
-            f'{message.channel.guild.name} with {len(message.attachments)} '
-            f'attachment(s): {message.content}')
+            f'{message.created_at}: A message from {message.author.name} '
+            f'has been deleted in {message.channel} of {guild_description} '
+            f'with {len(message.attachments)} attachments: {message.content}')
         self.last_deleted_message[message.channel.id] = deletion_message
         with codecs.open(DELETION_LOG_PATH, 'a', 'utf-8') as deletion_log_file:
             deletion_log_file.write(deletion_message+'\n')
