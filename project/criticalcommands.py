@@ -21,18 +21,24 @@ class CriticalCommands(discord.ext.commands.Cog):
         '''
         logging.info('---Reloading makucommands and commandutil---')
         importlib.reload(commandutil)
-        for to_reload in ['reminders', 'picturecommands', 'makucommands']:
+        reload_response = ''
+        for to_reload in ['reminders',
+                          'picturecommands',
+                          'serverlogging',
+                          'makucommands',
+                          'movement']:
             ctx.bot.unload_extension(f'project.{to_reload}')
             try:
                 ctx.bot.load_extension(f'project.{to_reload}')
                 logging.info(f'Successfully reloaded {to_reload}')
-                await ctx.send(f'Successfully reloaded {to_reload}!')
+                reload_response += f'\nSuccessfully reloaded {to_reload}!'
             except Exception as e:
-                logging.info('Failed to reload {}:\n{}\n\n\n'
-                             .format(to_reload,
-                                     commandutil.get_formatted_traceback(e)))
-                await commandutil.send_formatted_message(
-                    ctx, commandutil.get_formatted_traceback(e))
+                excepted_traceback = commandutil.get_formatted_traceback(e)
+                logging.info(f'Failed to reload {to_reload}:\
+                             {excepted_traceback}\n\n\n')
+                reload_response += f'\nFailed to reload {to_reload}'
+                print('Error importing {to_reload}: \n{excepted_traceback}')
+        await ctx.send(reload_response)
 
 
 def setup(bot):

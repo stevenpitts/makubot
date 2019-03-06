@@ -28,10 +28,9 @@ class MakuBot(commands.Bot):
                               owner_id=203285581004931072)
         self.makusu = None
         self.shared = {}
-        self.load_extension('project.criticalcommands')
-        self.load_extension('project.reminders')
-        self.load_extension('project.picturecommands')
-        self.load_extension('project.makucommands')
+        for extension in ['criticalcommands', 'reminders', 'picturecommands',
+                          'makucommands', 'serverlogging', 'movement']:
+            self.load_extension(f'project.{extension}')
 
     async def on_ready(self):
         '''
