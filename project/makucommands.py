@@ -426,11 +426,13 @@ class MakuCommands(discord.ext.commands.Cog):
 class CustomFormatter(discord.ext.commands.formatter.HelpFormatter):
     async def format(self):
         base_help = await super(CustomFormatter, self).format()
+        if isinstance(self.command, discord.ext.commands.Command):
+            return base_help
         people_desc = ', '.join(
             self.context.bot.shared['fave_pictures_commands'])
         reaction_desc = ', '.join(
             self.context.bot.shared['reaction_images_commands'])
-        return base_help + [f'```Favorite people commands: {people_desc}```',
+        return base_help + [f'```Favorite people commands: {people_desc}```\n'
                             f'```Reaction image commands: {reaction_desc}```']
 
 
