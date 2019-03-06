@@ -17,6 +17,8 @@ google-api-python-client = "*"
 python_version = "3.7"
 
 [scripts]
-real = "python -m project real"
-test = "python -m project test"
+real = "python -m project real profile"
+test = "python -m project test profile"
+realnp = "python -m project real"
+testnp = "python -m project test
 lint = "python -m flake8 project"

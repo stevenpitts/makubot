@@ -287,8 +287,8 @@ class MakuCommands(discord.ext.commands.Cog):
     @commands.command()
     async def whatis(self, ctx, *, query):
         '''Searches Wikipedia to see what something is! Give it a try!'''
-        result = wikipedia.page(wikipedia.search(query)[0])
         try:
+            result = wikipedia.page(wikipedia.search(query)[0])
             summary = ''.join(result.summary)[:1500]
         except wikipedia.exceptions.DisambiguationError:
             await ctx.send("Sorry, please be more specific than that ;~;")
