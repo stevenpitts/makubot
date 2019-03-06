@@ -15,6 +15,7 @@ SCRIPT_DIR = Path(__file__).parent
 PARENT_DIR = SCRIPT_DIR.parent
 DATA_DIR = PARENT_DIR / 'data'
 
+
 def main():
     for data_dir_folder in ['picture_associations',
                             'picture_reactions',
@@ -47,6 +48,7 @@ def main():
         p.sort_stats('cumtime').print_stats(r'makubot[\/,\\]project')
     else:
         makubot.MakuBot().run(token)
+
 
 if __name__ == "__main__":
     main()

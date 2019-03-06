@@ -52,6 +52,8 @@ class ServerLogging(discord.ext.commands.Cog):
 
     @commands.Cog.listener()
     async def on_message_delete(self, message):
+        if isinstance(message.channel, discord.DMChannel):
+            return
         deletion_message = (
             f'{message.created_at}:A message from {message.author.name} '
             f'has been deleted in {message.channel.name} of '

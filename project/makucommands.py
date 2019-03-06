@@ -5,7 +5,6 @@ Also used to reload criticalcommands.
 import random
 import sys
 from pathlib import Path
-import asyncio
 from io import StringIO
 import datetime
 import json
@@ -18,7 +17,8 @@ from discord.ext.commands.errors import (CommandError, CommandNotFound,
                                          CommandOnCooldown, NotOwner,
                                          MissingPermissions,
                                          BotMissingPermissions,
-                                         BadUnionArgument)
+                                         BadUnionArgument,
+                                         MissingRequiredArgument)
 import wikipedia
 from . import tokens
 from . import commandutil
@@ -383,7 +383,8 @@ class MakuCommands(discord.ext.commands.Cog):
                             I\'m sorry :(')
         elif isinstance(caught_exception, (MissingPermissions,
                                            BotMissingPermissions,
-                                           BadUnionArgument)):
+                                           BadUnionArgument,
+                                           MissingRequiredArgument)):
             await ctx.send(str(caught_exception))
         else:
             await commandutil.send_formatted_message(
