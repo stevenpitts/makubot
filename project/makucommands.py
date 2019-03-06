@@ -387,15 +387,11 @@ class MakuCommands(discord.ext.commands.Cog):
                                            MissingRequiredArgument)):
             await ctx.send(str(caught_exception))
         else:
-            await commandutil.send_formatted_message(
-                self.bot.makusu,
-                commandutil.get_formatted_traceback(caught_exception))
+            print(commandutil.get_formatted_traceback(caught_exception))
 
     @commands.Cog.listener()
     async def on_error(self, ctx, caught_exception):
-        await commandutil.send_formatted_message(
-            self.bot.makusu,
-            commandutil.get_formatted_traceback(caught_exception))
+        print(commandutil.get_formatted_traceback(caught_exception))
 
     @commands.Cog.listener()
     async def on_message(self, message: discord.Message):
