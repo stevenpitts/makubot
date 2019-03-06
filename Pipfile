@@ -20,5 +20,5 @@ python_version = "3.7"
 real = "python -m project real profile"
 test = "python -m project test profile"
 realnp = "python -m project real"
-testnp = "python -m project test
+testnp = "python -m project test"
 lint = "python -m flake8 project"
