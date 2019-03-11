@@ -18,19 +18,19 @@ REMINDERS_PATH = DATA_DIR / 'reminders.txt'
 class ReminderCommands(discord.ext.commands.Cog):
     def __init__(self, bot):
         self.bot = bot
-        self.reminders = PriorityQueue
+        self.reminders = None
 
     @commands.Cog.listener()
     async def on_ready(self):
-        asyncio.get_event_loop().create_task(self.load_reminders())
-        asyncio.get_event_loop().create_task(self.keep_checking_reminders())
+        await self.load_reminders()
+        await self.keep_checking_reminders()
 
     @commands.command()
     async def remindme(self, ctx, timelength: str, *, reminder: str):
         '''Reminds you of a thing!
-Usage:
-    remindme [<days>d][<hours>h] [<minutes>m][<seconds>s] <reminder message>
-Example: remindme 1d2h9s do laundry
+        Usage:
+          remindme [<days>d][<hours>h] [<minutes>m][<seconds>s] <reminder>
+        Example: remindme 1d2h9s do laundry
         '''
         def get_num_seconds(timelength):
             if timelength.isnumeric():
@@ -67,17 +67,14 @@ Example: remindme 1d2h9s do laundry
     async def keep_checking_reminders(self):
         while True:
             if not self.reminders.empty():
-                next_reminder = self.reminders.get()
-                ready_to_send = next_reminder.ready_to_send()
-                if ready_to_send:
+                if self.reminders.queue[0].ready_to_send():
+                    next_reminder = self.reminders.get()
                     self.save_reminders()
                     await next_reminder.channel.send(
                         '{}, you have a message from {} seconds ago: {}'
                         .format(next_reminder.user.mention,
                                 next_reminder.reminder_delay,
                                 next_reminder.reminder_message))
-                else:
-                    self.reminders.put(next_reminder)
             await asyncio.sleep(1)
 
     async def load_reminders(self):

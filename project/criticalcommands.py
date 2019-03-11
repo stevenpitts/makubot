@@ -37,7 +37,7 @@ class CriticalCommands(discord.ext.commands.Cog):
                 logging.info(f'Failed to reload {to_reload}:\
                              {excepted_traceback}\n\n\n')
                 reload_response += f'\nFailed to reload {to_reload}'
-                print('Error importing {to_reload}: \n{excepted_traceback}')
+                print(f'Error importing {to_reload}: \n{excepted_traceback}')
         await ctx.send(reload_response)
 
 
