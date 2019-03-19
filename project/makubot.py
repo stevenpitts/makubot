@@ -36,7 +36,7 @@ class MakuBot(commands.Bot):
         '''
         Called when MakuBot has logged in and is ready to accept commands
         '''
-        self.makusu = await self.get_user_info(self.owner_id)
+        self.makusu = await self.fetch_user(self.owner_id)
         print('Logged in as {} with ID {}'
               .format(self.user.name, self.user.id))
         await self.change_presence(activity=discord.Game(

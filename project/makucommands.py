@@ -419,21 +419,19 @@ class MakuCommands(discord.ext.commands.Cog):
                                                    'Maku loves you! <333333')
 
 
-class CustomFormatter(discord.ext.commands.formatter.HelpFormatter):
-    async def format(self):
-        base_help = await super(CustomFormatter, self).format()
-        if isinstance(self.command, discord.ext.commands.Command):
-            return base_help
+class MakuHelpCommand(discord.ext.commands.help.DefaultHelpCommand):
+    def get_ending_note(self):
         people_desc = ', '.join(
             self.context.bot.shared['fave_pictures_commands'])
         reaction_desc = ', '.join(
             self.context.bot.shared['reaction_images_commands'])
-        return base_help + [f'```Favorite people commands: {people_desc}```\n'
-                            f'```Reaction image commands: {reaction_desc}```']
+        return (f'Favorite people: {people_desc}\n\n'
+                f'Reaction images: {reaction_desc}\n\n\n'
+                f"{super().get_ending_note()}")
 
 
 def setup(bot):
     logging.info('makucommands starting setup')
     bot.add_cog(MakuCommands(bot))
-    bot.formatter = CustomFormatter()
+    bot.help_command = MakuHelpCommand()
     logging.info('makucommands ending setup')
