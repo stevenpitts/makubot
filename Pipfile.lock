@@ -1,7 +1,7 @@
 {
     "_meta": {
         "hash": {
-            "sha256": "8d8c77fe3a4fa842bfa6e13ccdcc0b84e14e396d0716bda2aa70556bfc1ca042"
+            "sha256": "8f9caf733fd4f38aeb2106f1ea326caf76cebff14bdd08348cf9e5422b2520d6"
         },
         "pipfile-spec": 6,
         "requires": {
@@ -40,10 +40,10 @@
         },
         "certifi": {
             "hashes": [
-                "sha256:47f9c83ef4c0c621eaef743f133f09fa8a74a9b75f037e8624f83bd1b6626cb7",
-                "sha256:993f830721089fef441cdfeb4b2c8c9df86f0c63239f06bd025a76a7daddb033"
+                "sha256:59b7658e26ca9c7339e00f8f4636cdfe59d34fa37b9b04f6f9e9926b3cece1a5",
+                "sha256:b26104d6835d1f5e49452a26eb2ff87fe7090b89dfcaee5ea2212697e1e1d7ae"
             ],
-            "version": "==2018.11.29"
+            "version": "==2019.3.9"
         },
         "chardet": {
             "hashes": [
@@ -53,8 +53,8 @@
             "version": "==3.0.4"
         },
         "discord-py": {
-            "git": "https://github.com/Rapptz/discord.py",
-            "ref": "45af9fa40bc0083de3a695795029d6f6a85ce0d8"
+            "git": "https://github.com/Rapptz/discord.py.git",
+            "ref": "c30a366106f9d6114dcf38a31aed58dec6747054"
         },
         "entrypoints": {
             "hashes": [
