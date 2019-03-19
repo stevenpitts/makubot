@@ -414,9 +414,7 @@ class MakuCommands(discord.ext.commands.Cog):
     async def on_member_join(self, member: discord.Member):
         '''Called when a member joins to tell them that Maku loves them
         (because Maku does) <3'''
-        print("here01")
         if member.guild.id in self.free_guilds:
-            print("here02")
             await member.guild.system_channel.send(f'Hi {member.mention}! '
                                                    'Maku loves you! <333333')
 
