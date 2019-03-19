@@ -111,7 +111,7 @@ class MakuCommands(discord.ext.commands.Cog):
                           'picturecommands',
                           'serverlogging',
                           'makucommands',
-                          'movement',]:
+                          'movement']:
             try:
                 ctx.bot.reload_extension(f"project.{to_reload}")
             except Exception as e:
