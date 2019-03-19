@@ -4,6 +4,7 @@ Also used to reload criticalcommands.
 '''
 import random
 import sys
+import importlib
 from pathlib import Path
 from io import StringIO
 import datetime
@@ -96,6 +97,31 @@ class MakuCommands(discord.ext.commands.Cog):
             {guild.name: guild.id for guild in self.bot.guilds})
         await commandutil.send_formatted_message(
             self.bot.makusu, current_servers_string)
+
+    @commands.command(hidden=True)
+    @commands.is_owner()
+    async def reload(self, ctx):
+        '''
+        Reloads my command cogs. Works even in fatal situations. Sometimes.
+        '''
+        logging.info('---Reloading makucommands and commandutil---')
+        importlib.reload(commandutil)
+        reload_response = ''
+        for to_reload in ['reminders',
+                          'picturecommands',
+                          'serverlogging',
+                          'makucommands',
+                          'movement',]:
+            try:
+                ctx.bot.reload_extension(f"project.{to_reload}")
+            except Exception as e:
+                reload_response += f"Failed to reload {to_reload}\n"
+                fail_tb = commandutil.get_formatted_traceback(e)
+                fail_message = f"Error reloading {to_reload}: \n{fail_tb}\n\n"
+                print(fail_message)
+                logging.info(fail_message)
+        reload_response += "Done!"
+        await ctx.send(reload_response)
 
     @commands.command()
     @commands.cooldown(1, 1, type=commands.BucketType.user)
