@@ -99,7 +99,7 @@ class Movement(discord.ext.commands.Cog):
         You can also add the reaction \U0001f232 to automate this process.
         '''
         try:
-            message_to_move = await ctx.message.channel.get_message(msg_id)
+            message_to_move = await ctx.message.channel.fetch_message(msg_id)
         except discord.errors.HTTPException:
             await ctx.message.channel.send(
                 "That, uh, doesn't look like a valid message ID. Try again.")
