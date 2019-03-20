@@ -11,6 +11,7 @@ import datetime
 import json
 import logging
 from googleapiclient.discovery import build
+from translate import Translator
 import asteval
 import discord
 from discord.ext import commands
@@ -56,6 +57,7 @@ With great power comes great responsibility -Uncle Ben'''.split('\n')
 
 YOUTUBE_SEARCH = None if tokens.googleAPI is None else build(
     'youtube', 'v3', developerKey=tokens.googleAPI).search()
+TRANSLATOR = Translator(to_lang="en"    )
 
 
 def aeval(to_evaluate, return_error=True) -> str:
@@ -206,7 +208,8 @@ class MakuCommands(discord.ext.commands.Cog):
 
     @commands.command(aliases=['yt'])
     async def youtube(self, ctx, *, search_term: str):
-        '''Post a YouTube video based on a search phrase!'''
+        '''Post a YouTube video based on a search phrase!
+        Idea stolen from KitchenSink'''
         if YOUTUBE_SEARCH is None:
             await ctx.send('Sorry, I\'m missing the google API key!')
             return
@@ -219,6 +222,13 @@ class MakuCommands(discord.ext.commands.Cog):
         search_result = next(search_results, None)
         await ctx.send(f'https://www.youtube.com/watch?v={search_result}'
                        if search_result else 'Sowwy, I can\'t find it :(')
+
+    @commands.command(aliases=["english"])
+    async def translate(self, ctx, *, text: str):
+        """Translate some text into English!
+        Idea stolen from KitchenSink."""
+        translated = TRANSLATOR.translate(text)
+        await ctx.send(f"Translated: {translated}")
 
     @commands.command()
     async def eval(self, ctx, *, to_eval: str):
