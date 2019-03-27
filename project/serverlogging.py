@@ -57,7 +57,8 @@ class ServerLogging(discord.ext.commands.Cog):
         if should_be_logged:
             aagshit_lawgs_channel = self.bot.get_channel(
                 commandutil.known_ids['aagshit_lawgs'])
-            await aagshit_lawgs_channel.send(rf'```{deletion_message}```',
+            escaped_deletion = deletion_message.replace(r"`", r"'")
+            await aagshit_lawgs_channel.send(rf'```{escaped_deletion}```',
                                              files=attachment_files)
 
 
