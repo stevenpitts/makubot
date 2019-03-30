@@ -17,10 +17,6 @@ class Movement(discord.ext.commands.Cog):
         self.bot = bot
 
     @commands.Cog.listener()
-    async def on_ready(self):
-        pass
-
-    @commands.Cog.listener()
     async def on_reaction_add(self, reaction, user):
         '''Called when a user adds a reaction to a message which is in my cache.
         Currently only looks for the 'move message' emoji.'''

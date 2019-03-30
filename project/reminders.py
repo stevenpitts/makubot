@@ -19,11 +19,12 @@ class ReminderCommands(discord.ext.commands.Cog):
     def __init__(self, bot):
         self.bot = bot
         self.reminders = None
-
-    @commands.Cog.listener()
-    async def on_ready(self):
-        await self.load_reminders()
-        await self.keep_checking_reminders()
+        asyncio.get_event_loop().create_task(self.load_reminders())
+        asyncio.get_event_loop().create_task(self.keep_checking_reminders())
+    #
+    # @commands.Cog.listener()
+    # async def on_ready(self):
+    #     print("\n\nHi, I'm ready\n\n")
 
     @commands.command()
     async def remindme(self, ctx, timelength: str, *, reminder: str):
