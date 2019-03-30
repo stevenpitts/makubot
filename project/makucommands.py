@@ -87,9 +87,6 @@ class MakuCommands(discord.ext.commands.Cog):
         prefixes = [m+b+punc+maybespace for m in 'mM' for b in 'bB'
                     for punc in '.!' for maybespace in [' ', '']]
         self.bot.command_prefix = commands.when_mentioned_or(*prefixes)
-
-    @commands.Cog.listener()
-    async def on_ready(self):
         self.load_free_reign_guilds()
 
     @commands.command(hidden=True, aliases=['status'])
