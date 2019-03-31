@@ -36,13 +36,14 @@ class ServerLogging(discord.ext.commands.Cog):
                              else "DMs")
         attachment_files = []
         for attachment in message.attachments:
-            attachment.url = attachment.proxy_url  # Cheating or clever?
-            filepath = str(SAVED_ATTACHMENTS_DIR / attachment.filename)
+            filepath = SAVED_ATTACHMENTS_DIR / attachment.filename
             try:
-                await attachment.save(filepath)
-                attachment_files.append(discord.File(filepath))
-            except discord.errors.Forbidden:
-                pass
+                await attachment.save(filepath, use_cached=True)
+            except discord.errors.HTTPException:
+                await attachment.save(filepath, use_cached=False)
+            except discord.errors.NotFound:
+                continue
+            attachment_files.append(discord.File(filepath))
         deletion_message = (
             f'{message.created_at}: A message from {message.author.name} '
             f'has been deleted in {message.channel} of {guild_description} '
