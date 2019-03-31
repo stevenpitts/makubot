@@ -121,6 +121,7 @@ class MakuCommands(discord.ext.commands.Cog):
                 logging.info(fail_message)
         reload_response += "Done!"
         await ctx.send(reload_response)
+        print("Reloaded")
 
     @commands.command()
     @commands.cooldown(1, 1, type=commands.BucketType.user)
