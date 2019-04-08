@@ -57,7 +57,7 @@ With great power comes great responsibility -Uncle Ben'''.split('\n')
 
 YOUTUBE_SEARCH = None if tokens.googleAPI is None else build(
     'youtube', 'v3', developerKey=tokens.googleAPI).search()
-TRANSLATOR = Translator(to_lang="en"    )
+TRANSLATOR = Translator(to_lang="en")
 
 
 def aeval(to_evaluate, return_error=True) -> str:
@@ -451,11 +451,12 @@ class MakuCommands(discord.ext.commands.Cog):
         if member.guild.id in self.free_guilds:
             try:
                 await member.guild.system_channel.send(f'Hi {member.mention}! '
-                                                        'Maku loves you! '
-                                                        '<333333')
+                                                       'Maku loves you! '
+                                                       '<333333')
             except AttributeError:
-                print(f"{member.mention} joined, but guild {guild.name} has"
-                      "no system_channel. ID is {guild._system_channel_id}.")
+                print(f"{member.mention} joined, but guild "
+                      f"{member.guild.name} has no system_channel. ID is "
+                      "{guild._system_channel_id}.")
 
 
 class MakuHelpCommand(discord.ext.commands.help.DefaultHelpCommand):

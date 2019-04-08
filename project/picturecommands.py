@@ -4,23 +4,26 @@ import logging
 from pathlib import Path
 import os
 import random
+import urllib.request
+import shutil
 
 SCRIPT_DIR = Path(__file__).parent
 PARENT_DIR = SCRIPT_DIR.parent
 DATA_DIR = PARENT_DIR / 'data'
 PICTURES_DIR = DATA_DIR / 'pictures'
+SAVED_ATTACHMENTS_DIR = DATA_DIR / 'saved_attachments'
 
 
 class PictureAdder(discord.ext.commands.Cog):
     def __init__(self, bot):
         self.bot = bot
 
-    async def image_suggestion(self, image_dir, attachment):
-        proposal = (f"Add image to {image_dir}?\n{attachment.url}"
+    async def image_suggestion(self, image_dir, filename):
+        proposal = (f"Add image {filename} to {image_dir}?"
                     if image_dir.exists() else
-                    (f"Add image to ***NEW*** dir {image_dir}?\n"
-                     f"{attachment.url}"))
-        request = await self.bot.makusu.send(proposal)
+                    f"Add image to ***NEW*** dir {image_dir}?")
+        request = await self.bot.makusu.send(
+            proposal, file=discord.File(SAVED_ATTACHMENTS_DIR / filename))
         no_emoji, yes_emoji = "❌", "✅"
         await request.add_reaction(no_emoji)
         await request.add_reaction(yes_emoji)
@@ -33,11 +36,12 @@ class PictureAdder(discord.ext.commands.Cog):
         if res[0].emoji == yes_emoji:
             if not image_dir.exists():
                 os.makedirs(image_dir)
-            await attachment.save(str(image_dir / attachment.filename))
+            shutil.move(SAVED_ATTACHMENTS_DIR / filename,
+                        image_dir / filename)
         await request.delete()
 
     @commands.command(aliases=["addimage"])
-    async def add_image(self, ctx, *, image_collection: str):
+    async def add_image(self, ctx, image_collection: str, url: str = None):
         """Requests an image be added.
         mb.addimage reaction nao
         Makubot will then ask the for the image to be added.
@@ -54,19 +58,30 @@ class PictureAdder(discord.ext.commands.Cog):
         if command_taken:
             await ctx.send("That is already a command name.")
             return
-        await ctx.send("Please send your image(s).")
-
-        def image_message_check(message):
-            return (message.channel == ctx.channel
-                    and message.author == ctx.author
-                    and message.attachments)
-        image_message = await self.bot.wait_for('message',
-                                                check=image_message_check,
-                                                timeout=120)
-        for attachment in image_message.attachments:
+        if url is None:
+            if not ctx.message.attachments:
+                await ctx.send("You must include a URL at the end of your "
+                               "message or attach image(s).")
+                return
             await ctx.send("Sent to Maku for approval!")
-            await self.image_suggestion(PICTURES_DIR/image_collection,
-                                        attachment)
+            for attachment in ctx.message.attachments:
+                await attachment.save(SAVED_ATTACHMENTS_DIR
+                                      / attachment.filename)
+                await self.image_suggestion(PICTURES_DIR / image_collection,
+                                            attachment.filename)
+        else:
+            filename = url.split(r"/")[-1]
+            while os.path.exists(PICTURES_DIR / image_collection / filename):
+                filename += str(random.randint(1, 1000))
+            try:
+                urllib.request.urlretrieve(url,
+                                           SAVED_ATTACHMENTS_DIR / filename)
+            except urllib.error.HTTPError:
+                await ctx.send("I can't grab the image from that URL, sorry!")
+            else:
+                await ctx.send("Sent to Maku for approval!")
+                await self.image_suggestion(PICTURES_DIR / image_collection,
+                                            filename)
 
 
 async def post_picture(channel, folder_name):

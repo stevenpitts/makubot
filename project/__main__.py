@@ -17,8 +17,7 @@ DATA_DIR = PARENT_DIR / 'data'
 
 
 def main():
-    for data_dir_folder in ['picture_associations',
-                            'picture_reactions',
+    for data_dir_folder in ['pictures',
                             'saved_attachments',
                             'working_directory']:
         os.makedirs(str(DATA_DIR / data_dir_folder), exist_ok=True)
