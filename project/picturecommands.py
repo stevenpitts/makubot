@@ -18,7 +18,8 @@ class PictureAdder(discord.ext.commands.Cog):
     async def image_suggestion(self, image_dir, attachment):
         proposal = (f"Add image to {image_dir}?\n{attachment.url}"
                     if image_dir.exists() else
-                    f"Add image to new dir {image_dir}?\n{attachment.url}")
+                    (f"Add image to ***NEW*** dir {image_dir}?\n"
+                     f"{attachment.url}"))
         request = await self.bot.makusu.send(proposal)
         no_emoji, yes_emoji = "❌", "✅"
         await request.add_reaction(no_emoji)
@@ -44,6 +45,14 @@ class PictureAdder(discord.ext.commands.Cog):
         Then, it'll be sent to maku for approval!"""
         if not image_collection.isalpha():
             await ctx.send("Please only include letters.")
+            return
+        existing_command = self.bot.get_command(image_collection)
+        command_taken = (existing_command is not None
+                         and (not hasattr(existing_command, "instance")
+                              or not isinstance(existing_command.instance,
+                                                ReactionImages)))
+        if command_taken:
+            await ctx.send("That is already a command name.")
             return
         await ctx.send("Please send your image(s).")
 

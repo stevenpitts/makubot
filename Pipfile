@@ -11,8 +11,8 @@ flake8 = "*"
 asteval = "*"
 wikipedia = "*"
 google-api-python-client = "*"
-discord-py = {git = "https://github.com/Rapptz/discord.py.git",ref = "rewrite"}
 translate = "*"
+discord-py = {git = "https://github.com/Rapptz/discord.py.git",ref = "rewrite"}
 
 [requires]
 python_version = "3.7"
