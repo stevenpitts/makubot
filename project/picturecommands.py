@@ -36,20 +36,12 @@ class PictureAdder(discord.ext.commands.Cog):
         await request.delete()
 
     @commands.command(aliases=["addimage"])
-    async def add_image(self, ctx, type, *, image_collection: str):
+    async def add_image(self, ctx, *, image_collection: str):
         """Requests an image be added.
         mb.addimage reaction nao
         Makubot will then ask the for the image to be added.
         You must send the image as an attachment; I can't save URLs ;~;
         Then, it'll be sent to maku for approval!"""
-        type = type.lower().strip()
-        image_collection = image_collection.lower().strip()
-        if type not in ["reaction", "association"]:
-            await ctx.send("You must specify whether your image is a reaction "
-                           "or an association image. Association would be an "
-                           "image specific to a user, reaction would be a "
-                           "generic reaction image.")
-            return
         if not image_collection.isalpha():
             await ctx.send("Please only include letters.")
             return
@@ -64,7 +56,8 @@ class PictureAdder(discord.ext.commands.Cog):
                                                 timeout=120)
         for attachment in image_message.attachments:
             await ctx.send("Sent to Maku for approval!")
-            await self.image_suggestion(PICTURES_DIR/image_collection, attachment)
+            await self.image_suggestion(PICTURES_DIR/image_collection,
+                                        attachment)
 
 
 async def post_picture(channel, folder_name):
