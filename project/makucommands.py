@@ -460,12 +460,9 @@ class MakuCommands(discord.ext.commands.Cog):
 
 class MakuHelpCommand(discord.ext.commands.help.DefaultHelpCommand):
     def get_ending_note(self):
-        people_desc = ', '.join(
-            self.context.bot.shared['fave_pictures_commands'])
-        reaction_desc = ', '.join(
-            self.context.bot.shared['reaction_images_commands'])
-        return (f'Favorite people: {people_desc}\n\n'
-                f'Reaction images: {reaction_desc}\n\n\n'
+        pictures_desc = ', '.join(
+            self.context.bot.shared['pictures_commands'])
+        return (f'Reaction images: {pictures_desc}\n\n\n'
                 f"{super().get_ending_note()}")
 
 
