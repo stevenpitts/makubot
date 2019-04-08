@@ -8,8 +8,7 @@ import random
 SCRIPT_DIR = Path(__file__).parent
 PARENT_DIR = SCRIPT_DIR.parent
 DATA_DIR = PARENT_DIR / 'data'
-PICTURE_ASSOCIATIONS_DIR = DATA_DIR / 'picture_associations'
-PICTURE_REACTIONS_DIR = DATA_DIR / 'picture_reactions'
+PICTURES_DIR = DATA_DIR / 'pictures'
 
 
 class PictureAdder(discord.ext.commands.Cog):
@@ -54,8 +53,6 @@ class PictureAdder(discord.ext.commands.Cog):
         if not image_collection.isalpha():
             await ctx.send("Please only include letters.")
             return
-        type_dir = (PICTURE_ASSOCIATIONS_DIR if type == "association" else
-                    PICTURE_REACTIONS_DIR)
         await ctx.send("Please send your image(s).")
 
         def image_message_check(message):
@@ -67,7 +64,7 @@ class PictureAdder(discord.ext.commands.Cog):
                                                 timeout=120)
         for attachment in image_message.attachments:
             await ctx.send("Sent to Maku for approval!")
-            await self.image_suggestion(type_dir/image_collection, attachment)
+            await self.image_suggestion(PICTURES_DIR/image_collection, attachment)
 
 
 async def post_picture(channel, folder_name):
@@ -76,38 +73,17 @@ async def post_picture(channel, folder_name):
     await channel.send(file=discord.File(file_to_send))
 
 
-class FavePictures(discord.ext.commands.Cog):
-
-    async def folder_func(ctx):
-        true_path = PICTURE_ASSOCIATIONS_DIR / ctx.invoked_with
-        await post_picture(ctx.channel, true_path)
-
-    def __init__(self, bot):
-        self.bot = bot
-        self.bot.shared['fave_pictures_commands'] = []
-        for folder_name in os.listdir(PICTURE_ASSOCIATIONS_DIR):
-            self.bot.shared['fave_pictures_commands'].append(folder_name)
-            folder_brief = f"Post one of {folder_name}'s favorite pictures~"
-            folder_command = commands.Command(FavePictures.folder_func,
-                                              brief=folder_brief,
-                                              name=folder_name,
-                                              hidden=True)
-            folder_command.instance = self
-            folder_command.module = self.__module__
-            self.bot.add_command(folder_command)
-
-
 class ReactionImages(discord.ext.commands.Cog):
 
     async def folder_func(ctx):
-        true_path = PICTURE_REACTIONS_DIR / ctx.invoked_with
+        true_path = PICTURES_DIR / ctx.invoked_with
         await post_picture(ctx.channel, true_path)
 
     def __init__(self, bot):
         self.bot = bot
-        self.bot.shared['reaction_images_commands'] = []
-        for folder_name in os.listdir(PICTURE_REACTIONS_DIR):
-            self.bot.shared['reaction_images_commands'].append(folder_name)
+        self.bot.shared['pictures_commands'] = []
+        for folder_name in os.listdir(PICTURES_DIR):
+            self.bot.shared['pictures_commands'].append(folder_name)
             folder_command = commands.Command(ReactionImages.folder_func,
                                               name=folder_name,
                                               brief=folder_name,
@@ -119,7 +95,6 @@ class ReactionImages(discord.ext.commands.Cog):
 
 def setup(bot):
     logging.info('picturecommands starting setup')
-    bot.add_cog(FavePictures(bot))
     bot.add_cog(ReactionImages(bot))
     bot.add_cog(PictureAdder(bot))
     logging.info('picturecommands ending setup')
