@@ -449,8 +449,13 @@ class MakuCommands(discord.ext.commands.Cog):
         '''Called when a member joins to tell them that Maku loves them
         (because Maku does) <3'''
         if member.guild.id in self.free_guilds:
-            await member.guild.system_channel.send(f'Hi {member.mention}! '
-                                                   'Maku loves you! <333333')
+            try:
+                await member.guild.system_channel.send(f'Hi {member.mention}! '
+                                                        'Maku loves you! '
+                                                        '<333333')
+            except AttributeError:
+                print(f"{member.mention} joined, but guild {guild.name} has"
+                      "no system_channel. ID is {guild._system_channel_id}.")
 
 
 class MakuHelpCommand(discord.ext.commands.help.DefaultHelpCommand):
