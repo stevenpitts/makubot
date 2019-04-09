@@ -200,8 +200,7 @@ class MakuCommands(discord.ext.commands.Cog):
         '''Add the current guild as a gowild guild; I do a bit more on these.
         Only Maku can add guilds though :('''
         if ctx.message.guild:
-            self.bot.shared['data']['free_guilds'].append(
-                ctx.message.guild.id)
+            self.bot.shared['data']['free_guilds'].append(ctx.message.guild.id)
             await ctx.send('Ayaya~')
 
     def cog_unload(self):
