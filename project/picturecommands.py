@@ -4,8 +4,9 @@ import logging
 from pathlib import Path
 import os
 import random
-import urllib.request
+import aiohttp
 import shutil
+import re
 
 SCRIPT_DIR = Path(__file__).parent
 PARENT_DIR = SCRIPT_DIR.parent
@@ -38,6 +39,7 @@ class PictureAdder(discord.ext.commands.Cog):
                 os.makedirs(image_dir)
             shutil.move(SAVED_ATTACHMENTS_DIR / filename,
                         image_dir / filename)
+            self.bot.reload_extension("project.picturecommands")
         await request.delete()
 
     @commands.command(aliases=["addimage"])
@@ -70,13 +72,16 @@ class PictureAdder(discord.ext.commands.Cog):
                 await self.image_suggestion(PICTURES_DIR / image_collection,
                                             attachment.filename)
         else:
-            filename = url.split(r"/")[-1]
+            filename = re.sub(r"\W+", "", url.split(r"/")[-1])
+            if "." not in filename:
+                filename += ".notactuallypng.png"
             while os.path.exists(PICTURES_DIR / image_collection / filename):
-                filename += str(random.randint(1, 1000))
+                filename = f"{str(random.randint(1, 1000))}{filename}"
             try:
-                urllib.request.urlretrieve(url,
-                                           SAVED_ATTACHMENTS_DIR / filename)
-            except urllib.error.HTTPError:
+                data = await self.bot.http.get_from_cdn(url)
+                with open(SAVED_ATTACHMENTS_DIR / filename, 'wb') as f:
+                    f.write(data)
+            except aiohttp.client_exceptions.ClientConnectorError:
                 await ctx.send("I can't grab the image from that URL, sorry!")
             else:
                 await ctx.send("Sent to Maku for approval!")

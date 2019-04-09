@@ -456,7 +456,7 @@ class MakuCommands(discord.ext.commands.Cog):
             except AttributeError:
                 print(f"{member.mention} joined, but guild "
                       f"{member.guild.name} has no system_channel. ID is "
-                      "{guild._system_channel_id}.")
+                      f"{member.guild._system_channel_id}.")
 
 
 class MakuHelpCommand(discord.ext.commands.help.DefaultHelpCommand):

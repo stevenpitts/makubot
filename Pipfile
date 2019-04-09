@@ -12,7 +12,7 @@ asteval = "*"
 wikipedia = "*"
 google-api-python-client = "*"
 translate = "*"
-discord-py = {git = "https://github.com/Rapptz/discord.py.git",ref = "rewrite"}
+discord-py = "*"
 
 [requires]
 python_version = "3.7"
