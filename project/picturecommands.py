@@ -19,7 +19,7 @@ class PictureAdder(discord.ext.commands.Cog):
     def __init__(self, bot):
         self.bot = bot
 
-    async def image_suggestion(self, image_dir, filename):
+    async def image_suggestion(self, image_dir, filename, requestor):
         proposal = (f"Add image {filename} to {image_dir}?"
                     if image_dir.exists() else
                     f"Add image to ***NEW*** dir {image_dir}?")
@@ -40,6 +40,12 @@ class PictureAdder(discord.ext.commands.Cog):
             shutil.move(SAVED_ATTACHMENTS_DIR / filename,
                         image_dir / filename)
             self.bot.reload_extension("project.picturecommands")
+            await requestor.send(f"Your image {filename.split('.')[0]} "
+                                 "was approved!")
+        else:
+            await requestor.send(f"Your image {filename.split('.')[0]} "
+                                 "was not approved. "
+                                 "Feel free to ask Maku why ^_^")
         await request.delete()
 
     @commands.command(aliases=["addimage"])
@@ -70,7 +76,7 @@ class PictureAdder(discord.ext.commands.Cog):
                 await attachment.save(SAVED_ATTACHMENTS_DIR
                                       / attachment.filename)
                 await self.image_suggestion(PICTURES_DIR / image_collection,
-                                            attachment.filename)
+                                            attachment.filename, ctx.author)
         else:
             filename = re.sub(r"\W+", "", url.split(r"/")[-1])
             if "." not in filename:
@@ -86,7 +92,7 @@ class PictureAdder(discord.ext.commands.Cog):
             else:
                 await ctx.send("Sent to Maku for approval!")
                 await self.image_suggestion(PICTURES_DIR / image_collection,
-                                            filename)
+                                            filename, ctx.author)
 
 
 async def post_picture(channel, folder_name):
