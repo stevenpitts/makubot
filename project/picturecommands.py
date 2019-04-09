@@ -49,7 +49,7 @@ class PictureAdder(discord.ext.commands.Cog):
         await request.delete()
 
     @commands.command(aliases=["addimage"])
-    async def add_image(self, ctx, image_collection: str, *, urls: str = None):
+    async def add_image(self, ctx, image_collection: str, *, urls: str = ""):
         """Requests an image be added.
         mb.addimage reaction nao
         Makubot will then ask the for the image to be added.
@@ -66,42 +66,38 @@ class PictureAdder(discord.ext.commands.Cog):
         if command_taken:
             await ctx.send("That is already a command name.")
             return
-        if urls is None:
-            if not ctx.message.attachments:
-                await ctx.send("You must include a URL at the end of your "
-                               "message or attach image(s).")
-                return
+        request_tasks = []
+        if urls is None and not ctx.message.attachments:
+            await ctx.send("You must include a URL at the end of your "
+                           "message or attach image(s).")
+            return
+        for attachment in ctx.message.attachments:
+            await attachment.save(SAVED_ATTACHMENTS_DIR
+                                  / attachment.filename)
+            request_tasks.append(self.image_suggestion(
+                PICTURES_DIR / image_collection,
+                attachment.filename, ctx.author))
             await ctx.send("Sent to Maku for approval!")
-            for attachment in ctx.message.attachments:
-                await attachment.save(SAVED_ATTACHMENTS_DIR
-                                      / attachment.filename)
+        for url in urls.split():
+            filename = re.sub(r"\W+", "", url.split(r"/")[-1])
+            if "." not in filename:
+                filename += ".notactuallypng.png"
+            while os.path.exists(PICTURES_DIR
+                                 / image_collection
+                                 / filename):
+                filename = f"{str(random.randint(1, 1000))}{filename}"
+            try:
+                data = await self.bot.http.get_from_cdn(url)
+                with open(SAVED_ATTACHMENTS_DIR / filename, 'wb') as f:
+                    f.write(data)
+            except aiohttp.client_exceptions.ClientConnectorError:
+                await ctx.send("I can't download that image, sorry!")
+            else:
+                await ctx.send("Sent to Maku for approval!")
                 request_tasks.append(self.image_suggestion(
-                    PICTURES_DIR / image_collection,
-                    attachment.filename, ctx.author))
-            for request_task in request_tasks:
-                await request_task
-        else:
-            request_tasks = []
-            for url in urls.split():
-                filename = re.sub(r"\W+", "", url.split(r"/")[-1])
-                if "." not in filename:
-                    filename += ".notactuallypng.png"
-                while os.path.exists(PICTURES_DIR
-                                     / image_collection
-                                     / filename):
-                    filename = f"{str(random.randint(1, 1000))}{filename}"
-                try:
-                    data = await self.bot.http.get_from_cdn(url)
-                    with open(SAVED_ATTACHMENTS_DIR / filename, 'wb') as f:
-                        f.write(data)
-                except aiohttp.client_exceptions.ClientConnectorError:
-                    await ctx.send("I can't download that image, sorry!")
-                else:
-                    await ctx.send("Sent to Maku for approval!")
-                    request_tasks.append(self.image_suggestion(
-                        PICTURES_DIR / image_collection, filename, ctx.author))
-            for request_task in request_tasks:
-                await request_task
+                    PICTURES_DIR / image_collection, filename, ctx.author))
+        for request_task in request_tasks:
+            await request_task
 
 
 async def post_picture(channel, folder_name):
