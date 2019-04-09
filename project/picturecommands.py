@@ -67,7 +67,7 @@ class PictureAdder(discord.ext.commands.Cog):
             await ctx.send("That is already a command name.")
             return
         request_tasks = []
-        if urls is None and not ctx.message.attachments:
+        if not urls and not ctx.message.attachments:
             await ctx.send("You must include a URL at the end of your "
                            "message or attach image(s).")
             return
