@@ -1,7 +1,6 @@
 import discord
 from discord.ext import commands
 import logging
-from . import commandutil
 import codecs
 from pathlib import Path
 
@@ -21,7 +20,8 @@ class ServerLogging(discord.ext.commands.Cog):
     @commands.command(aliases=['addlogchannel'])
     @commands.is_owner()
     async def add_log_channel(self, ctx, log_channel: discord.TextChannel):
-        self.bot.shared['data']['log_channels'][str(ctx.guild.id)] = str(log_channel.id)
+        guild_id, log_channel_id = str(ctx.guild.id), str(log_channel.id)
+        self.bot.shared['data']['log_channels'][guild_id] = log_channel_id
 
     @commands.command(aliases=['what was that',
                                'whatwasthat?',
@@ -58,9 +58,11 @@ class ServerLogging(discord.ext.commands.Cog):
             deletion_log_file.write(deletion_message+'\n')
         should_be_logged = (
             message.author != self.bot.user and message.guild
-            and str(message.channel.guild.id) in self.bot.shared['data']['log_channels']
-            and str(message.channel.id) != self.bot.shared['data']['log_channels'][str(message.channel.id)]
-            )
+            and (str(message.channel.guild.id)
+                 in self.bot.shared['data']['log_channels'])
+            and str(message.channel.id) != (self.bot.shared
+                                            ['data']['log_channels']
+                                            [str(message.channel.id)]))
         if should_be_logged:
             log_channel = self.bot.get_channel(int(self.bot.shared['data']
                                                    ['log_channels']

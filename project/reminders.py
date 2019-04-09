@@ -1,4 +1,4 @@
-from queue import PriorityQueue
+import concurrent
 from pathlib import Path
 import discord
 from discord.ext import commands
@@ -6,7 +6,6 @@ import time
 import logging
 import asyncio
 import re
-import json
 from . import commandutil
 
 
@@ -23,7 +22,7 @@ class ReminderCommands(discord.ext.commands.Cog):
     async def remindme(self, ctx, timelength: str, *, reminder_message: str):
         '''Reminds you of a thing!
         Usage:
-          remindme [<days>d][<hours>h] [<minutes>m][<seconds>s] <reminder_message>
+          remindme [<days>d][<hours>h] [<minutes>m][<seconds>s] <reminder>
         Example: remindme 1d2h9s do laundry
         '''
         def get_num_seconds(timelength):
@@ -62,7 +61,8 @@ class ReminderCommands(discord.ext.commands.Cog):
             while True:
                 for reminder in self.bot.shared['data']['reminders']:
                     if reminder['remind_time'] < time.time():
-                        reminder_channel = self.bot.get_channel(reminder["channel_id"])
+                        reminder_channel = self.bot.get_channel(
+                            reminder["channel_id"])
                         reminder_user = self.bot.get_user(reminder["user_id"])
                         await reminder_channel.send(
                             '{}, you have a message from {} seconds ago: {}'
