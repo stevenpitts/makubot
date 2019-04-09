@@ -28,8 +28,8 @@ class MakuBot(commands.Bot):
                               owner_id=203285581004931072)
         self.makusu = None
         self.shared = {}
-        for extension in ['reminders', 'picturecommands',
-                          'makucommands', 'serverlogging', 'movement']:
+        for extension in ['makucommands', 'reminders', 'picturecommands',
+                          'serverlogging', 'movement']:
             self.load_extension(f'project.{extension}')
 
     async def on_ready(self):

@@ -24,7 +24,7 @@ def main():
 
     default_text = {'reminders.txt': '[]',
                     'makubot.log': '',
-                    'ids.json': '[]',
+                    'data.json': '{}',
                     'deletion_log.txt': ''}
     for filename, to_write in default_text.items():
         if not os.path.isfile(str(DATA_DIR / filename)):

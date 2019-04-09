@@ -29,7 +29,7 @@ SCRIPT_DIR = Path(__file__).parent
 PARENT_DIR = SCRIPT_DIR.parent
 DATA_DIR = PARENT_DIR / 'data'
 WORKING_DIR = DATA_DIR / 'working_directory'
-IDS_PATH = DATA_DIR / 'ids.json'
+DATAFILE_PATH = DATA_DIR / 'data.json'
 SAVED_ATTACHMENTS_DIR = DATA_DIR / 'saved_attachments'
 
 
@@ -85,8 +85,8 @@ class MakuCommands(discord.ext.commands.Cog):
                     for punc in '.!' for maybespace in [' ', '']]
         self.bot.command_prefix = commands.when_mentioned_or(*prefixes)
 
-        with open(IDS_PATH, 'r') as open_file:
-            self.bot.shared['ids'] = json.load(open_file)
+        with open(DATAFILE_PATH, 'r') as open_file:
+            self.bot.shared['data'] = json.load(open_file)
 
     @commands.command(hidden=True, aliases=['status'])
     @commands.is_owner()
@@ -152,7 +152,7 @@ class MakuCommands(discord.ext.commands.Cog):
     @commands.guild_only()
     async def areyoufree(self, ctx):
         '''If I have free reign I'll tell you'''
-        is_free = ctx.guild.id in self.bot.shared['ids']['free_guilds']
+        is_free = ctx.guild.id in self.bot.shared['data']['free_guilds']
         await ctx.send('Yes, I am free.' if is_free else
                        'This is not a free reign guild.')
 
@@ -200,12 +200,12 @@ class MakuCommands(discord.ext.commands.Cog):
         '''Add the current guild as a gowild guild; I do a bit more on these.
         Only Maku can add guilds though :('''
         if ctx.message.guild:
-            await self.bot.shared['ids']['free_guilds'].append(ctx.message.guild.id)
+            await self.bot.shared['data']['free_guilds'].append(ctx.message.guild.id)
             await ctx.send('Ayaya~')
 
     def cog_unload(self):
-        with open(IDS_PATH, 'w') as open_file:
-            json.dump(self.bot.shared['ids'], open_file)
+        with open(DATAFILE_PATH, 'w') as open_file:
+            json.dump(self.bot.shared['data'], open_file)
 
     @commands.command(aliases=['yt'])
     async def youtube(self, ctx, *, search_term: str):
@@ -386,10 +386,10 @@ class MakuCommands(discord.ext.commands.Cog):
     @commands.Cog.listener()
     async def on_message(self, message: discord.Message):
         if message.author != self.bot.user:
-            if message.guild and message.guild.id in self.bot.shared['ids']['free_guilds']\
+            if message.guild and message.guild.id in self.bot.shared['data']['free_guilds']\
                and message.mention_everyone:
                 await message.channel.send(message.author.mention+' grr')
-            if (message.guild and message.guild.id in self.bot.shared['ids']['free_guilds']
+            if (message.guild and message.guild.id in self.bot.shared['data']['free_guilds']
                     and 'vore' in message.content.split()):
                 await message.pin()
             if message.guild and self.bot.user in message.mentions:
@@ -400,7 +400,7 @@ class MakuCommands(discord.ext.commands.Cog):
     async def on_member_join(self, member: discord.Member):
         '''Called when a member joins to tell them that Maku loves them
         (because Maku does) <3'''
-        if member.guild.id in self.bot.shared['ids']['free_guilds']:
+        if member.guild.id in self.bot.shared['data']['free_guilds']:
             try:
                 await member.guild.system_channel.send(f'Hi {member.mention}! '
                                                        'Maku loves you! '
