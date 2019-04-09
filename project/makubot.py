@@ -40,4 +40,4 @@ class MakuBot(commands.Bot):
         print('Logged in as {} with ID {}'
               .format(self.user.name, self.user.id))
         await self.change_presence(activity=discord.Game(
-            name=r'Lilybot is being tsun to me :<'))
+            name=r'Nao is being tsun to me :<'))

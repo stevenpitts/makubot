@@ -311,14 +311,6 @@ class MakuCommands(discord.ext.commands.Cog):
             await displaytxt(out_text)
 
     @commands.command()
-    async def sayhitolily(self, ctx):
-        '''Says hi to Lilybot~'''
-        lily_in_guild = (ctx.guild and any(ctx.guild.get_member(id) is not None
-                         for id in commandutil.known_ids['lilybots']))
-        await ctx.send('Hi Lily! I love you!' if lily_in_guild else
-                       'L-lily? Where are you? ;~;')
-
-    @commands.command()
     async def whatis(self, ctx, *, query):
         '''Searches Wikipedia to see what something is! Give it a try!'''
         try:
@@ -439,10 +431,6 @@ class MakuCommands(discord.ext.commands.Cog):
             if message.guild and self.bot.user in message.mentions:
                 new_activity = discord.Game(name=message.author.name)
                 await self.bot.change_presence(activity=new_activity)
-        if (message.author.id in commandutil.known_ids['lilybots']
-                and 'Hi makubot!' in message.content):
-            await message.channel.send(
-                "Hi Lily! You're amazing and I love you so much!!!!")
 
     @commands.Cog.listener()
     async def on_member_join(self, member: discord.Member):

@@ -11,5 +11,4 @@ def get_formatted_traceback(e):
 
 
 known_ids = {"aagshit": 322509699159162883,
-             "aagshit_lawgs": 541742610604359720,
-             "lilybots": [287343736046878730]}
+             "aagshit_lawgs": 541742610604359720}
