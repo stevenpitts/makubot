@@ -11,7 +11,7 @@ flake8 = "*"
 asteval = "*"
 wikipedia = "*"
 google-api-python-client = "*"
-discord-py = "*"
+discord-py =  ">=1.0.0"
 
 [requires]
 python_version = "3.7"

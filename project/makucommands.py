@@ -29,7 +29,7 @@ SCRIPT_DIR = Path(__file__).parent
 PARENT_DIR = SCRIPT_DIR.parent
 DATA_DIR = PARENT_DIR / 'data'
 WORKING_DIR = DATA_DIR / 'working_directory'
-FREE_REIGN_PATH = DATA_DIR / 'free_reign.txt'
+IDS_PATH = DATA_DIR / 'ids.json'
 SAVED_ATTACHMENTS_DIR = DATA_DIR / 'saved_attachments'
 
 
@@ -56,7 +56,6 @@ With great power comes great responsibility -Uncle Ben'''.split('\n')
 
 YOUTUBE_SEARCH = None if tokens.googleAPI is None else build(
     'youtube', 'v3', developerKey=tokens.googleAPI).search()
-TRANSLATOR = Translator(to_lang="en")
 
 
 def aeval(to_evaluate, return_error=True) -> str:
@@ -82,11 +81,12 @@ class MakuCommands(discord.ext.commands.Cog):
         I'm currently running Python {}.
         Also you can just ask Makusu2#2222. They love making new friends <333
         '''.format('.'.join(map(str, sys.version_info[:3])))
-        self.free_guilds = set()
         prefixes = [m+b+punc+maybespace for m in 'mM' for b in 'bB'
                     for punc in '.!' for maybespace in [' ', '']]
         self.bot.command_prefix = commands.when_mentioned_or(*prefixes)
-        self.load_free_reign_guilds()
+
+        with open(IDS_PATH, 'r') as open_file:
+            self.bot.shared['ids'] = json.load(open_file)
 
     @commands.command(hidden=True, aliases=['status'])
     @commands.is_owner()
@@ -152,7 +152,7 @@ class MakuCommands(discord.ext.commands.Cog):
     @commands.guild_only()
     async def areyoufree(self, ctx):
         '''If I have free reign I'll tell you'''
-        is_free = ctx.guild.id in self.free_guilds
+        is_free = ctx.guild.id in self.bot.shared['ids']['free_guilds']
         await ctx.send('Yes, I am free.' if is_free else
                        'This is not a free reign guild.')
 
@@ -200,8 +200,12 @@ class MakuCommands(discord.ext.commands.Cog):
         '''Add the current guild as a gowild guild; I do a bit more on these.
         Only Maku can add guilds though :('''
         if ctx.message.guild:
-            await self.add_free_reign_guild(ctx.message.guild.id)
+            await self.bot.shared['ids']['free_guilds'].append(ctx.message.guild.id)
             await ctx.send('Ayaya~')
+
+    def cog_unload(self):
+        with open(IDS_PATH, 'w') as open_file:
+            json.dump(self.bot.shared['ids'], open_file)
 
     @commands.command(aliases=['yt'])
     async def youtube(self, ctx, *, search_term: str):
@@ -340,24 +344,6 @@ class MakuCommands(discord.ext.commands.Cog):
 
     @commands.command(hidden=True)
     @commands.is_owner()
-    async def reloadcritical(self, ctx):
-        '''Reloads my critical commands'''
-        logging.info('---Reloading criticalcommands---')
-        ctx.bot.unload_extension('project.criticalcommands')
-        try:
-            ctx.bot.load_extension('project.criticalcommands')
-            logging.info('Successfully reloaded criticalcommands')
-            await ctx.send('Successfully reloaded!')
-        except Exception as caught_exception:
-            exception_traceback = commandutil.get_formatted_traceback(
-                caught_exception)
-            logging.info(f'Failed to reload criticalcommands:\
-                         {exception_traceback}\n\n\n')
-            await commandutil.send_formatted_message(ctx,
-                                                     exception_traceback)
-
-    @commands.command(hidden=True)
-    @commands.is_owner()
     async def clearshell(self, ctx):
         '''Adds a few newlines to Maku's shell (for clean debugging)'''
         print('\n'*10)
@@ -369,26 +355,6 @@ class MakuCommands(discord.ext.commands.Cog):
         Separated  by spaces
         '''
         await ctx.send(f'I choose {random.choice(args)}!')
-
-    def load_free_reign_guilds(self):
-        '''Loads free reign guilds from FREE_REIGN_PATH'''
-        with open(FREE_REIGN_PATH, 'r') as open_file:
-            self.free_guilds = set(json.load(open_file))
-
-    def save_free_reign_guilds(self):
-        '''Saves free reign guilds to FREE_REIGN_PATH'''
-        with open(FREE_REIGN_PATH, 'w') as open_file:
-            json.dump(list(self.free_guilds), open_file)
-
-    def add_free_reign_guild(self, guild_id):
-        '''Adds a given guild ID to free reign guilds and saves it'''
-        self.free_guilds.add(guild_id)
-        self.save_free_reign_guilds()
-
-    def remove_free_reign_guild(self, guild_id):
-        '''Removes a given guild ID from free reign guilds and saves it'''
-        self.free_guilds.remove(guild_id)
-        self.save_free_reign_guilds()
 
     @commands.Cog.listener()
     async def on_command_error(self, ctx,
@@ -420,10 +386,10 @@ class MakuCommands(discord.ext.commands.Cog):
     @commands.Cog.listener()
     async def on_message(self, message: discord.Message):
         if message.author != self.bot.user:
-            if message.guild and message.guild.id in self.free_guilds\
+            if message.guild and message.guild.id in self.bot.shared['ids']['free_guilds']\
                and message.mention_everyone:
                 await message.channel.send(message.author.mention+' grr')
-            if (message.guild and message.guild.id in self.free_guilds
+            if (message.guild and message.guild.id in self.bot.shared['ids']['free_guilds']
                     and 'vore' in message.content.split()):
                 await message.pin()
             if message.guild and self.bot.user in message.mentions:
@@ -434,7 +400,7 @@ class MakuCommands(discord.ext.commands.Cog):
     async def on_member_join(self, member: discord.Member):
         '''Called when a member joins to tell them that Maku loves them
         (because Maku does) <3'''
-        if member.guild.id in self.free_guilds:
+        if member.guild.id in self.bot.shared['ids']['free_guilds']:
             try:
                 await member.guild.system_channel.send(f'Hi {member.mention}! '
                                                        'Maku loves you! '

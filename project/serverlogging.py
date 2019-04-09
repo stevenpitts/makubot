@@ -18,6 +18,11 @@ class ServerLogging(discord.ext.commands.Cog):
         self.last_deleted_message = {}
         '''Maps channel ID to (last deleted message content, sender)'''
 
+    @commands.command(aliases=['addlogchannel'])
+    @commands.is_owner()
+    async def add_log_channel(self, ctx, log_channel: discord.TextChannel):
+        self.bot.shared['ids']['log_channels'][str(ctx.guild.id)] = str(log_channel.id)
+
     @commands.command(aliases=['what was that',
                                'whatwasthat?',
                                'what was that?'])
@@ -53,14 +58,16 @@ class ServerLogging(discord.ext.commands.Cog):
             deletion_log_file.write(deletion_message+'\n')
         should_be_logged = (
             message.author != self.bot.user and message.guild
-            and message.channel.guild.id == commandutil.known_ids['aagshit']
-            and message.channel.id != commandutil.known_ids['aagshit_lawgs'])
+            and str(message.channel.guild.id) in self.bot.shared['ids']['log_channels']
+            and str(message.channel.id) != self.bot.shared['ids']['log_channels'][str(message.channel.id)]
+            )
         if should_be_logged:
-            aagshit_lawgs_channel = self.bot.get_channel(
-                commandutil.known_ids['aagshit_lawgs'])
+            log_channel = self.bot.get_channel(int(self.bot.shared['ids']
+                                                   ['log_channels']
+                                                   [str(message.channel.id)]))
             escaped_deletion = deletion_message.replace(r"`", r"'")
-            await aagshit_lawgs_channel.send(rf'```{escaped_deletion}```',
-                                             files=attachment_files)
+            await log_channel.send(rf'```{escaped_deletion}```',
+                                   files=attachment_files)
 
 
 def setup(bot):
