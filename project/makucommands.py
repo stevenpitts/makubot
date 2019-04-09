@@ -11,7 +11,6 @@ import datetime
 import json
 import logging
 from googleapiclient.discovery import build
-from translate import Translator
 import asteval
 import discord
 from discord.ext import commands
@@ -221,12 +220,11 @@ class MakuCommands(discord.ext.commands.Cog):
         await ctx.send(f'https://www.youtube.com/watch?v={search_result}'
                        if search_result else 'Sowwy, I can\'t find it :(')
 
-    @commands.command(aliases=["english"])
+    @commands.command(aliases=["english"], hidden=True)
     async def translate(self, ctx, *, text: str):
         """Translate some text into English!
         Idea stolen from KitchenSink."""
-        translated = TRANSLATOR.translate(text)
-        await ctx.send(f"Translated: {translated}")
+        await ctx.send("Not implemented :<")
 
     @commands.command()
     async def eval(self, ctx, *, to_eval: str):

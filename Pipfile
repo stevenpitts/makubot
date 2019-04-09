@@ -11,7 +11,6 @@ flake8 = "*"
 asteval = "*"
 wikipedia = "*"
 google-api-python-client = "*"
-translate = "*"
 discord-py = "*"
 
 [requires]
