@@ -338,23 +338,21 @@ class MakuCommands(discord.ext.commands.Cog):
     @commands.command(hidden=True)
     @commands.is_owner()
     async def supereval(self, ctx, *, to_eval: str):
-        #TODO do the __stdout__ thing and get rid of temp_output and old_stdout
-        old_stdout = sys.stdout
-        sys.stdout = temp_output = StringIO()
+        sys.stdout = StringIO()
         eval_result = ''
         eval_err = ''
         try:
             eval_result = eval(to_eval) or ''
         except Exception as e:
             eval_err = commandutil.get_formatted_traceback(e)
-        sys.stdout = old_stdout
-        eval_output = temp_output.getvalue() or ''
+        eval_output = sys.stdout.getvalue() or ''
+        sys.stdout = sys.__stdout__
         if eval_result or eval_output or eval_err:
-            eval_result = (f"{escape_markdown(eval_result)}\n"
+            eval_result = (f"{escape_markdown(str(eval_result))}\n"
                            if eval_result else "")
-            eval_output = (f"```{escape_markdown(eval_output)}```\n"
+            eval_output = (f"```{escape_markdown(str(eval_output))}```\n"
                            if eval_output else "")
-            eval_err = (f"```{escape_markdown(eval_err)}```"
+            eval_err = (f"```{escape_markdown(str(eval_err))}```"
                         if eval_err else "")
             await ctx.send(f'{eval_output}{eval_result}{eval_err}'.strip())
         else:
