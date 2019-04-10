@@ -23,6 +23,7 @@ from discord.ext.commands.errors import (CommandError, CommandNotFound,
 import wikipedia
 from . import tokens
 from . import commandutil
+from discord.utils import escape_markdown
 
 
 SCRIPT_DIR = Path(__file__).parent
@@ -64,8 +65,8 @@ def aeval(to_evaluate, return_error=True) -> str:
                                             err_writer=temp_string_io)
     result = aeval_interpreter(to_evaluate)
     output = temp_string_io.getvalue()
-    output = discord.utils.escape_markdown(str(output)) if output else None
-    result = discord.utils.escape_markdown(str(result)) if result else None
+    output = escape_markdown(str(output)) if output else None
+    result = escape_markdown(str(result)) if result else None
     if result or output:
         output_str = f'```{output}```\n' if output else ''
         result_str = f'```Result: {result}```' if result else 'No Result.'
@@ -274,7 +275,7 @@ class MakuCommands(discord.ext.commands.Cog):
             button_emojis = left_arrow, right_arrow, stop_emote = '👈👉❌'
             text_blocks = [f'{extracted_text[i:i+block_size]}'
                            for i in range(0, len(extracted_text), block_size)]
-            text_blocks = [f"```{discord.utils.escape_markdown(text_block)}```"
+            text_blocks = [f"```{escape_markdown(text_block)}```"
                            for text_block in text_blocks]
             current_index = 0
             block_message = await ctx.send(text_blocks[current_index])
@@ -325,7 +326,7 @@ class MakuCommands(discord.ext.commands.Cog):
         except wikipedia.exceptions.DisambiguationError:
             await ctx.send("Sorry, please be more specific than that ;~;")
         else:
-            summary = discord.utils.escape_markdown(summary)
+            summary = escape_markdown(summary)
             await ctx.send(f'```{summary}...```\n{result.url}')
 
     @commands.command(hidden=True)
@@ -337,15 +338,25 @@ class MakuCommands(discord.ext.commands.Cog):
     @commands.command(hidden=True)
     @commands.is_owner()
     async def supereval(self, ctx, *, to_eval: str):
+        #TODO do the __stdout__ thing and get rid of temp_output and old_stdout
         old_stdout = sys.stdout
         sys.stdout = temp_output = StringIO()
-        eval_result = eval(to_eval) or ''
+        eval_result = ''
+        eval_err = ''
+        try:
+            eval_result = eval(to_eval) or ''
+        except Exception as e:
+            eval_err = commandutil.get_formatted_traceback(e)
         sys.stdout = old_stdout
         eval_output = temp_output.getvalue() or ''
-        if eval_result or eval_output:
-            eval_result = discord.utils.escape_markdown(eval_result)
-            eval_output = discord.utils.escape_markdown(eval_output)
-            await ctx.send(f'{eval_output}\n```{eval_result}```'.strip())
+        if eval_result or eval_output or eval_err:
+            eval_result = (f"{escape_markdown(eval_result)}\n"
+                           if eval_result else "")
+            eval_output = (f"```{escape_markdown(eval_output)}```\n"
+                           if eval_output else "")
+            eval_err = (f"```{escape_markdown(eval_err)}```"
+                        if eval_err else "")
+            await ctx.send(f'{eval_output}{eval_result}{eval_err}'.strip())
         else:
             await ctx.send("Hmm, I didn't get any output for that ;~;")
 
