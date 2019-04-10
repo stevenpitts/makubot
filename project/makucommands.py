@@ -64,10 +64,10 @@ def aeval(to_evaluate, return_error=True) -> str:
                                             err_writer=temp_string_io)
     result = aeval_interpreter(to_evaluate)
     output = temp_string_io.getvalue()
+    output = discord.utils.escape_markdown(str(output)) if output else None
+    result = discord.utils.escape_markdown(str(result)) if result else None
     if result or output:
-        output_str = discord.utils.escape_markdown(output_str)
-        result_str = discord.utils.escape_markdown(result_str)
-        output_str = f'```{output}\n```' if output else ''
+        output_str = f'```{output}```\n' if output else ''
         result_str = f'```Result: {result}```' if result else 'No Result.'
         return f'{output_str}{result_str}'
     elif return_error:
