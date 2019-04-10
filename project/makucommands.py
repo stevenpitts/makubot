@@ -20,6 +20,7 @@ from discord.ext.commands.errors import (CommandError, CommandNotFound,
                                          BotMissingPermissions,
                                          BadUnionArgument,
                                          MissingRequiredArgument)
+from discord.errors import (NotFound)
 import wikipedia
 from . import tokens
 from . import commandutil
@@ -334,6 +335,30 @@ class MakuCommands(discord.ext.commands.Cog):
     async def sendto(self, ctx, channel: discord.TextChannel, *,
                      message_text: str):
         await channel.send(message_text)
+
+    @commands.command(hidden=True)
+    async def reactionspeak(self, ctx, channel_id, message_id, *, text: str):
+        """Adds an emoji reaction to a message!"""
+        if not text.isalnum():
+            await ctx.send("I can only add letters and numbers :<")
+        elif len(set(text)) < len(text):
+            await ctx.send("I can't do duplicate letters or numbers :<")
+        else:
+            channel = self.bot.get_channel(int(channel_id))
+            if channel is None:
+                await ctx.send("That channel is invalid")
+                return
+            try:
+                message = await channel.fetch_message(int(message_id))
+            except NotFound:
+                await ctx.send("That message is invalid")
+                return
+            else:
+                for letter in text.lower():
+                    emoji = chr(ord('🇦')+ord(letter)-ord('a'))
+                    await message.add_reaction(emoji)
+                await ctx.send("Done!")
+
 
     @commands.command(hidden=True)
     @commands.is_owner()
