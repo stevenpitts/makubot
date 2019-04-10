@@ -55,9 +55,7 @@ class ReminderCommands(discord.ext.commands.Cog):
 
     async def keep_checking_reminders(self):
         try:
-            while not self.bot.makusu:
-                # Bot hasn't connected yet. Ugly but oh well.
-                await asyncio.sleep(1)
+            await self.bot.wait_until_ready()
             while True:
                 for reminder in self.bot.shared['data']['reminders']:
                     if reminder['remind_time'] < time.time():
