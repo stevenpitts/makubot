@@ -70,6 +70,7 @@ class PictureAdder(discord.ext.commands.Cog):
             if maps_to_image:
                 aliases[ref_invocation] = true_invocation
                 self.bot.reload_extension("project.picturecommands")
+                await ctx.send("Added!")
             else:
                 await ctx.send(f"{true_invocation} is not an image command :?")
 
