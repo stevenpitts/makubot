@@ -339,25 +339,31 @@ class MakuCommands(discord.ext.commands.Cog):
     @commands.command(hidden=True)
     async def reactionspeak(self, ctx, channel_id, message_id, *, text: str):
         """Adds an emoji reaction to a message!"""
-        if not text.isalnum():
-            await ctx.send("I can only add letters and numbers :<")
+        channel = self.bot.get_channel(int(channel_id))
+        if not text.isalpha():
+            await ctx.send("I can only add letters :<")
+            return
         elif len(set(text)) < len(text):
-            await ctx.send("I can't do duplicate letters or numbers :<")
-        else:
-            channel = self.bot.get_channel(int(channel_id))
-            if channel is None:
-                await ctx.send("That channel is invalid")
-                return
-            try:
-                message = await channel.fetch_message(int(message_id))
-            except NotFound:
-                await ctx.send("That message is invalid")
-                return
-            else:
-                for letter in text.lower():
-                    emoji = chr(ord('🇦')+ord(letter)-ord('a'))
-                    await message.add_reaction(emoji)
-                await ctx.send("Done!")
+            await ctx.send("I can't do duplicate letters :<")
+            return
+        elif channel is None:
+            await ctx.send("That channel is invalid")
+            return
+        try:
+            message = await channel.fetch_message(int(message_id))
+        except NotFound:
+            await ctx.send("That message is invalid")
+            return
+        text_emojis = [chr(ord('🇦')+ord(letter)-ord('a')) for letter in text]
+        present_emojis = [reaction.emoji for reaction in message.reactions]
+        shared_emojis = set(text_emojis) & set(present_emojis)
+        if shared_emojis:
+            await ctx.send("Cannot add, some used emojis are already present "
+                           f"in the message: {''.join(shared_emojis)}")
+            return
+        for emoji in text_emojis:
+            await message.add_reaction(emoji)
+        await ctx.send("Done!")
 
 
     @commands.command(hidden=True)
