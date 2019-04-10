@@ -48,6 +48,31 @@ class PictureAdder(discord.ext.commands.Cog):
                                  "Feel free to ask Maku why ^_^")
         await request.delete()
 
+    @commands.command(aliases=["aliasimage", "aliaspicture"])
+    @commands.is_owner()
+    async def add_picture_alias(self, ctx, ref_invocation, true_invocation):
+        if not ref_invocation.isalpha() or not true_invocation.isalpha():
+            await ctx.send("Please only include letters.")
+            return
+        elif self.bot.get_command(ref_invocation):
+            await ctx.send(f"{ref_invocation} is already a command :<")
+        elif not self.bot.get_command(true_invocation):
+            await ctx.send(f"{true_invocation} isn't a command, though :<")
+        else:
+            aliases = self.bot.shared['data']['alias_pictures']
+            if true_invocation in aliases:
+                # true_invocation was in turn referencing another invocation
+                true_invocation = aliases[true_invocation]
+            true_command = self.bot.get_command(true_invocation)
+            maps_to_image = (hasattr(true_command, "instance")
+                             and isinstance(true_command.instance,
+                                            ReactionImages))
+            if maps_to_image:
+                aliases[ref_invocation] = true_invocation
+                self.bot.reload_extension("project.picturecommands")
+            else:
+                await ctx.send(f"{true_invocation} is not an image command :?")
+
     @commands.command(aliases=["addimage"])
     async def add_image(self, ctx, image_collection: str, *, urls: str = ""):
         """Requests an image be added.
@@ -109,17 +134,22 @@ async def post_picture(channel, folder_name):
 class ReactionImages(discord.ext.commands.Cog):
 
     async def folder_func(ctx):
-        true_path = PICTURES_DIR / ctx.invoked_with
+        true_path = PICTURES_DIR / ctx.command.name
         await post_picture(ctx.channel, true_path)
 
     def __init__(self, bot):
         self.bot = bot
         self.bot.shared['pictures_commands'] = []
+        aliases = {}
+        for key, val in self.bot.shared['data']['alias_pictures'].items():
+            aliases[val] = aliases.get(val, []) + [key]
         for folder_name in os.listdir(PICTURES_DIR):
             self.bot.shared['pictures_commands'].append(folder_name)
             folder_command = commands.Command(ReactionImages.folder_func,
                                               name=folder_name,
                                               brief=folder_name,
+                                              aliases=aliases.get(folder_name,
+                                                                  []),
                                               hidden=True)
             folder_command.instance = self
             folder_command.module = self.__module__
