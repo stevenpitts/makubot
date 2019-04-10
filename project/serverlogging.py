@@ -62,11 +62,11 @@ class ServerLogging(discord.ext.commands.Cog):
                  in self.bot.shared['data']['log_channels'])
             and str(message.channel.id) != (self.bot.shared
                                             ['data']['log_channels']
-                                            [str(message.channel.id)]))
+                                            [str(message.channel.guild.id)]))
         if should_be_logged:
             log_channel = self.bot.get_channel(int(self.bot.shared['data']
                                                    ['log_channels']
-                                                   [str(message.channel.id)]))
+                                                   [str(message.channel.guild.id)]))
             escaped_deletion = deletion_message.replace(r"`", r"'")
             await log_channel.send(rf'```{escaped_deletion}```',
                                    files=attachment_files)
