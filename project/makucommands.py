@@ -65,7 +65,9 @@ def aeval(to_evaluate, return_error=True) -> str:
     result = aeval_interpreter(to_evaluate)
     output = temp_string_io.getvalue()
     if result or output:
-        output_str = '```{}\n```'.format(output) if output else ''
+        output_str = discord.utils.escape_markdown(output_str)
+        result_str = discord.utils.escape_markdown(result_str)
+        output_str = f'```{output}\n```' if output else ''
         result_str = f'```Result: {result}```' if result else 'No Result.'
         return f'{output_str}{result_str}'
     elif return_error:
@@ -93,8 +95,7 @@ class MakuCommands(discord.ext.commands.Cog):
     async def getstatus(self, ctx):
         current_servers_string = 'Current servers: {}'.format(
             {guild.name: guild.id for guild in self.bot.guilds})
-        await commandutil.send_formatted_message(
-            self.bot.makusu, current_servers_string)
+        await self.bot.makusu.send(f"```{current_servers_string}```")
 
     @commands.command(hidden=True)
     @commands.is_owner()
@@ -270,8 +271,10 @@ class MakuCommands(discord.ext.commands.Cog):
         async def displaytxt(extracted_text: str):
             block_size = 500
             button_emojis = left_arrow, right_arrow, stop_emote = '👈👉❌'
-            text_blocks = [r'```{}```'.format(extracted_text[i:i+block_size])
+            text_blocks = [f'{extracted_text[i:i+block_size]}'
                            for i in range(0, len(extracted_text), block_size)]
+            text_blocks = [f"```{discord.utils.escape_markdown(text_block)}```"
+                           for text_block in text_blocks]
             current_index = 0
             block_message = await ctx.send(text_blocks[current_index])
 
@@ -321,6 +324,7 @@ class MakuCommands(discord.ext.commands.Cog):
         except wikipedia.exceptions.DisambiguationError:
             await ctx.send("Sorry, please be more specific than that ;~;")
         else:
+            summary = discord.utils.escape_markdown(summary)
             await ctx.send(f'```{summary}...```\n{result.url}')
 
     @commands.command(hidden=True)
@@ -338,6 +342,8 @@ class MakuCommands(discord.ext.commands.Cog):
         sys.stdout = old_stdout
         eval_output = temp_output.getvalue() or ''
         if eval_result or eval_output:
+            eval_result = discord.utils.escape_markdown(eval_result)
+            eval_output = discord.utils.escape_markdown(eval_output)
             await ctx.send(f'{eval_output}\n```{eval_result}```'.strip())
         else:
             await ctx.send("Hmm, I didn't get any output for that ;~;")

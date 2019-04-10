@@ -67,7 +67,7 @@ class ServerLogging(discord.ext.commands.Cog):
             log_channel = self.bot.get_channel(int(self.bot.shared['data']
                                                    ['log_channels']
                                                    [str(message.channel.guild.id)]))
-            escaped_deletion = deletion_message.replace(r"`", r"'")
+            escaped_deletion = discord.utils.escape_markdown(deletion_message)
             await log_channel.send(rf'```{escaped_deletion}```',
                                    files=attachment_files)
 
