@@ -337,7 +337,7 @@ class MakuCommands(discord.ext.commands.Cog):
         await channel.send(message_text)
 
     @commands.command(hidden=True)
-    @commands.isowner()
+    @commands.is_owner()
     async def reactionspeak(self, ctx, channel_id, message_id, *, text: str):
         """Adds an emoji reaction to a message!"""
         channel = self.bot.get_channel(int(channel_id))
