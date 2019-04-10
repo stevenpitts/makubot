@@ -13,6 +13,16 @@ SCRIPT_DIR = Path(__file__).parent
 PARENT_DIR = SCRIPT_DIR.parent
 
 
+def get_human_delay(seconds):
+    minutes, seconds = divmod(seconds, 60)
+    hours, minutes = divmod(minutes, 60)
+    days, hours = divmod(hours, 24)
+    days_str = f"{days} days, " if days else ""
+    hours_str = f"{hours} hours, " if hours else ""
+    minutes_str = f"{minutes} minutes, " if minutes else ""
+    return f"{days_str}{hours_str}{minutes_str}{seconds} seconds"
+
+
 class ReminderCommands(discord.ext.commands.Cog):
     def __init__(self, bot):
         self.bot = bot
@@ -44,8 +54,8 @@ class ReminderCommands(discord.ext.commands.Cog):
                 "Hmm, that doesn't look valid. Ask for help if you need it!")
             return
         else:
-            await ctx.send("Coolio I'll remind you in {} seconds"
-                           .format(total_seconds))
+            await ctx.send("Coolio I'll remind you in {}"
+                           .format(get_human_delay(total_seconds)))
             reminder_time = time.time() + total_seconds
             reminder = get_reminder(reminder_time, total_seconds,
                                     ctx.message.author.id,
@@ -53,20 +63,22 @@ class ReminderCommands(discord.ext.commands.Cog):
                                     reminder_message)
             self.bot.shared['data']['reminders'].append(reminder)
 
+    async def send_reminder(self, reminder):
+        reminder_channel = self.bot.get_channel(reminder["channel_id"])
+        reminder_user = self.bot.get_user(reminder["user_id"])
+        human_delay = get_human_delay(reminder["reminder_delay"])
+        await reminder_channel.send('{}, you have a message from {} ago: {}'
+                                    .format(reminder_user.mention,
+                                            human_delay,
+                                            reminder["reminder_message"]))
+
     async def keep_checking_reminders(self):
         try:
             await self.bot.wait_until_ready()
             while True:
                 for reminder in self.bot.shared['data']['reminders']:
                     if reminder['remind_time'] < time.time():
-                        reminder_channel = self.bot.get_channel(
-                            reminder["channel_id"])
-                        reminder_user = self.bot.get_user(reminder["user_id"])
-                        await reminder_channel.send(
-                            '{}, you have a message from {} seconds ago: {}'
-                            .format(reminder_user.mention,
-                                    reminder["reminder_delay"],
-                                    reminder["reminder_message"]))
+                        await self.send_reminder(reminder)
                         self.bot.shared['data']['reminders'].remove(reminder)
                     await asyncio.sleep(0)
                 await asyncio.sleep(1)
