@@ -205,8 +205,9 @@ class MakuCommands(discord.ext.commands.Cog):
             await ctx.send('Ayaya~')
 
     def cog_unload(self):
-        with open(DATAFILE_PATH, 'w') as open_file:
-            json.dump(self.bot.shared['data'], open_file)
+        if self.bot.shared['data']:
+            with open(DATAFILE_PATH, 'w') as open_file:
+                json.dump(self.bot.shared['data'], open_file)
 
     @commands.command(aliases=['yt'])
     async def youtube(self, ctx, *, search_term: str):

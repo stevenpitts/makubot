@@ -125,17 +125,20 @@ class PictureAdder(discord.ext.commands.Cog):
             await request_task
 
 
-async def post_picture(channel, folder_name):
-    file_to_send_name = random.choice(os.listdir(folder_name))
-    file_to_send = str(folder_name / file_to_send_name)
-    await channel.send(file=discord.File(file_to_send))
+# async def post_picture(channel, folder_name):
+#     file_to_send_name = random.choice(os.listdir(folder_name))
+#     file_to_send = str(folder_name / file_to_send_name)
+#     await channel.send(file=discord.File(file_to_send))
 
 
 class ReactionImages(discord.ext.commands.Cog):
 
     async def folder_func(ctx):
         true_path = PICTURES_DIR / ctx.command.name
-        await post_picture(ctx.channel, true_path)
+        file_to_send_name = random.choice(os.listdir(true_path))
+        file_to_send = true_path / file_to_send_name
+        await ctx.channel.send(file=discord.File(file_to_send))
+        #await post_picture(ctx.channel, true_path)
 
     def __init__(self, bot):
         self.bot = bot
