@@ -51,8 +51,8 @@ class PictureAdder(discord.ext.commands.Cog):
     @commands.command(aliases=["aliasimage", "aliaspicture"])
     @commands.is_owner()
     async def add_picture_alias(self, ctx, ref_invocation, true_invocation):
-        if not ref_invocation.isalpha() or not true_invocation.isalpha():
-            await ctx.send("Please only include letters.")
+        if not ref_invocation.isalnum() or not true_invocation.isalnum():
+            await ctx.send("Please only include letters and numbers.")
             return
         elif self.bot.get_command(ref_invocation):
             await ctx.send(f"{ref_invocation} is already a command :<")
@@ -81,8 +81,8 @@ class PictureAdder(discord.ext.commands.Cog):
         Makubot will then ask the for the image to be added.
         You must send the image as an attachment; I can't save URLs ;~;
         Then, it'll be sent to maku for approval!"""
-        if not image_collection.isalpha():
-            await ctx.send("Please only include letters.")
+        if not image_collection.isalnum():
+            await ctx.send("Please only include letters and numbers.")
             return
         existing_command = self.bot.get_command(image_collection)
         command_taken = (existing_command is not None
