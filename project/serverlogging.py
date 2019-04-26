@@ -51,10 +51,11 @@ class ServerLogging(discord.ext.commands.Cog):
             filepath = SAVED_ATTACHMENTS_DIR / attachment.filename
             try:
                 await attachment.save(filepath, use_cached=True)
-            except discord.errors.HTTPException:
-                await attachment.save(filepath, use_cached=False)
-            except discord.errors.NotFound:
-                continue
+            except (discord.errors.HTTPException, discord.errors.NotFound):
+                try:
+                    await attachment.save(filepath, use_cached=False)
+                except (discord.errors.HTTPException, discord.errors.NotFound):
+                    continue
             attachment_files.append(discord.File(filepath))
         deletion_message = (
             f'{message.created_at}: A message from {message.author.name} '
