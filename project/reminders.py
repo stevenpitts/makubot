@@ -63,6 +63,19 @@ class ReminderCommands(discord.ext.commands.Cog):
                                     reminder_message)
             self.bot.shared['data']['reminders'].append(reminder)
 
+    @commands.command(aliases=["listreminders"])
+    async def list_reminders(self, ctx):
+        active_reminders = [reminder for reminder
+                            in self.bot.shared['data']['reminders']
+                            if reminder['user_id'] == ctx.author.id]
+        if not active_reminders:
+            await ctx.send("You have no active reminders.")
+            return
+        reminder_list_display = '\n'.join(
+            [f"{reminder_num}: `{reminder['reminder_message']}`"
+             for reminder_num, reminder in enumerate(active_reminders)])
+        await ctx.send(reminder_list_display)
+
     @commands.command(aliases=["cancelreminder"])
     async def cancel_reminder(self, ctx):
         active_reminders = [reminder for reminder
@@ -72,15 +85,23 @@ class ReminderCommands(discord.ext.commands.Cog):
             await ctx.send("You have no active reminders.")
             return
         if len(active_reminders) == 1:
-            reminder_to_delete = active_reminders[0]
-            await ctx.send(f"Reminder deleted: "
-                           f"`{reminder_to_delete['reminder_message']}`")
-            return
-        reminder_list_display = '\n'.join(
-            [f"{reminder_num}: `{reminder['reminder_message']}`"
-             for reminder_num, reminder in enumerate(active_reminders)])
-        await ctx.send(f"Which reminder would you like to delete? "
-                       f"Enter a number: \n{reminder_list_display}")
+            choice = active_reminders[0]
+        else:
+            reminder_list_display = '\n'.join(
+                [f"{reminder_num}: `{reminder['reminder_message']}`"
+                 for reminder_num, reminder in enumerate(active_reminders)])
+            await ctx.send(f"Which reminder would you like to delete? "
+                           f"Enter a number: \n{reminder_list_display}")
+            message = await self.bot.wait_for('message', check=lambda message:
+                                              ctx.author == message.author)
+            try:
+                choice = active_reminders[int(message.content)]
+            except (IndexError, ValueError):
+                await ctx.send("Invalid choice")
+                return
+        self.bot.shared['data']['reminders'].remove(choice)
+        await ctx.send(f"Reminder deleted: "
+                       f"`{choice['reminder_message']}`")
 
     async def send_reminder(self, reminder):
         reminder_channel = self.bot.get_channel(reminder["channel_id"])
