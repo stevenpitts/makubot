@@ -17,10 +17,14 @@ def get_human_delay(seconds):
     minutes, seconds = divmod(seconds, 60)
     hours, minutes = divmod(minutes, 60)
     days, hours = divmod(hours, 24)
-    days_str = f"{days} days, " if days else ""
-    hours_str = f"{hours} hours, " if hours else ""
-    minutes_str = f"{minutes} minutes, " if minutes else ""
-    return f"{days_str}{hours_str}{minutes_str}{seconds} seconds"
+    days_str = f"{days} days" if days else ""
+    hours_str = f"{hours} hours" if hours else ""
+    minutes_str = f"{minutes} minutes" if minutes else ""
+    seconds_str = f"{seconds} seconds" if seconds else ""
+    parts = [part for part in [days_str, hours_str, minutes_str, seconds_str]
+             if part]
+    human_delay = ", ".join(parts)
+    return f"{human_delay}."
 
 
 class ReminderCommands(discord.ext.commands.Cog):
