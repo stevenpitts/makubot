@@ -28,8 +28,8 @@ class ReminderCommands(discord.ext.commands.Cog):
         self.bot = bot
         self.bot.loop.create_task(self.keep_checking_reminders())
 
-    @commands.command()
-    async def remindme(self, ctx, timelength: str, *, reminder_message: str):
+    @commands.command(aliases=["remindme"])
+    async def remind_me(self, ctx, timelength: str, *, reminder_message: str):
         '''Reminds you of a thing!
         Usage:
           remindme [<days>d][<hours>h] [<minutes>m][<seconds>s] <reminder>
@@ -62,6 +62,25 @@ class ReminderCommands(discord.ext.commands.Cog):
                                     ctx.message.channel.id,
                                     reminder_message)
             self.bot.shared['data']['reminders'].append(reminder)
+
+    @commands.command(aliases=["cancelreminder"])
+    async def cancel_reminder(self, ctx):
+        active_reminders = [reminder for reminder
+                            in self.bot.shared['data']['reminders']
+                            if reminder['user_id'] == ctx.author.id]
+        if not active_reminders:
+            await ctx.send("You have no active reminders.")
+            return
+        if len(active_reminders) == 1:
+            reminder_to_delete = active_reminders[0]
+            await ctx.send(f"Reminder deleted: "
+                           f"`{reminder_to_delete['reminder_message']}`")
+            return
+        reminder_list_display = '\n'.join(
+            [f"{reminder_num}: `{reminder['reminder_message']}`"
+             for reminder_num, reminder in enumerate(active_reminders)])
+        await ctx.send(f"Which reminder would you like to delete? "
+                       f"Enter a number: \n{reminder_list_display}")
 
     async def send_reminder(self, reminder):
         reminder_channel = self.bot.get_channel(reminder["channel_id"])

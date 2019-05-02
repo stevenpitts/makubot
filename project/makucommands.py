@@ -366,7 +366,6 @@ class MakuCommands(discord.ext.commands.Cog):
             await message.add_reaction(emoji)
         await ctx.send("Done!")
 
-
     @commands.command(hidden=True)
     @commands.is_owner()
     async def supereval(self, ctx, *, to_eval: str):

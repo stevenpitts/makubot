@@ -20,9 +20,11 @@ class PictureAdder(discord.ext.commands.Cog):
         self.bot = bot
 
     async def image_suggestion(self, image_dir, filename, requestor):
-        proposal = (f"Add image {filename} to {image_dir}?"
+        proposal = (f"Add image {filename} to {image_dir}? "
+                    f"Requested by {requestor.name}"
                     if image_dir.exists() else
-                    f"Add image to ***NEW*** dir {image_dir}?")
+                    f"Add image to ***NEW*** dir {image_dir}? "
+                    f"Requested by {requestor.name}")
         request = await self.bot.makusu.send(
             proposal, file=discord.File(SAVED_ATTACHMENTS_DIR / filename))
         no_emoji, yes_emoji = "❌", "✅"
