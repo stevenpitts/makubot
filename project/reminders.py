@@ -30,7 +30,11 @@ def get_human_delay(seconds):
 class ReminderCommands(discord.ext.commands.Cog):
     def __init__(self, bot):
         self.bot = bot
-        self.bot.loop.create_task(self.keep_checking_reminders())
+        self.reminder_check_task = self.bot.loop.create_task(
+            self.keep_checking_reminders())
+
+    def cog_unload(self):
+        self.reminder_check_task.cancel()
 
     @commands.command(aliases=["remindme"])
     async def remind_me(self, ctx, timelength: str, *, reminder_message: str):
