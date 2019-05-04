@@ -3,10 +3,12 @@ from pathlib import Path
 import discord
 from discord.ext import commands
 import time
+import datetime
 import logging
 import asyncio
 import re
 from . import commandutil
+from dateutil.parser import parse as date_parse
 
 
 SCRIPT_DIR = Path(__file__).parent
@@ -24,7 +26,51 @@ def get_human_delay(seconds):
     parts = [part for part in [days_str, hours_str, minutes_str, seconds_str]
              if part]
     human_delay = ", ".join(parts)
-    return f"{human_delay}."
+    return f"{human_delay}"
+
+
+def strip_conjunctions(words):
+    conjunctions = [' ', '.', ',', ';', '-', '/', "'", 'at', 'on', 'and',
+                    'to', 'that', 'of']
+    while words and words[0].lower() in conjunctions:
+        words = words[1:]
+    while words and words[-1].lower() in conjunctions:
+        words = words[:-1]
+    return words
+
+
+def parse_remind_me(time_and_reminder):
+    words = time_and_reminder.split(" ")
+    timereg_parts = [r'((?P<{}>\d*){})?'.format(cha, cha) for cha in 'dhms']
+    timereg = re.compile(r'^'+''.join(timereg_parts)+r'$')
+    short_match = re.search(timereg, words[0])
+    if short_match:
+        days, hours, minutes, seconds = [int(val) if val else 0
+                                         for val
+                                         in short_match.group(*'dhms')]
+        total_seconds = days*86400 + hours*3600 + minutes*60 + seconds
+        words = strip_conjunctions(words[1:])
+        if not words:
+            return None, None
+        reminder_message = " ".join(words)
+        return total_seconds, reminder_message
+    try:
+        time_specified, reminder_tokens = date_parse(time_and_reminder,
+                                                     fuzzy_with_tokens=True,
+                                                     ignoretz=True,
+                                                     dayfirst=True)
+    except (ValueError, OverflowError):
+        return None, None
+    if not reminder_tokens:
+        return None, None
+    time_difference = time_specified - datetime.datetime.utcnow()
+    total_seconds = time_difference.total_seconds()
+    reminder_message_raw = max(reminder_tokens, key=len)
+    words = strip_conjunctions(reminder_message_raw.split(" "))
+    if not words:
+        return None, None
+    reminder_message = " ".join(words)
+    return total_seconds, reminder_message
 
 
 class ReminderCommands(discord.ext.commands.Cog):
@@ -37,39 +83,32 @@ class ReminderCommands(discord.ext.commands.Cog):
         self.reminder_check_task.cancel()
 
     @commands.command(aliases=["remindme"])
-    async def remind_me(self, ctx, timelength: str, *, reminder_message: str):
+    async def remind_me(self, ctx, *, time_and_reminder: str):
         '''Reminds you of a thing!
         Usage:
           remindme [<days>d][<hours>h] [<minutes>m][<seconds>s] <reminder>
+          remindme in 1 day to <reminder>
+        Many other forms are also supported, but they must use UTC and
+        day-before-month format. Also they're a tad wonky.
         Example: remindme 1d2h9s do laundry
         '''
-        def get_num_seconds(timelength):
-            if timelength.isnumeric():
-                return int(timelength)
-            timereg = re.compile(''.join([
-                r'((?P<{}>\d*){})?'.format(cha, cha) for cha in 'dhms']))
-            matches = re.search(timereg, timelength)
-            if matches:
-                days, hours, minutes, seconds = [int(val) if val else 0
-                                                 for val
-                                                 in matches.group(*'dhms')]
-                return days*86400 + hours*3600 + minutes*60 + seconds
-            return None
-
-        total_seconds = get_num_seconds(timelength)
-        if total_seconds is None:
+        total_seconds, reminder_message = parse_remind_me(time_and_reminder)
+        total_seconds = total_seconds and int(total_seconds)
+        if total_seconds is None or reminder_message is None:
             await ctx.send(
                 "Hmm, that doesn't look valid. Ask for help if you need it!")
             return
-        else:
-            await ctx.send("Coolio I'll remind you in {}"
-                           .format(get_human_delay(total_seconds)))
-            reminder_time = time.time() + total_seconds
-            reminder = get_reminder(reminder_time, total_seconds,
-                                    ctx.message.author.id,
-                                    ctx.message.channel.id,
-                                    reminder_message)
-            self.bot.shared['data']['reminders'].append(reminder)
+        elif total_seconds < 0:
+            await ctx.send("That's a time in the past :?")
+            return
+        await ctx.send(f"Coolio I'll remind you `{reminder_message}` in "
+                       f"{get_human_delay(total_seconds)}.")
+        reminder_time = time.time() + total_seconds
+        reminder = get_reminder(reminder_time, total_seconds,
+                                ctx.message.author.id,
+                                ctx.message.channel.id,
+                                reminder_message)
+        self.bot.shared['data']['reminders'].append(reminder)
 
     @commands.command(aliases=["listreminders"])
     async def list_reminders(self, ctx):

@@ -13,6 +13,7 @@ wikipedia = "*"
 google-api-python-client = "*"
 discord-py =  ">=1.0.1"
 urllib3 = ">=1.24.2"
+python-dateutil = "*"
 
 [requires]
 python_version = "3.7"
