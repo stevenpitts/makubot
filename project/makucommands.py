@@ -56,12 +56,16 @@ Oh dang is that a gun -Uncle Ben
 With great power comes great responsibility -Uncle Ben'''.split('\n')
 
 
-YOUTUBE_SEARCH = None if tokens.googleAPI is None else build(
-    'youtube', 'v3', developerKey=tokens.googleAPI).search()
+YOUTUBE_SEARCH = tokens.googleAPI and build('youtube', 'v3',
+                                            developerKey=tokens.googleAPI,
+                                            ).search()
 
 
 def aeval(to_evaluate, return_error=True) -> str:
-    is_dangerous_input = any([char.isalpha() for char in to_evaluate])
+    is_dangerous_input = (any([char.isalpha() and char not in 'eE'
+                               for char in to_evaluate])
+                          or "**" in to_evaluate
+                          or "=" in to_evaluate)
     if is_dangerous_input:
         return "Sorry, that looks dangerous; please use me for simple math!"
     temp_string_io = StringIO()
@@ -69,8 +73,8 @@ def aeval(to_evaluate, return_error=True) -> str:
                                             err_writer=temp_string_io)
     result = aeval_interpreter(to_evaluate)
     output = temp_string_io.getvalue()
-    output = escape_markdown(str(output)) if output else None
-    result = escape_markdown(str(result)) if result else None
+    output = output and escape_markdown(str(output))
+    result = result and escape_markdown(str(result))
     if result or output:
         output_str = f'```{output}```\n' if output else ''
         result_str = f'```Result: {result}```' if result else 'No Result.'
