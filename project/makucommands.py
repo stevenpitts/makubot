@@ -61,6 +61,9 @@ YOUTUBE_SEARCH = None if tokens.googleAPI is None else build(
 
 
 def aeval(to_evaluate, return_error=True) -> str:
+    is_dangerous_input = any([char.isalpha() for char in to_evaluate])
+    if is_dangerous_input:
+        return "Sorry, that looks dangerous; please use me for simple math!"
     temp_string_io = StringIO()
     aeval_interpreter = asteval.Interpreter(writer=temp_string_io,
                                             err_writer=temp_string_io)
@@ -234,8 +237,8 @@ class MakuCommands(discord.ext.commands.Cog):
         Idea stolen from KitchenSink."""
         await ctx.send("Not implemented :<")
 
-    @commands.command()
-    async def eval(self, ctx, *, to_eval: str):
+    @commands.command(aliases=["eval"])
+    async def evaluate(self, ctx, *, to_eval: str):
         r'''Evals a statement. Feel free to inject malicious code \o/
         Example:
             @makubot eval 3+3
