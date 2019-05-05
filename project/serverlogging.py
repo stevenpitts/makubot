@@ -52,7 +52,10 @@ class ServerLogging(discord.ext.commands.Cog):
             try:
                 await attachment.save(filepath, use_cached=True)
             except discord.errors.HTTPException:
-                await attachment.save(filepath, use_cached=False)
+                try:
+                    await attachment.save(filepath, use_cached=False)
+                except discord.errors.Forbidden:
+                    continue
             except discord.errors.NotFound:
                 continue
             attachment_files.append(discord.File(filepath))
