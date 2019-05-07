@@ -56,18 +56,25 @@ Oh dang is that a gun -Uncle Ben
 With great power comes great responsibility -Uncle Ben'''.split('\n')
 
 
-YOUTUBE_SEARCH = None if tokens.googleAPI is None else build(
-    'youtube', 'v3', developerKey=tokens.googleAPI).search()
+YOUTUBE_SEARCH = tokens.googleAPI and build('youtube', 'v3',
+                                            developerKey=tokens.googleAPI,
+                                            ).search()
 
 
 def aeval(to_evaluate, return_error=True) -> str:
+    is_dangerous_input = (any([char.isalpha() and char not in 'eE'
+                               for char in to_evaluate])
+                          or "**" in to_evaluate
+                          or "=" in to_evaluate)
+    if is_dangerous_input:
+        return "Sorry, that looks dangerous; please use me for simple math!"
     temp_string_io = StringIO()
     aeval_interpreter = asteval.Interpreter(writer=temp_string_io,
                                             err_writer=temp_string_io)
     result = aeval_interpreter(to_evaluate)
     output = temp_string_io.getvalue()
-    output = escape_markdown(str(output)) if output else None
-    result = escape_markdown(str(result)) if result else None
+    output = output and escape_markdown(str(output))
+    result = result and escape_markdown(str(result))
     if result or output:
         output_str = f'```{output}```\n' if output else ''
         result_str = f'```Result: {result}```' if result else 'No Result.'
@@ -234,8 +241,8 @@ class MakuCommands(discord.ext.commands.Cog):
         Idea stolen from KitchenSink."""
         await ctx.send("Not implemented :<")
 
-    @commands.command()
-    async def eval(self, ctx, *, to_eval: str):
+    @commands.command(aliases=["eval"])
+    async def evaluate(self, ctx, *, to_eval: str):
         r'''Evals a statement. Feel free to inject malicious code \o/
         Example:
             @makubot eval 3+3
@@ -365,7 +372,6 @@ class MakuCommands(discord.ext.commands.Cog):
         for emoji in text_emojis:
             await message.add_reaction(emoji)
         await ctx.send("Done!")
-
 
     @commands.command(hidden=True)
     @commands.is_owner()
