@@ -450,7 +450,10 @@ class MakuCommands(discord.ext.commands.Cog):
                          in self.bot.shared['data']['free_guilds'])
                     and 'vore' in message.content.split()):
                 await message.pin()
-            if message.guild and self.bot.user in message.mentions:
+            if ((message.guild and self.bot.user in message.mentions)
+                or (message.guild
+                    and (message.guild.id
+                         in self.bot.shared['data']['free_guilds']))):
                 new_activity = discord.Game(name=message.author.name)
                 await self.bot.change_presence(activity=new_activity)
 
