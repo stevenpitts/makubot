@@ -108,11 +108,12 @@ class PictureAdder(discord.ext.commands.Cog):
             await ctx.send("Sent to Maku for approval!")
         for url in urls.split():
             filename = re.sub(r"\W+", "", url.split(r"/")[-1])
+            image_extensions = ["jpg", "jpeg", "tiff", "gif", "bmp", "svg"]
             if "." not in filename:
-                for possible_ending in ["jpg", "jpeg", "tiff",
-                                        "gif", "bmp", "svg"]:
-                    if filename.endswith(possible_ending):
-                        filename += f".{possible_ending}"
+                for image_extension in image_extensions:
+                    if filename.endswith(image_extension):
+                        filename += f".{image_extension}"
+            if "." not in filename:
                 filename += ".notactuallypng.png"
             while os.path.exists(PICTURES_DIR
                                  / image_collection
