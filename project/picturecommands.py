@@ -109,11 +109,17 @@ class PictureAdder(discord.ext.commands.Cog):
         for url in urls.split():
             filename = re.sub(r"\W+", "", url.split(r"/")[-1])
             if "." not in filename:
+                for possible_ending in ["jpg", "jpeg", "tiff",
+                                        "gif", "bmp", "svg"]:
+                    if filename.endswith(possible_ending):
+                        filename += f".{possible_ending}"
                 filename += ".notactuallypng.png"
             while os.path.exists(PICTURES_DIR
                                  / image_collection
                                  / filename):
                 filename = f"{str(random.randint(1, 1000))}{filename}"
+            filename = f"{str(random.randint(1, 10000))}{filename}"
+            # Above just to be safe
             try:
                 data = await self.bot.http.get_from_cdn(url)
                 with open(SAVED_ATTACHMENTS_DIR / filename, 'wb') as f:
