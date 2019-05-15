@@ -99,28 +99,19 @@ class PictureAdder(discord.ext.commands.Cog):
             await ctx.send("You must include a URL at the end of your "
                            "message or attach image(s).")
             return
-        for attachment in ctx.message.attachments:
-            await attachment.save(SAVED_ATTACHMENTS_DIR
-                                  / attachment.filename)
-            request_tasks.append(self.image_suggestion(
-                PICTURES_DIR / image_collection,
-                attachment.filename, ctx.author))
-            await ctx.send("Sent to Maku for approval!")
-        for url in urls.split():
+        urls = urls.split() + [attachment.url for attachment
+                               in ctx.message.attachments]
+        for url in urls:
             filename = re.sub(r"\W+", "", url.split(r"/")[-1])
-            image_extensions = ["jpg", "jpeg", "tiff", "gif", "bmp", "svg"]
+            image_extensions = ["png", "jpg", "jpeg", "tiff", "gif", "bmp",
+                                "svg"]
             if "." not in filename:
-                for image_extension in image_extensions:
-                    if filename.endswith(image_extension):
-                        filename += f".{image_extension}"
-            if "." not in filename:
-                filename += ".notactuallypng.png"
-            while os.path.exists(PICTURES_DIR
-                                 / image_collection
-                                 / filename):
+                correct_endings = (image_extension for image_extension
+                                   in image_extensions
+                                   if filename.endswith(image_extension))
+                filename += f".{next(correct_endings, 'notactuallypng.png')}"
+            while os.path.exists(PICTURES_DIR / image_collection / filename):
                 filename = f"{str(random.randint(1, 1000))}{filename}"
-            filename = f"{str(random.randint(1, 10000))}{filename}"
-            # Above just to be safe
             try:
                 data = await self.bot.http.get_from_cdn(url)
                 with open(SAVED_ATTACHMENTS_DIR / filename, 'wb') as f:
