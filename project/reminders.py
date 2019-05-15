@@ -16,25 +16,15 @@ PARENT_DIR = SCRIPT_DIR.parent
 
 
 def get_human_delay(seconds):
-    # TODO make sure time strs are ordered
-    parts = {"seconds": seconds}
-    parts["minutes"], parts["seconds"] = divmod(parts["seconds"], 60)
-    parts["hours"], parts["minutes"] = divmod(parts["minutes"], 60)
-    parts["days"], parts["hours"] = divmod(parts["hours"], 24)
-    parts["years"], parts["days"] = divmod(parts["days"], 365)
-    human_strs = [f"{time_val} {time_len}"
-                  for time_len, time_val in parts.items() if time_val]
+    time_strs = ("seconds", "minutes", "hours", "days", "years")
+    time_mults = (60, 60, 24, 365)
+    parts = [seconds]
+    for time_mult in time_mults:
+        quotient, parts[-1] = divmod(parts[-1], time_mult)
+        parts.append(quotient)
+    human_strs = (f"{part} {time_str}" for part, time_str
+                  in reversed(list(zip(parts, time_strs))) if part)
     return ", ".join(human_strs)
-    # years_str = f"{years} years" if years else ""
-    # days_str = f"{days} days" if days else ""
-    # hours_str = f"{hours} hours" if hours else ""
-    # minutes_str = f"{minutes} minutes" if minutes else ""
-    # seconds_str = f"{seconds} seconds" if seconds else ""
-    # parts = [part for part
-    #          in (years_str, days_str, hours_str, minutes_str, seconds_str)
-    #          if part]
-    # human_delay = ", ".join(parts)
-    # return f"{human_delay}"
 
 
 def strip_conjunctions(words):
