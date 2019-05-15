@@ -19,11 +19,14 @@ def get_human_delay(seconds):
     minutes, seconds = divmod(seconds, 60)
     hours, minutes = divmod(minutes, 60)
     days, hours = divmod(hours, 24)
+    years, days = divmod(days, 365)
+    years_str = f"{years} years" if years else ""
     days_str = f"{days} days" if days else ""
     hours_str = f"{hours} hours" if hours else ""
     minutes_str = f"{minutes} minutes" if minutes else ""
     seconds_str = f"{seconds} seconds" if seconds else ""
-    parts = [part for part in [days_str, hours_str, minutes_str, seconds_str]
+    parts = [part for part
+             in (years_str, days_str, hours_str, minutes_str, seconds_str)
              if part]
     human_delay = ", ".join(parts)
     return f"{human_delay}"
@@ -41,14 +44,15 @@ def strip_conjunctions(words):
 
 def parse_remind_me(time_and_reminder):
     words = time_and_reminder.split(" ")
-    timereg_parts = [r'((?P<{}>\d*){})?'.format(cha, cha) for cha in 'dhms']
+    timereg_parts = [r'((?P<{}>\d*){})?'.format(cha, cha) for cha in 'ydhms']
     timereg = re.compile(r'^'+''.join(timereg_parts)+r'$')
     short_match = re.search(timereg, words[0])
     if short_match:
-        days, hours, minutes, seconds = [int(val) if val else 0
-                                         for val
-                                         in short_match.group(*'dhms')]
-        total_seconds = days*86400 + hours*3600 + minutes*60 + seconds
+        years, days, hours, minutes, seconds = [int(val) if val else 0
+                                                for val
+                                                in short_match.group(*'ydhms')]
+        total_seconds = (years*31557600 + days*86400 + hours*3600 + minutes*60
+                         + seconds)
         words = strip_conjunctions(words[1:])
         if not words:
             return None, None
@@ -86,7 +90,8 @@ class ReminderCommands(discord.ext.commands.Cog):
     async def remind_me(self, ctx, *, time_and_reminder: str):
         '''Reminds you of a thing!
         Usage:
-          remindme [<days>d][<hours>h][<minutes>m][<seconds>s] <reminder>
+          remindme [<years>y][<days>d][<hours>h][<minutes>m][<seconds>s]
+                   <reminder>
           remindme in 1 day to <reminder>
         Many other forms are also supported, but they must use UTC and
         day-before-month format. Also they're a tad wonky.
