@@ -86,7 +86,7 @@ class ReminderCommands(discord.ext.commands.Cog):
     async def remind_me(self, ctx, *, time_and_reminder: str):
         '''Reminds you of a thing!
         Usage:
-          remindme [<days>d][<hours>h] [<minutes>m][<seconds>s] <reminder>
+          remindme [<days>d][<hours>h][<minutes>m][<seconds>s] <reminder>
           remindme in 1 day to <reminder>
         Many other forms are also supported, but they must use UTC and
         day-before-month format. Also they're a tad wonky.
