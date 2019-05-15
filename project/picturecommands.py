@@ -94,7 +94,6 @@ class PictureAdder(discord.ext.commands.Cog):
         if command_taken:
             await ctx.send("That is already a command name.")
             return
-        request_tasks = []
         if not urls and not ctx.message.attachments:
             await ctx.send("You must include a URL at the end of your "
                            "message or attach image(s).")
@@ -103,11 +102,10 @@ class PictureAdder(discord.ext.commands.Cog):
                                in ctx.message.attachments]
         for url in urls:
             filename = re.sub(r"\W+", "", url.split(r"/")[-1])
-            image_extensions = ["png", "jpg", "jpeg", "tiff", "gif", "bmp",
-                                "svg"]
+            image_endings = ["png", "jpg", "jpeg", "tiff", "gif", "bmp", "svg"]
             if "." not in filename:
                 correct_endings = (image_extension for image_extension
-                                   in image_extensions
+                                   in image_endings
                                    if filename.endswith(image_extension))
                 filename += f".{next(correct_endings, 'notactuallypng.png')}"
             while os.path.exists(PICTURES_DIR / image_collection / filename):
@@ -120,10 +118,8 @@ class PictureAdder(discord.ext.commands.Cog):
                 await ctx.send("I can't download that image, sorry!")
             else:
                 await ctx.send("Sent to Maku for approval!")
-                request_tasks.append(self.image_suggestion(
+                self.bot.loop.create_task(self.image_suggestion(
                     PICTURES_DIR / image_collection, filename, ctx.author))
-        for request_task in request_tasks:
-            await request_task
 
 
 class ReactionImages(discord.ext.commands.Cog):
