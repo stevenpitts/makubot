@@ -337,7 +337,7 @@ class MakuCommands(discord.ext.commands.Cog):
             summary = escape_markdown(summary)
             await ctx.send(f'```{summary}...```\n{result.url}')
 
-    @commands.command(hidden=True)
+    @commands.command(hidden=True, aliases=['sayto',])
     @commands.is_owner()
     async def sendto(self, ctx, channel: discord.TextChannel, *,
                      message_text: str):
