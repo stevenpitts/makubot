@@ -448,7 +448,8 @@ class MakuCommands(discord.ext.commands.Cog):
             if (message.guild
                     and (message.guild.id
                          in self.bot.shared['data']['free_guilds'])
-                    and 'vore' in message.content.split()):
+                    and 'vore' in message.content.split()
+                    and random.random() > 0.8):
                 await message.pin()
             if (not message.author.bot
                 and ((message.guild and self.bot.user in message.mentions)
