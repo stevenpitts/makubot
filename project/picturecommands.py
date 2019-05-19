@@ -116,7 +116,8 @@ class PictureAdder(discord.ext.commands.Cog):
                                    in image_endings
                                    if filename.endswith(image_extension))
                 filename += f".{next(correct_endings, 'notactuallypng.png')}"
-            while os.path.exists(PICTURES_DIR / image_collection / filename):
+            while (os.path.exists(PICTURES_DIR / image_collection / filename)
+                   or os.path.exists(SAVED_ATTACHMENTS_DIR / filename)):
                 filename = f"{str(random.randint(1, 1000))}{filename}"
             try:
                 data = await self.bot.http.get_from_cdn(url)
