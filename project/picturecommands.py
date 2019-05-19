@@ -76,6 +76,14 @@ class PictureAdder(discord.ext.commands.Cog):
             else:
                 await ctx.send(f"{true_invocation} is not an image command :?")
 
+    @commands.command(aliases=["randomimage"])
+    async def random_image(self, ctx):
+        files = [Path(dirpath) / Path(filename)
+                 for dirpath, dirnames, filenames in os.walk(PICTURES_DIR)
+                 for filename in filenames]
+        chosen_file = random.choice(files)
+        await ctx.send(file=discord.File(chosen_file))
+
     @commands.command(aliases=["addimage"])
     async def add_image(self, ctx, image_collection: str, *, urls: str = ""):
         """Requests an image be added.
