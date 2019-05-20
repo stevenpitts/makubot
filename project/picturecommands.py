@@ -124,7 +124,8 @@ class PictureAdder(discord.ext.commands.Cog):
                 data = await self.bot.http.get_from_cdn(url)
                 with open(SAVED_ATTACHMENTS_DIR / filename, 'wb') as f:
                     f.write(data)
-            except aiohttp.client_exceptions.ClientConnectorError:
+            except (aiohttp.client_exceptions.ClientConnectorError,
+                    aiohttp.client_exceptions.InvalidURL):
                 await ctx.send("I can't download that image, sorry!")
             else:
                 await ctx.send("Sent to Maku for approval!")
