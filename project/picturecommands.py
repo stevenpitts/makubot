@@ -110,7 +110,8 @@ class PictureAdder(discord.ext.commands.Cog):
                                in ctx.message.attachments]
         for url in urls:
             filename = re.sub(r"\W+", "", url.split(r"/")[-1])
-            image_endings = ["png", "jpg", "jpeg", "tiff", "gif", "bmp", "svg"]
+            image_endings = ["png", "jpg", "jpeg", "tiff", "gif", "bmp",
+                             "svg", "mov", "webm", "mp4", "mpeg"]
             if "." not in filename:
                 correct_endings = (image_extension for image_extension
                                    in image_endings
