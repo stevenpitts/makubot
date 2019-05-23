@@ -348,6 +348,7 @@ class MakuCommands(discord.ext.commands.Cog):
     async def reactionspeak(self, ctx, channel_id, message_id, *, text: str):
         """Adds an emoji reaction to a message!"""
         channel = self.bot.get_channel(int(channel_id))
+        text = text.lower()
         if not text.isalpha():
             await ctx.send("I can only add letters :<")
             return
