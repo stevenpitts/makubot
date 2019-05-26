@@ -91,6 +91,7 @@ class PictureAdder(discord.ext.commands.Cog):
         Makubot will then ask the for the image to be added.
         You must send the image as an attachment; I can't save URLs ;~;
         Then, it'll be sent to maku for approval!"""
+        image_collection = image_collection.lower()
         if not image_collection.isalnum():
             await ctx.send("Please only include letters and numbers.")
             return
