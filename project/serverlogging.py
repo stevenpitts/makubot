@@ -18,13 +18,13 @@ class ServerLogging(discord.ext.commands.Cog):
         self.last_deleted_message = {}
         '''Maps channel ID to (last deleted message content, sender)'''
 
-    @commands.command(aliases=['removelogchannel'])
+    @commands.command(hidden=True, aliases=['removelogchannel'])
     @commands.is_owner()
     async def remove_log_channel(self, ctx):
         self.bot.shared['data']['log_channels'].pop(str(ctx.guild.id), None)
         await ctx.send("Coolio")
 
-    @commands.command(aliases=['addlogchannel'])
+    @commands.command(hidden=True, aliases=['addlogchannel'])
     @commands.is_owner()
     async def add_log_channel(self, ctx, log_channel: discord.TextChannel):
         guild_id, log_channel_id = str(ctx.guild.id), str(log_channel.id)

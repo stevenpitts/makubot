@@ -112,6 +112,7 @@ class ReminderCommands(discord.ext.commands.Cog):
 
     @commands.command(aliases=["listreminders"])
     async def list_reminders(self, ctx):
+        """List all active reminders for you"""
         active_reminders = [reminder for reminder
                             in self.bot.shared['data']['reminders']
                             if reminder['user_id'] == ctx.author.id]
@@ -125,6 +126,7 @@ class ReminderCommands(discord.ext.commands.Cog):
 
     @commands.command(aliases=["cancelreminder"])
     async def cancel_reminder(self, ctx):
+        """Cancels a reminder. I'll ask which one you want to cancel."""
         active_reminders = [reminder for reminder
                             in self.bot.shared['data']['reminders']
                             if reminder['user_id'] == ctx.author.id]
