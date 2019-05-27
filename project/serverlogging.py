@@ -1,5 +1,6 @@
 import discord
 from discord.ext import commands
+from discord.utils import escape_markdown
 import logging
 import codecs
 from pathlib import Path
@@ -42,10 +43,7 @@ class ServerLogging(discord.ext.commands.Cog):
 
     @commands.Cog.listener()
     async def on_message_delete(self, message):
-        guild_description = (message.channel.guild.name if
-                             isinstance(message.channel,
-                                        discord.abc.GuildChannel)
-                             else "DMs")
+        guild_description = getattr(message.guild, "name", "DMs")
         attachment_files = []
         for attachment in message.attachments:
             filepath = SAVED_ATTACHMENTS_DIR / attachment.filename
@@ -59,26 +57,23 @@ class ServerLogging(discord.ext.commands.Cog):
                     discord.errors.NotFound):
                 continue
             attachment_files.append(discord.File(filepath))
-        deletion_message = (
+        num_failed = len(message.attachments) - len(attachment_files)
+        deletion_text = (
             f'{message.created_at}: A message from {message.author.name} '
             f'has been deleted in {message.channel} of {guild_description} '
-            f'with {len(message.attachments)} attachments: {message.content}')
-        self.last_deleted_message[message.channel.id] = deletion_message
+            f'with {len(message.attachments)} attachments '
+            f'({num_failed} failed to save): {message.content}')
+        self.last_deleted_message[message.channel.id] = deletion_text
         with codecs.open(DELETION_LOG_PATH, 'a', 'utf-8') as deletion_log_file:
-            deletion_log_file.write(deletion_message+'\n')
-        should_be_logged = (
-            message.author != self.bot.user and message.guild
-            and (str(message.channel.guild.id)
-                 in self.bot.shared['data']['log_channels'])
-            and str(message.channel.id) != (self.bot.shared
-                                            ['data']['log_channels']
-                                            [str(message.channel.guild.id)]))
+            deletion_log_file.write(deletion_text+'\n')
+        log_channels = self.bot.shared['data']['log_channels']
+        should_be_logged = (message.guild and message.channel
+                            and (log_channels.get(str(message.guild.id), None)
+                                 != str(message.channel.id)))
         if should_be_logged:
-            guild_id = str(message.channel.guild.id)
-            log_channel_id = self.bot.shared['data']['log_channels'][guild_id]
-            log_channel = self.bot.get_channel(int(log_channel_id))
-            escaped_deletion = discord.utils.escape_markdown(deletion_message)
-            await log_channel.send(rf'```{escaped_deletion}```',
+            log_channel = self.bot.get_channel(int(log_channels
+                                                   [str(message.guild.id)]))
+            await log_channel.send(rf'```{escape_markdown(deletion_text)}```',
                                    files=attachment_files)
 
 
