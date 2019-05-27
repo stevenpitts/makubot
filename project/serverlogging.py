@@ -50,12 +50,11 @@ class ServerLogging(discord.ext.commands.Cog):
         for attachment in message.attachments:
             filepath = SAVED_ATTACHMENTS_DIR / attachment.filename
             try:
-                await attachment.save(filepath, use_cached=True)
-            except (discord.errors.HTTPException, discord.errors.NotFound):
                 try:
+                    await attachment.save(filepath, use_cached=True)
+                except (discord.errors.HTTPException, discord.errors.NotFound,
+                        discord.errors.Forbidden):
                     await attachment.save(filepath, use_cached=False)
-                except discord.errors.Forbidden:
-                    continue
             except (discord.errors.Forbidden, discord.errors.HTTPException,
                     discord.errors.NotFound):
                 continue
