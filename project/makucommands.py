@@ -475,16 +475,7 @@ class MakuCommands(discord.ext.commands.Cog):
                       f"{member.guild._system_channel_id}.")
 
 
-class MakuHelpCommand(discord.ext.commands.help.DefaultHelpCommand):
-    def get_ending_note(self):
-        pictures_desc = ', '.join(
-            self.context.bot.shared['pictures_commands'])
-        return (f'Reaction images: {pictures_desc}\n\n\n'
-                f"{super().get_ending_note()}")
-
-
 def setup(bot):
     logging.info('makucommands starting setup')
     bot.add_cog(MakuCommands(bot))
-    bot.help_command = MakuHelpCommand()
     logging.info('makucommands ending setup')

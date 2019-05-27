@@ -1,5 +1,6 @@
 import discord
 from discord.ext import commands
+from discord.utils import escape_markdown
 import logging
 from pathlib import Path
 import os
@@ -50,7 +51,7 @@ class PictureAdder(discord.ext.commands.Cog):
                                  "Feel free to ask Maku why ^_^")
         await request.delete()
 
-    @commands.command(aliases=["aliasimage", "aliaspicture"])
+    @commands.command(hidden=True, aliases=["aliasimage", "aliaspicture"])
     @commands.is_owner()
     async def add_picture_alias(self, ctx, ref_invocation, true_invocation):
         if not ref_invocation.isalnum() or not true_invocation.isalnum():
@@ -78,6 +79,7 @@ class PictureAdder(discord.ext.commands.Cog):
 
     @commands.command(aliases=["randomimage"])
     async def random_image(self, ctx):
+        """For true shitposting."""
         files = [Path(dirpath) / Path(filename)
                  for dirpath, dirnames, filenames in os.walk(PICTURES_DIR)
                  for filename in filenames]
@@ -158,6 +160,16 @@ class ReactionImages(discord.ext.commands.Cog):
             folder_command.instance = self
             folder_command.module = self.__module__
             self.bot.add_command(folder_command)
+
+    @commands.command(aliases=["listreactions"])
+    async def list_reactions(self, ctx):
+        """List all my reactions"""
+        pictures_desc = ', '.join(self.bot.shared['pictures_commands'])
+        block_size = 1500
+        text_blocks = [f'{pictures_desc[i:i+block_size]}'
+                       for i in range(0, len(pictures_desc), block_size)]
+        for text_block in text_blocks:
+            await ctx.send(f"```{escape_markdown(text_block)}```")
 
 
 def setup(bot):
