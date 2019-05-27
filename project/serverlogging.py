@@ -68,7 +68,8 @@ class ServerLogging(discord.ext.commands.Cog):
             deletion_log_file.write(deletion_text+'\n')
         log_channels = self.bot.shared['data']['log_channels']
         should_be_logged = (message.guild and message.channel
-                            and (log_channels.get(str(message.guild.id), None)
+                            and str(message.guild.id) in log_channels
+                            and (log_channels[str(message.guild.id)]
                                  != str(message.channel.id)))
         if should_be_logged:
             log_channel = self.bot.get_channel(int(log_channels
