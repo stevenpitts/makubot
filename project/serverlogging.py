@@ -58,11 +58,17 @@ class ServerLogging(discord.ext.commands.Cog):
                 continue
             attachment_files.append(discord.File(filepath))
         num_failed = len(message.attachments) - len(attachment_files)
+        failed_attachments_str = (f' ({num_failed} failed to save)'
+                                  if num_failed else '')
+        embed_content_str = '\n'.join([f"Embed: {captured_embed.to_dict()}"
+                                       for captured_embed in message.embeds])
         deletion_text = (
             f'{message.created_at}: A message from {message.author.name} '
             f'has been deleted in {message.channel} of {guild_description} '
-            f'with {len(message.attachments)} attachments '
-            f'({num_failed} failed to save): {message.content}')
+            f'with {len(message.attachments)} attachment(s)'
+            f'{failed_attachments_str} and '
+            f'{len(message.embeds)} embed(s): {message.content}\n'
+            f'{embed_content_str}')
         self.last_deleted_message[message.channel.id] = deletion_text
         with codecs.open(DELETION_LOG_PATH, 'a', 'utf-8') as deletion_log_file:
             deletion_log_file.write(deletion_text+'\n')
