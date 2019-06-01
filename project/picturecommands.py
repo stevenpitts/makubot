@@ -77,7 +77,7 @@ class PictureAdder(discord.ext.commands.Cog):
             else:
                 await ctx.send(f"{true_invocation} is not an image command :?")
 
-    @commands.command(aliases=["randomimage"])
+    @commands.command(aliases=["randomimage", "yo", "hey", "makubot"])
     async def random_image(self, ctx):
         """For true shitposting."""
         files = [Path(dirpath) / Path(filename)
