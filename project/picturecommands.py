@@ -8,6 +8,7 @@ import random
 import aiohttp
 import shutil
 import re
+from . import commandutil
 
 SCRIPT_DIR = Path(__file__).parent
 PARENT_DIR = SCRIPT_DIR.parent
@@ -21,35 +22,43 @@ class PictureAdder(discord.ext.commands.Cog):
         self.bot = bot
 
     async def image_suggestion(self, image_dir, filename, requestor):
-        proposal = (f"Add image {filename} to {image_dir}? "
-                    f"Requested by {requestor.name}"
-                    if image_dir.exists() else
-                    f"Add image to ***NEW*** dir {image_dir}? "
-                    f"Requested by {requestor.name}")
-        request = await self.bot.makusu.send(
-            proposal, file=discord.File(SAVED_ATTACHMENTS_DIR / filename))
-        no_emoji, yes_emoji = "❌", "✅"
-        await request.add_reaction(no_emoji)
-        await request.add_reaction(yes_emoji)
+        try:
+            proposal = (f"Add image {filename} to {image_dir}? "
+                        f"Requested by {requestor.name}"
+                        if image_dir.exists() else
+                        f"Add image to ***NEW*** dir {image_dir}? "
+                        f"Requested by {requestor.name}")
+            try:
+                request = await self.bot.makusu.send(
+                    proposal, file=discord.File(SAVED_ATTACHMENTS_DIR
+                                                / filename))
+            except discord.errors.HTTPException:
+                await requestor.send("Sorry, that image is too large ;~;")
+                return
+            no_emoji, yes_emoji = "❌", "✅"
+            await request.add_reaction(no_emoji)
+            await request.add_reaction(yes_emoji)
 
-        def reaction_check(reaction, user):
-            return (user == self.bot.makusu
-                    and reaction.message.id == request.id
-                    and reaction.emoji in [no_emoji, yes_emoji])
-        res = await self.bot.wait_for("reaction_add", check=reaction_check)
-        if res[0].emoji == yes_emoji:
-            if not image_dir.exists():
-                os.makedirs(image_dir)
-            shutil.move(SAVED_ATTACHMENTS_DIR / filename,
-                        image_dir / filename)
-            self.bot.reload_extension("project.picturecommands")
-            await requestor.send(f"Your image {filename.split('.')[0]} "
-                                 "was approved!")
-        else:
-            await requestor.send(f"Your image {filename.split('.')[0]} "
-                                 "was not approved. "
-                                 "Feel free to ask Maku why ^_^")
-        await request.delete()
+            def reaction_check(reaction, user):
+                return (user == self.bot.makusu
+                        and reaction.message.id == request.id
+                        and reaction.emoji in [no_emoji, yes_emoji])
+            res = await self.bot.wait_for("reaction_add", check=reaction_check)
+            if res[0].emoji == yes_emoji:
+                if not image_dir.exists():
+                    os.makedirs(image_dir)
+                shutil.move(SAVED_ATTACHMENTS_DIR / filename,
+                            image_dir / filename)
+                self.bot.reload_extension("project.picturecommands")
+                await requestor.send(f"Your image {filename.split('.')[0]} "
+                                     "was approved!")
+            else:
+                await requestor.send(f"Your image {filename.split('.')[0]} "
+                                     "was not approved. "
+                                     "Feel free to ask Maku why ^_^")
+            await request.delete()
+        except Exception as e:
+            print(commandutil.get_formatted_traceback(e))
 
     @commands.command(hidden=True, aliases=["aliasimage", "aliaspicture"])
     @commands.is_owner()
