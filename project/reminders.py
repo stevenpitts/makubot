@@ -103,7 +103,7 @@ class ReminderCommands(discord.ext.commands.Cog):
             return
         await ctx.send(f"Coolio I'll remind you `{reminder_message}` in "
                        f"{get_human_delay(total_seconds)}.")
-        reminder_time = time.time() + total_seconds
+        reminder_time = int(time.time()) + total_seconds
         reminder = get_reminder(reminder_time, total_seconds,
                                 ctx.message.author.id,
                                 ctx.message.channel.id,
