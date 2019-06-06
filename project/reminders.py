@@ -124,7 +124,8 @@ class ReminderCommands(discord.ext.commands.Cog):
              for reminder_num, reminder in enumerate(active_reminders)])
         await ctx.send(reminder_list_display)
 
-    @commands.command(aliases=["cancelreminder"])
+    @commands.command(aliases=["cancelreminder", "deletereminder",
+                               "delete_reminder"])
     async def cancel_reminder(self, ctx):
         """Cancels a reminder. I'll ask which one you want to cancel."""
         active_reminders = [reminder for reminder
