@@ -407,8 +407,13 @@ class MakuCommands(discord.ext.commands.Cog):
     async def choose(self, ctx, *args):
         '''
         Returns a random choice from the choices you provide!
-        Separated  by spaces
+        Separated  by spaces, but you can put options in quotes
+        to allow spaces in a single option.
+        For example: `mb.choose "North Carolina" Maine "Rhode Island"`
         '''
+        if not args:
+            await ctx.send(f"You gotta give options!\n{ctx.command.help}")
+            return
         await ctx.send(f'I choose {random.choice(args)}!')
 
     @commands.Cog.listener()
