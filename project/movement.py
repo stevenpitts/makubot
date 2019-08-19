@@ -24,7 +24,8 @@ class Movement(discord.ext.commands.Cog):
         def author_is_user_check(message):
             return message.author == user
 
-        if reaction.emoji == MOVE_EMOTE:
+        if (reaction.emoji == MOVE_EMOTE and
+                reaction.message.channel.permissions_for(self).send_messages):
             await reaction.message.channel.send(
                 f'{user.mention} Move to which channel?')
             while True:

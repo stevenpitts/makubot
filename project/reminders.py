@@ -157,20 +157,37 @@ class ReminderCommands(discord.ext.commands.Cog):
         reminder_channel = self.bot.get_channel(reminder["channel_id"])
         reminder_user = self.bot.get_user(reminder["user_id"])
         human_delay = get_human_delay(reminder["reminder_delay"])
-        await reminder_channel.send('{}, you have a message from {} ago: {}'
-                                    .format(reminder_user.mention,
-                                            human_delay,
-                                            reminder["reminder_message"]))
+        if reminder_user and not reminder_channel:
+            await reminder_user.send(
+                "Hey, you had a reminder set but I couldn't find the channel "
+                "you'd set it in. Your reminder was: "
+                f"{reminder['reminder_message']}")
+        elif reminder_channel and not reminder_user:
+            await reminder_channel.send(
+                "Uhh there was a person but they're gone now but the reminder "
+                f"was {reminder['reminder_message']}")
+        elif not reminder_channel and not reminder_user:
+            await self.bot.makusu.send(f"Couldn't find stuff for {reminder}")
+        else:
+            await reminder_channel.send(
+                f"{reminder_user.mention}, you have a message from "
+                f"{human_delay} ago: {reminder['reminder_message']}")
 
     async def keep_checking_reminders(self):
+        async def cycle_reminders():
+            ready_reminders = (
+                reminder for reminder in self.bot.shared['data']['reminders']
+                if reminder['remind_time'] < time.time())
+            for reminder in ready_reminders:
+                await self.send_reminder(reminder)
+                self.bot.shared['data']['reminders'].remove(reminder)
+
         try:
             await self.bot.wait_until_ready()
+            while not self.bot.makusu:
+                await asyncio.sleep(0)
             while True:
-                for reminder in self.bot.shared['data']['reminders']:
-                    if reminder['remind_time'] < time.time():
-                        await self.send_reminder(reminder)
-                        self.bot.shared['data']['reminders'].remove(reminder)
-                    await asyncio.sleep(0)
+                await cycle_reminders()
                 await asyncio.sleep(1)
         except concurrent.futures._base.CancelledError:
             return
