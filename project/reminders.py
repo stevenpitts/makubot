@@ -77,10 +77,6 @@ class ReminderCommands(discord.ext.commands.Cog):
         self.bot = bot
         self.cycle_reminders.start()
 
-        # self.reminder_check_task = self.bot.loop.create_task(
-        #     self.keep_checking_reminders())
-        #
-
     def cog_unload(self):
         self.cycle_reminders.cancel()
 
@@ -193,20 +189,6 @@ class ReminderCommands(discord.ext.commands.Cog):
     @cycle_reminders.before_loop
     async def before_cycling(self):
         await self.bot.wait_until_ready()
-
-    # async def keep_checking_reminders(self):
-    #
-    #     try:
-    #         await self.bot.wait_until_ready()
-    #         while not self.bot.makusu:
-    #             await asyncio.sleep(0)
-    #         while True:
-    #             await self.cycle_reminders()
-    #             await asyncio.sleep(1)
-        # except concurrent.futures._base.CancelledError:
-        #     return
-    #     except Exception as e:
-    #         print(commandutil.get_formatted_traceback(e))
 
 
 def get_reminder(remind_time, reminder_delay, user_id, channel_id,
