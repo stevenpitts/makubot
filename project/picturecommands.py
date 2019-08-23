@@ -6,9 +6,11 @@ from pathlib import Path
 import os
 import random
 import aiohttp
+import asyncio
 import shutil
 import re
 import itertools
+import concurrent
 from . import commandutil
 
 SCRIPT_DIR = Path(__file__).parent
@@ -68,7 +70,16 @@ class PictureAdder(discord.ext.commands.Cog):
                 return (user == self.bot.makusu
                         and reaction.message.id == request.id
                         and reaction.emoji in [no_emoji, yes_emoji])
-            res = await self.bot.wait_for("reaction_add", check=reaction_check)
+            res = None
+            while not res:
+                try:
+                    res = await self.bot.wait_for(
+                        "reaction_add", check=reaction_check)
+                except concurrent.futures._base.CancelledError:
+                    return
+                except Exception as e:
+                    print(commandutil.get_formatted_traceback(e))
+                    await asyncio.sleep(1)
             if res[0].emoji == yes_emoji:
                 image_dir.mkdir(parents=True, exist_ok=True)
                 new_filename = get_nonconflicting_filename(filename, image_dir)

@@ -1,4 +1,4 @@
-# import concurrent
+import concurrent
 from pathlib import Path
 import discord
 from discord.ext import commands, tasks
@@ -185,16 +185,15 @@ class ReminderCommands(discord.ext.commands.Cog):
             for reminder in ready_reminders:
                 await self.send_reminder(reminder)
                 self.bot.shared['data']['reminders'].remove(reminder)
+        except concurrent.futures._base.CancelledError:
+            return
         except Exception as e:
             print(commandutil.get_formatted_traceback(e))
-
 
     @cycle_reminders.before_loop
     async def before_cycling(self):
         await self.bot.wait_until_ready()
 
-
-    #
     # async def keep_checking_reminders(self):
     #
     #     try:
@@ -204,8 +203,8 @@ class ReminderCommands(discord.ext.commands.Cog):
     #         while True:
     #             await self.cycle_reminders()
     #             await asyncio.sleep(1)
-    #     except concurrent.futures._base.CancelledError:
-    #         return
+        # except concurrent.futures._base.CancelledError:
+        #     return
     #     except Exception as e:
     #         print(commandutil.get_formatted_traceback(e))
 
