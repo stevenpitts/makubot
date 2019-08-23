@@ -148,9 +148,6 @@ class PictureAdder(discord.ext.commands.Cog):
         for url in urls:
             filename = get_nonconflicting_filename(
                 slugify(url.split(r"/")[-1]), SAVED_ATTACHMENTS_DIR)
-            # while (os.path.exists(PICTURES_DIR / image_collection / filename)
-            #        or os.path.exists(SAVED_ATTACHMENTS_DIR / filename)):
-            #     filename = f"{str(random.randint(1, 1000))}{filename}"
             try:
                 data = await self.bot.http.get_from_cdn(url)
                 with open(SAVED_ATTACHMENTS_DIR / filename, 'wb') as f:

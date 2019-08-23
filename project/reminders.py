@@ -1,11 +1,11 @@
-import concurrent
+# import concurrent
 from pathlib import Path
 import discord
-from discord.ext import commands
+from discord.ext import commands, tasks
 import time
 import datetime
 import logging
-import asyncio
+# import asyncio
 import re
 from . import commandutil
 from dateutil.parser import parse as date_parse
@@ -75,11 +75,14 @@ def parse_remind_me(time_and_reminder):
 class ReminderCommands(discord.ext.commands.Cog):
     def __init__(self, bot):
         self.bot = bot
-        self.reminder_check_task = self.bot.loop.create_task(
-            self.keep_checking_reminders())
+        self.cycle_reminders.start()
+
+        # self.reminder_check_task = self.bot.loop.create_task(
+        #     self.keep_checking_reminders())
+        #
 
     def cog_unload(self):
-        self.reminder_check_task.cancel()
+        self.cycle_reminders.cancel()
 
     @commands.command(aliases=["remindme"])
     async def remind_me(self, ctx, *, time_and_reminder: str):
@@ -173,26 +176,38 @@ class ReminderCommands(discord.ext.commands.Cog):
                 f"{reminder_user.mention}, you have a message from "
                 f"{human_delay} ago: {reminder['reminder_message']}")
 
-    async def keep_checking_reminders(self):
-        async def cycle_reminders():
+    @tasks.loop(seconds=1.0)
+    async def cycle_reminders(self):
+        try:
             ready_reminders = (
                 reminder for reminder in self.bot.shared['data']['reminders']
                 if reminder['remind_time'] < time.time())
             for reminder in ready_reminders:
                 await self.send_reminder(reminder)
                 self.bot.shared['data']['reminders'].remove(reminder)
-
-        try:
-            await self.bot.wait_until_ready()
-            while not self.bot.makusu:
-                await asyncio.sleep(0)
-            while True:
-                await cycle_reminders()
-                await asyncio.sleep(1)
-        except concurrent.futures._base.CancelledError:
-            return
         except Exception as e:
             print(commandutil.get_formatted_traceback(e))
+
+
+    @cycle_reminders.before_loop
+    async def before_cycling(self):
+        await self.bot.wait_until_ready()
+
+
+    #
+    # async def keep_checking_reminders(self):
+    #
+    #     try:
+    #         await self.bot.wait_until_ready()
+    #         while not self.bot.makusu:
+    #             await asyncio.sleep(0)
+    #         while True:
+    #             await self.cycle_reminders()
+    #             await asyncio.sleep(1)
+    #     except concurrent.futures._base.CancelledError:
+    #         return
+    #     except Exception as e:
+    #         print(commandutil.get_formatted_traceback(e))
 
 
 def get_reminder(remind_time, reminder_delay, user_id, channel_id,

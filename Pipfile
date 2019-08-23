@@ -11,7 +11,7 @@ flake8 = "*"
 asteval = "*"
 wikipedia = "*"
 google-api-python-client = "*"
-discord-py =  ">=1.0.1"
+discord-py =  ">=1.1.0"
 urllib3 = ">=1.24.2"
 python-dateutil = "*"
 
