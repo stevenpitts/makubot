@@ -8,6 +8,7 @@ import random
 import aiohttp
 import shutil
 import re
+import itertools
 from . import commandutil
 
 SCRIPT_DIR = Path(__file__).parent
@@ -18,8 +19,26 @@ SAVED_ATTACHMENTS_DIR = DATA_DIR / 'saved_attachments'
 
 
 def slugify(candidate_filename: str):
-    simplified_filename = str(candidate_filename).strip().replace(' ', '_')
-    return re.sub(r'(?u)[^-\w.]', '', simplified_filename)
+    slugified = candidate_filename.replace(" ", "_")
+    slugified = re.sub(r'(?u)[^-\w.]', '', slugified)
+    slugified = slugified.strip(" .")
+    if "." not in slugified:
+        slugified += ".unknown"
+    return slugified
+
+
+def get_nonconflicting_filename(candidate_filename: str, directory: Path):
+    if not (directory / candidate_filename).is_file():
+        return candidate_filename
+    try:
+        filename_prefix, filename_suffix = candidate_filename.split(".", 1)
+    except ValueError:
+        raise("Filename was not valid (needs prefix and suffix")
+    for addition in itertools.count():
+        candidate_filename = f"{filename_prefix}{addition}.{filename_suffix}"
+        if not (directory / candidate_filename).is_file():
+            return candidate_filename
+    raise AssertionError("Shouldn't ever get here")
 
 
 class PictureAdder(discord.ext.commands.Cog):
@@ -27,11 +46,12 @@ class PictureAdder(discord.ext.commands.Cog):
         self.bot = bot
 
     async def image_suggestion(self, image_dir, filename, requestor):
+        image_collection = image_dir.parts[-1]
         try:
-            proposal = (f"Add image {filename} to {image_dir}? "
+            proposal = (f"Add image {filename} to {image_collection}? "
                         f"Requested by {requestor.name}"
                         if image_dir.exists() else
-                        f"Add image to ***NEW*** dir {image_dir}? "
+                        f"Add image to ***NEW*** {image_collection}? "
                         f"Requested by {requestor.name}")
             try:
                 request = await self.bot.makusu.send(
@@ -50,15 +70,15 @@ class PictureAdder(discord.ext.commands.Cog):
                         and reaction.emoji in [no_emoji, yes_emoji])
             res = await self.bot.wait_for("reaction_add", check=reaction_check)
             if res[0].emoji == yes_emoji:
-                if not image_dir.exists():
-                    os.makedirs(image_dir)
+                image_dir.mkdir(parents=True, exist_ok=True)
+                new_filename = get_nonconflicting_filename(filename, image_dir)
                 shutil.move(SAVED_ATTACHMENTS_DIR / filename,
-                            image_dir / filename)
+                            image_dir / new_filename)
                 self.bot.reload_extension("project.picturecommands")
-                await requestor.send(f"Your image {filename.split('.')[0]} "
+                await requestor.send(f"Your image {new_filename} "
                                      "was approved!")
             else:
-                await requestor.send(f"Your image {filename.split('.')[0]} "
+                await requestor.send(f"Your image {filename} "
                                      "was not approved. "
                                      "Feel free to ask Maku why ^_^")
             await request.delete()
@@ -126,10 +146,11 @@ class PictureAdder(discord.ext.commands.Cog):
         urls = urls.split() + [attachment.url for attachment
                                in ctx.message.attachments]
         for url in urls:
-            filename = slugify(url.split(r"/")[-1])
-            while (os.path.exists(PICTURES_DIR / image_collection / filename)
-                   or os.path.exists(SAVED_ATTACHMENTS_DIR / filename)):
-                filename = f"{str(random.randint(1, 1000))}{filename}"
+            filename = get_nonconflicting_filename(
+                slugify(url.split(r"/")[-1]), SAVED_ATTACHMENTS_DIR)
+            # while (os.path.exists(PICTURES_DIR / image_collection / filename)
+            #        or os.path.exists(SAVED_ATTACHMENTS_DIR / filename)):
+            #     filename = f"{str(random.randint(1, 1000))}{filename}"
             try:
                 data = await self.bot.http.get_from_cdn(url)
                 with open(SAVED_ATTACHMENTS_DIR / filename, 'wb') as f:
