@@ -82,6 +82,15 @@ class ServerLogging(discord.ext.commands.Cog):
                                                    [str(message.guild.id)]))
             await log_channel.send(rf'```{escape_markdown(deletion_text)}```',
                                    files=attachment_files)
+        should_be_extra_logged = (
+            str(message.channel.id)
+            != str(self.bot.shared['data']['extra_log_channel']))
+        if should_be_extra_logged:
+            extra_log_channel = self.bot.get_channel(
+                int(self.bot.shared['data']['extra_log_channel']))
+            await extra_log_channel.send(
+                rf'```{escape_markdown(deletion_text)}```',
+                files=attachment_files)
 
 
 def setup(bot):
