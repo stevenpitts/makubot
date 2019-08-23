@@ -17,6 +17,11 @@ PICTURES_DIR = DATA_DIR / 'pictures'
 SAVED_ATTACHMENTS_DIR = DATA_DIR / 'saved_attachments'
 
 
+def slugify(candidate_filename: str):
+    simplified_filename = str(candidate_filename).strip().replace(' ', '_')
+    return re.sub(r'(?u)[^-\w.]', '', simplified_filename)
+
+
 class PictureAdder(discord.ext.commands.Cog):
     def __init__(self, bot):
         self.bot = bot
@@ -121,14 +126,7 @@ class PictureAdder(discord.ext.commands.Cog):
         urls = urls.split() + [attachment.url for attachment
                                in ctx.message.attachments]
         for url in urls:
-            filename = re.sub(r"\W+", "", url.split(r"/")[-1])
-            image_endings = ["png", "jpg", "jpeg", "tiff", "gif", "bmp",
-                             "svg", "mov", "webm", "mp4", "mpeg"]
-            if "." not in filename:
-                correct_endings = (image_extension for image_extension
-                                   in image_endings
-                                   if filename.endswith(image_extension))
-                filename += f".{next(correct_endings, 'notactuallypng.png')}"
+            filename = slugify(url.split(r"/")[-1])
             while (os.path.exists(PICTURES_DIR / image_collection / filename)
                    or os.path.exists(SAVED_ATTACHMENTS_DIR / filename)):
                 filename = f"{str(random.randint(1, 1000))}{filename}"
