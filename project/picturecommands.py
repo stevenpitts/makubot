@@ -10,6 +10,7 @@ import asyncio
 import shutil
 import re
 import itertools
+import tempfile
 import concurrent
 from . import commandutil
 
@@ -17,7 +18,8 @@ SCRIPT_DIR = Path(__file__).parent
 PARENT_DIR = SCRIPT_DIR.parent
 DATA_DIR = PARENT_DIR / 'data'
 PICTURES_DIR = DATA_DIR / 'pictures'
-SAVED_ATTACHMENTS_DIR = DATA_DIR / 'saved_attachments'
+_TEMP_SAVE_DIR = tempfile.TemporaryDirectory()
+TEMP_SAVE_DIR = Path(_TEMP_SAVE_DIR.name)
 
 
 def slugify(candidate_filename: str):
@@ -57,7 +59,7 @@ class PictureAdder(discord.ext.commands.Cog):
                         f"Requested by {requestor.name}")
             try:
                 request = await self.bot.makusu.send(
-                    proposal, file=discord.File(SAVED_ATTACHMENTS_DIR
+                    proposal, file=discord.File(TEMP_SAVE_DIR
                                                 / filename))
             except discord.errors.HTTPException:
                 await requestor.send("Sorry, that image is too large ;~;")
@@ -83,7 +85,7 @@ class PictureAdder(discord.ext.commands.Cog):
             if res[0].emoji == yes_emoji:
                 image_dir.mkdir(parents=True, exist_ok=True)
                 new_filename = get_nonconflicting_filename(filename, image_dir)
-                shutil.move(SAVED_ATTACHMENTS_DIR / filename,
+                shutil.move(TEMP_SAVE_DIR / filename,
                             image_dir / new_filename)
                 self.bot.reload_extension("project.picturecommands")
                 await requestor.send(f"Your image {new_filename} "
@@ -158,10 +160,10 @@ class PictureAdder(discord.ext.commands.Cog):
                                in ctx.message.attachments]
         for url in urls:
             filename = get_nonconflicting_filename(
-                slugify(url.split(r"/")[-1]), SAVED_ATTACHMENTS_DIR)
+                slugify(url.split(r"/")[-1]), TEMP_SAVE_DIR)
             try:
                 data = await self.bot.http.get_from_cdn(url)
-                with open(SAVED_ATTACHMENTS_DIR / filename, 'wb') as f:
+                with open(TEMP_SAVE_DIR / filename, 'wb') as f:
                     f.write(data)
             except (aiohttp.client_exceptions.ClientConnectorError,
                     aiohttp.client_exceptions.InvalidURL,

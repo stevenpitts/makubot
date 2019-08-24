@@ -10,7 +10,6 @@ SCRIPT_DIR = Path(__file__).parent
 PARENT_DIR = SCRIPT_DIR.parent
 DATA_DIR = PARENT_DIR / 'data'
 DELETION_LOG_PATH = DATA_DIR / 'deletion_log.txt'
-# SAVED_ATTACHMENTS_DIR = DATA_DIR / 'saved_attachments'
 _TEMP_SAVE_DIR = tempfile.TemporaryDirectory()
 TEMP_SAVE_DIR = Path(_TEMP_SAVE_DIR.name)
 
@@ -59,7 +58,7 @@ class ServerLogging(discord.ext.commands.Cog):
             except (discord.errors.Forbidden, discord.errors.HTTPException,
                     discord.errors.NotFound):
                 continue
-            attachment_files.append(discord.File(filepath))
+            attachment_files.append(filepath)
         num_failed = len(message.attachments) - len(attachment_files)
         failed_attachments_str = (f' ({num_failed} failed to save)'
                                   if num_failed else '')
@@ -83,17 +82,19 @@ class ServerLogging(discord.ext.commands.Cog):
         if should_be_logged:
             log_channel = self.bot.get_channel(int(log_channels
                                                    [str(message.guild.id)]))
+            discord_files = tuple(discord.File(f) for f in attachment_files)
             await log_channel.send(rf'```{escape_markdown(deletion_text)}```',
-                                   files=attachment_files)
+                                   files=discord_files)
         should_be_extra_logged = (
             str(message.channel.id)
             != str(self.bot.shared['data']['extra_log_channel']))
         if should_be_extra_logged:
             extra_log_channel = self.bot.get_channel(
                 int(self.bot.shared['data']['extra_log_channel']))
+            discord_files = tuple(discord.File(f) for f in attachment_files)
             await extra_log_channel.send(
                 rf'```{escape_markdown(deletion_text)}```',
-                files=attachment_files)
+                files=discord_files)
 
 
 def setup(bot):

@@ -78,7 +78,7 @@ class ReminderCommands(discord.ext.commands.Cog):
         self.cycle_reminders.start()
 
     def cog_unload(self):
-        self.cycle_reminders.cancel()
+        self.cycle_reminders.stop()
 
     @commands.command(aliases=["remindme"])
     async def remind_me(self, ctx, *, time_and_reminder: str):
@@ -172,7 +172,7 @@ class ReminderCommands(discord.ext.commands.Cog):
                 f"{reminder_user.mention}, you have a message from "
                 f"{human_delay} ago: {reminder['reminder_message']}")
 
-    @tasks.loop(seconds=1.0)
+    @tasks.loop(seconds=1)
     async def cycle_reminders(self):
         try:
             ready_reminders = (

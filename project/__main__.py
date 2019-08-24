@@ -17,10 +17,7 @@ DATA_DIR = PARENT_DIR / 'data'
 
 
 def main():
-    for data_dir_folder in ['pictures',
-                            'saved_attachments',
-                            'working_directory']:
-        os.makedirs(str(DATA_DIR / data_dir_folder), exist_ok=True)
+    os.makedirs(str(DATA_DIR / 'pictures'), exist_ok=True)
 
     default_text = {'reminders.txt': '[]',
                     'makubot.log': '',
@@ -42,8 +39,8 @@ def main():
     token = tokens.testToken if 'test' in sys.argv else tokens.realToken
     if "profile" in sys.argv:
         cProfile.run(f"makubot.MakuBot().run('{token}')",
-                     DATA_DIR / 'working_directory' / 'profile.txt')
-        p = pstats.Stats(str(DATA_DIR / 'working_directory' / 'profile.txt'))
+                     DATA_DIR / 'profile.txt')
+        p = pstats.Stats(str(DATA_DIR / 'profile.txt'))
         p.sort_stats('cumtime').print_stats(r'makubot[\/,\\]project')
     else:
         makubot.MakuBot().run(token)

@@ -13,6 +13,7 @@ import logging
 from googleapiclient.discovery import build
 import asteval
 import discord
+import tempfile
 from discord.ext import commands
 from discord.ext.commands.errors import (CommandError, CommandNotFound,
                                          CommandOnCooldown, NotOwner,
@@ -30,9 +31,9 @@ from discord.utils import escape_markdown
 SCRIPT_DIR = Path(__file__).parent
 PARENT_DIR = SCRIPT_DIR.parent
 DATA_DIR = PARENT_DIR / 'data'
-WORKING_DIR = DATA_DIR / 'working_directory'
 DATAFILE_PATH = DATA_DIR / 'data.json'
-SAVED_ATTACHMENTS_DIR = DATA_DIR / 'saved_attachments'
+_TEMP_SAVE_DIR = tempfile.TemporaryDirectory()
+TEMP_SAVE_DIR = Path(_TEMP_SAVE_DIR.name)
 
 
 FACTS = '''Geese are NEAT
@@ -313,8 +314,8 @@ class MakuCommands(discord.ext.commands.Cog):
                                  ctx.channel.history() if message.attachments)
             message_with_file = await previous_messages.__anext__()
             attachment = message_with_file.attachments[0]
-            await attachment.save(WORKING_DIR / attachment.filename)
-            with open(WORKING_DIR / attachment.filename, 'r') as file:
+            await attachment.save(TEMP_SAVE_DIR / attachment.filename)
+            with open(TEMP_SAVE_DIR / attachment.filename, 'r') as file:
                 out_text = '\n'.join(file.readlines()).replace("```", "'''")
         except UnicodeDecodeError:
             await ctx.send(f'It looks like you\'re trying to get me to '
