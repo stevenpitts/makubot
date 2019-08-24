@@ -75,24 +75,21 @@ class ServerLogging(discord.ext.commands.Cog):
         with codecs.open(DELETION_LOG_PATH, 'a', 'utf-8') as deletion_log_file:
             deletion_log_file.write(deletion_text+'\n')
         log_channels = self.bot.shared['data']['log_channels']
-        should_be_logged = (message.guild and message.channel
-                            and str(message.guild.id) in log_channels
-                            and (log_channels[str(message.guild.id)]
-                                 != str(message.channel.id)))
+        log_to_channels = []
+        extra_log_channel = self.bot.get_channel(
+            int(self.bot.shared['data']['extra_log_channel']))
+        try:
+            log_channel_id = log_channels[str(message.guild.id)]
+            should_be_logged = log_channel_id != str(message.channel.id)
+        except (AttributeError, KeyError):
+            should_be_logged = False
         if should_be_logged:
-            log_channel = self.bot.get_channel(int(log_channels
-                                                   [str(message.guild.id)]))
+            log_to_channels.append(self.bot.get_channel(int(log_channel_id)))
+        if message.channel != extra_log_channel:
+            log_to_channels.append(extra_log_channel)
+        for log_to_channel in log_to_channels:
             discord_files = tuple(discord.File(f) for f in attachment_files)
-            await log_channel.send(rf'```{escape_markdown(deletion_text)}```',
-                                   files=discord_files)
-        should_be_extra_logged = (
-            str(message.channel.id)
-            != str(self.bot.shared['data']['extra_log_channel']))
-        if should_be_extra_logged:
-            extra_log_channel = self.bot.get_channel(
-                int(self.bot.shared['data']['extra_log_channel']))
-            discord_files = tuple(discord.File(f) for f in attachment_files)
-            await extra_log_channel.send(
+            await log_to_channel.send(
                 rf'```{escape_markdown(deletion_text)}```',
                 files=discord_files)
 
