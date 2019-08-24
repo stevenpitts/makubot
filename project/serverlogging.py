@@ -3,15 +3,12 @@ from discord.ext import commands
 from discord.utils import escape_markdown
 import logging
 import codecs
-import tempfile
 from pathlib import Path
 
 SCRIPT_DIR = Path(__file__).parent
 PARENT_DIR = SCRIPT_DIR.parent
 DATA_DIR = PARENT_DIR / 'data'
 DELETION_LOG_PATH = DATA_DIR / 'deletion_log.txt'
-_TEMP_SAVE_DIR = tempfile.TemporaryDirectory()
-TEMP_SAVE_DIR = Path(_TEMP_SAVE_DIR.name)
 
 
 class ServerLogging(discord.ext.commands.Cog):
@@ -48,7 +45,7 @@ class ServerLogging(discord.ext.commands.Cog):
         guild_description = getattr(message.guild, "name", "DMs")
         attachment_files = []
         for attachment in message.attachments:
-            filepath = TEMP_SAVE_DIR / attachment.filename
+            filepath = self.bot.shared['temp_dir'] / attachment.filename
             try:
                 try:
                     await attachment.save(filepath, use_cached=True)

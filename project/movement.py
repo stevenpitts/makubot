@@ -1,15 +1,12 @@
 import discord
 from discord.ext import commands
 import logging
-import tempfile
 import re
 from pathlib import Path
 
 SCRIPT_DIR = Path(__file__).parent
 PARENT_DIR = SCRIPT_DIR.parent
 DATA_DIR = PARENT_DIR / 'data'
-_TEMP_SAVE_DIR = tempfile.TemporaryDirectory()
-TEMP_SAVE_DIR = Path(_TEMP_SAVE_DIR.name)
 
 MOVE_EMOTE = '\U0001f232'
 
@@ -73,11 +70,12 @@ class Movement(discord.ext.commands.Cog):
                             or move_request_user == message.author
                             or move_request_user.id == self.bot.makusu.id)
         if should_get_moved:
+            temp_save_dir = self.bot.shared['temp_dir']
             for attachment in message.attachments:
-                await attachment.save(TEMP_SAVE_DIR
+                await attachment.save(temp_save_dir
                                       / attachment.filename)
             attachment_files = [
-                discord.File(TEMP_SAVE_DIR / attachment.filename)
+                discord.File(temp_save_dir / attachment.filename)
                 for attachment in message.attachments]
             move_description = (f'{move_request_user.mention} has moved '
                                 f'this here from {message.channel.mention}. '

@@ -11,9 +11,9 @@ import datetime
 import json
 import logging
 from googleapiclient.discovery import build
+import httplib2
 import asteval
 import discord
-import tempfile
 from discord.ext import commands
 from discord.ext.commands.errors import (CommandError, CommandNotFound,
                                          CommandOnCooldown, NotOwner,
@@ -32,8 +32,6 @@ SCRIPT_DIR = Path(__file__).parent
 PARENT_DIR = SCRIPT_DIR.parent
 DATA_DIR = PARENT_DIR / 'data'
 DATAFILE_PATH = DATA_DIR / 'data.json'
-_TEMP_SAVE_DIR = tempfile.TemporaryDirectory()
-TEMP_SAVE_DIR = Path(_TEMP_SAVE_DIR.name)
 
 
 FACTS = '''Geese are NEAT
@@ -57,9 +55,12 @@ Oh dang is that a gun -Uncle Ben
 With great power comes great responsibility -Uncle Ben'''.split('\n')
 
 
-YOUTUBE_SEARCH = tokens.googleAPI and build('youtube', 'v3',
-                                            developerKey=tokens.googleAPI,
-                                            ).search()
+try:
+    YOUTUBE_SEARCH = tokens.googleAPI and build('youtube', 'v3',
+                                                developerKey=tokens.googleAPI,
+                                                ).search()
+except httplib2.ServerNotFoundError:
+    YOUTUBE_SEARCH = None
 
 
 def aeval(to_evaluate, return_error=True) -> str:
@@ -224,7 +225,7 @@ class MakuCommands(discord.ext.commands.Cog):
         '''Post a YouTube video based on a search phrase!
         Idea stolen from KitchenSink'''
         if YOUTUBE_SEARCH is None:
-            await ctx.send('Sorry, I\'m missing the google API key!')
+            await ctx.send('Sorry, I can\'t connect to Google API!')
             return
         search_response = YOUTUBE_SEARCH.list(q=search_term,
                                               part='id',
@@ -314,8 +315,9 @@ class MakuCommands(discord.ext.commands.Cog):
                                  ctx.channel.history() if message.attachments)
             message_with_file = await previous_messages.__anext__()
             attachment = message_with_file.attachments[0]
-            await attachment.save(TEMP_SAVE_DIR / attachment.filename)
-            with open(TEMP_SAVE_DIR / attachment.filename, 'r') as file:
+            temp_save_dir = self.bot.shared['temp_dir']
+            await attachment.save(temp_save_dir / attachment.filename)
+            with open(temp_save_dir / attachment.filename, 'r') as file:
                 out_text = '\n'.join(file.readlines()).replace("```", "'''")
         except UnicodeDecodeError:
             await ctx.send(f'It looks like you\'re trying to get me to '

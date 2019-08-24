@@ -6,6 +6,8 @@ criticalcommands, and commandutil.
 '''
 import logging
 import discord
+import tempfile
+import asyncio
 from discord.ext import commands
 from pathlib import Path
 
@@ -28,8 +30,14 @@ class MakuBot(commands.Bot):
                               owner_id=203285581004931072)
         self.makusu = None
         self.shared = {}
-        for extension in ['makucommands', 'reminders', 'picturecommands',
-                          'serverlogging', 'movement']:
+        self.temp_dir_pointer = tempfile.TemporaryDirectory()
+        self.shared['temp_dir'] = Path(self.temp_dir_pointer.name)
+        for extension in ['makucommands',
+                          'reminders',
+                          'picturecommands',
+                          'serverlogging',
+                          'movement'
+                          ]:
             self.load_extension(f'project.{extension}')
 
     async def on_ready(self):

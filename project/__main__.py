@@ -41,7 +41,7 @@ def main():
         cProfile.run(f"makubot.MakuBot().run('{token}')",
                      DATA_DIR / 'profile.txt')
         p = pstats.Stats(str(DATA_DIR / 'profile.txt'))
-        p.sort_stats('cumtime').print_stats(r'makubot[\/,\\]project')
+        p.sort_stats('cumtime').print_stats(r'[\/,\\]project')
     else:
         makubot.MakuBot().run(token)
 

@@ -10,7 +10,6 @@ import asyncio
 import shutil
 import re
 import itertools
-import tempfile
 import concurrent
 from . import commandutil
 
@@ -18,8 +17,6 @@ SCRIPT_DIR = Path(__file__).parent
 PARENT_DIR = SCRIPT_DIR.parent
 DATA_DIR = PARENT_DIR / 'data'
 PICTURES_DIR = DATA_DIR / 'pictures'
-_TEMP_SAVE_DIR = tempfile.TemporaryDirectory()
-TEMP_SAVE_DIR = Path(_TEMP_SAVE_DIR.name)
 
 
 def slugify(candidate_filename: str):
@@ -48,6 +45,7 @@ def get_nonconflicting_filename(candidate_filename: str, directory: Path):
 class PictureAdder(discord.ext.commands.Cog):
     def __init__(self, bot):
         self.bot = bot
+        self.temp_save_dir = self.bot.shared['temp_dir']
 
     async def image_suggestion(self, image_dir, filename, requestor):
         image_collection = image_dir.parts[-1]
@@ -59,7 +57,7 @@ class PictureAdder(discord.ext.commands.Cog):
                         f"Requested by {requestor.name}")
             try:
                 request = await self.bot.makusu.send(
-                    proposal, file=discord.File(TEMP_SAVE_DIR
+                    proposal, file=discord.File(self.temp_save_dir
                                                 / filename))
             except discord.errors.HTTPException:
                 await requestor.send("Sorry, that image is too large ;~;")
@@ -85,7 +83,7 @@ class PictureAdder(discord.ext.commands.Cog):
             if res[0].emoji == yes_emoji:
                 image_dir.mkdir(parents=True, exist_ok=True)
                 new_filename = get_nonconflicting_filename(filename, image_dir)
-                shutil.move(TEMP_SAVE_DIR / filename,
+                shutil.move(self.temp_save_dir / filename,
                             image_dir / new_filename)
                 self.bot.reload_extension("project.picturecommands")
                 await requestor.send(f"Your image {new_filename} "
@@ -160,10 +158,10 @@ class PictureAdder(discord.ext.commands.Cog):
                                in ctx.message.attachments]
         for url in urls:
             filename = get_nonconflicting_filename(
-                slugify(url.split(r"/")[-1]), TEMP_SAVE_DIR)
+                slugify(url.split(r"/")[-1]), self.temp_save_dir)
             try:
                 data = await self.bot.http.get_from_cdn(url)
-                with open(TEMP_SAVE_DIR / filename, 'wb') as f:
+                with open(self.temp_save_dir / filename, 'wb') as f:
                     f.write(data)
             except (aiohttp.client_exceptions.ClientConnectorError,
                     aiohttp.client_exceptions.InvalidURL,
