@@ -63,7 +63,6 @@ class PictureAdder(discord.ext.commands.Cog):
                             image_dir / new_filename)
                 self.bot.get_cog("ReactionImages").add_pictures_dir(
                     image_collection)
-                # self.bot.reload_extension("project.picturecommands")
                 await requestor.send(f"Your image {new_filename} "
                                      "was approved!")
             else:
@@ -97,7 +96,6 @@ class PictureAdder(discord.ext.commands.Cog):
                 aliases[ref_invocation] = true_invocation
                 true_command.aliases += [ref_invocation]
                 self.bot.all_commands[ref_invocation] = true_command
-                # self.bot.reload_extension("project.picturecommands")
                 await ctx.send("Added!")
             else:
                 await ctx.send(f"{true_invocation} is not an image command :?")
