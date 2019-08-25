@@ -11,7 +11,6 @@ import json
 import logging
 from googleapiclient.discovery import build
 import httplib2
-import asteval
 import discord
 from discord.ext import commands
 from discord.ext.commands.errors import (CommandError, CommandNotFound,
@@ -60,28 +59,6 @@ try:
                                                 ).search()
 except httplib2.ServerNotFoundError:
     YOUTUBE_SEARCH = None
-
-
-def aeval(to_evaluate, return_error=True) -> str:
-    is_dangerous_input = (any([char.isalpha() and char not in 'eE'
-                               for char in to_evaluate])
-                          or "**" in to_evaluate
-                          or "=" in to_evaluate)
-    if is_dangerous_input:
-        return "Sorry, that looks dangerous; please use me for simple math!"
-    temp_string_io = StringIO()
-    aeval_interpreter = asteval.Interpreter(writer=temp_string_io,
-                                            err_writer=temp_string_io)
-    result = aeval_interpreter(to_evaluate)
-    output = temp_string_io.getvalue()
-    output = output and escape_markdown(str(output))
-    result = result and escape_markdown(str(result))
-    if result or output:
-        output_str = f'```{output}```\n' if output else ''
-        result_str = f'```Result: {result}```' if result else 'No Result.'
-        return f'{output_str}{result_str}'
-    elif return_error:
-        return 'No result'
 
 
 class MakuCommands(discord.ext.commands.Cog):
@@ -252,7 +229,7 @@ class MakuCommands(discord.ext.commands.Cog):
                 'EZ_sql_inject_api').destroy_maku_computer_operating_system()
             >>>ERROR ERROR MAJOR ERROR SELF DESTRUCT SEQUENCE INITIALIZE'''
         try:
-            await ctx.send(aeval(to_eval))
+            await ctx.send(commandutil.aeval(to_eval))
         except AttributeError:
             logging.error(f"Couldn't get a match on {ctx.message.content}.")
 
@@ -425,7 +402,7 @@ class MakuCommands(discord.ext.commands.Cog):
             if self.bot.user.mention in ctx.message.content:
                 to_asteval = ctx.message.content.replace(
                     self.bot.user.mention, '').strip()
-                astevald = aeval(to_asteval, return_error=False)
+                astevald = commandutil.aeval(to_asteval, return_error=False)
                 if astevald:
                     await ctx.send(astevald)
         elif isinstance(caught_exception, NotOwner):

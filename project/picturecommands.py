@@ -8,8 +8,6 @@ import random
 import aiohttp
 import asyncio
 import shutil
-import re
-import itertools
 import concurrent
 from . import commandutil
 
@@ -17,29 +15,6 @@ SCRIPT_DIR = Path(__file__).parent
 PARENT_DIR = SCRIPT_DIR.parent
 DATA_DIR = PARENT_DIR / 'data'
 PICTURES_DIR = DATA_DIR / 'pictures'
-
-
-def slugify(candidate_filename: str):
-    slugified = candidate_filename.replace(" ", "_")
-    slugified = re.sub(r'(?u)[^-\w.]', '', slugified)
-    slugified = slugified.strip(" .")
-    if "." not in slugified:
-        slugified += ".unknown"
-    return slugified
-
-
-def get_nonconflicting_filename(candidate_filename: str, directory: Path):
-    if not (directory / candidate_filename).is_file():
-        return candidate_filename
-    try:
-        filename_prefix, filename_suffix = candidate_filename.split(".", 1)
-    except ValueError:
-        raise("Filename was not valid (needs prefix and suffix")
-    for addition in itertools.count():
-        candidate_filename = f"{filename_prefix}{addition}.{filename_suffix}"
-        if not (directory / candidate_filename).is_file():
-            return candidate_filename
-    raise AssertionError("Shouldn't ever get here")
 
 
 class PictureAdder(discord.ext.commands.Cog):
@@ -82,7 +57,8 @@ class PictureAdder(discord.ext.commands.Cog):
                     await asyncio.sleep(1)
             if res[0].emoji == yes_emoji:
                 image_dir.mkdir(parents=True, exist_ok=True)
-                new_filename = get_nonconflicting_filename(filename, image_dir)
+                new_filename = commandutil.get_nonconflicting_filename(
+                    filename, image_dir)
                 shutil.move(self.temp_save_dir / filename,
                             image_dir / new_filename)
                 self.bot.get_cog("ReactionImages").add_pictures_dir(
@@ -161,8 +137,8 @@ class PictureAdder(discord.ext.commands.Cog):
         urls = urls.split() + [attachment.url for attachment
                                in ctx.message.attachments]
         for url in urls:
-            filename = get_nonconflicting_filename(
-                slugify(url.split(r"/")[-1]), self.temp_save_dir)
+            filename = commandutil.get_nonconflicting_filename(
+                commandutil.slugify(url.split(r"/")[-1]), self.temp_save_dir)
             try:
                 data = await self.bot.http.get_from_cdn(url)
                 with open(self.temp_save_dir / filename, 'wb') as f:
