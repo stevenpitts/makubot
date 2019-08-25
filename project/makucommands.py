@@ -1,6 +1,5 @@
 '''
 Module containing the majority of the basic commands makubot can execute.
-Also used to reload criticalcommands.
 '''
 import random
 import sys

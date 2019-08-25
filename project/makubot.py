@@ -1,8 +1,7 @@
 '''
 Main module for makubot.
 This module should never have to be reloaded.
-All reloading should take place in makucommands,
-criticalcommands, and commandutil.
+All reloading should take place in makucommands and commandutil.
 '''
 import logging
 import discord
@@ -18,11 +17,6 @@ logging.basicConfig(filename=DATA_DIR/'makubot.log', level=logging.INFO)
 
 
 class MakuBot(commands.Bot):
-    '''
-    MakuBot class
-    Client -> Bot -> MakuBot
-    '''
-
     def __init__(self):
         commands.Bot.__init__(self, command_prefix=commands.when_mentioned,
                               case_insensitive=True,
