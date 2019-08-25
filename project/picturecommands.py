@@ -112,9 +112,7 @@ class PictureAdder(discord.ext.commands.Cog):
     @commands.command(aliases=["addimage"])
     async def add_image(self, ctx, image_collection: str, *, urls: str = ""):
         """Requests an image be added.
-        mb.addimage reaction nao
-        Makubot will then ask the for the image to be added.
-        You must send the image as an attachment; I can't save URLs ;~;
+        mb.addimage nao http://static.zerochan.net/Tomori.Nao.full.1901643.jpg
         Then, it'll be sent to maku for approval!"""
         image_collection = image_collection.lower()
         if not image_collection.isalnum():
