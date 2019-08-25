@@ -85,7 +85,9 @@ class PictureAdder(discord.ext.commands.Cog):
                 new_filename = get_nonconflicting_filename(filename, image_dir)
                 shutil.move(self.temp_save_dir / filename,
                             image_dir / new_filename)
-                self.bot.reload_extension("project.picturecommands")
+                self.bot.get_cog("ReactionImages").add_pictures_dir(
+                    image_collection)
+                # self.bot.reload_extension("project.picturecommands")
                 await requestor.send(f"Your image {new_filename} "
                                      "was approved!")
             else:
@@ -117,7 +119,9 @@ class PictureAdder(discord.ext.commands.Cog):
                                             ReactionImages))
             if maps_to_image:
                 aliases[ref_invocation] = true_invocation
-                self.bot.reload_extension("project.picturecommands")
+                true_command.aliases += [ref_invocation]
+                self.bot.all_commands[ref_invocation] = true_command
+                # self.bot.reload_extension("project.picturecommands")
                 await ctx.send("Added!")
             else:
                 await ctx.send(f"{true_invocation} is not an image command :?")
@@ -183,20 +187,25 @@ class ReactionImages(discord.ext.commands.Cog):
     def __init__(self, bot):
         self.bot = bot
         self.bot.shared['pictures_commands'] = []
-        aliases = {}
+        self.image_aliases = {}
         for key, val in self.bot.shared['data']['alias_pictures'].items():
-            aliases[val] = aliases.get(val, []) + [key]
+            self.image_aliases[val] = self.image_aliases.get(val, []) + [key]
         for folder_name in os.listdir(PICTURES_DIR):
-            self.bot.shared['pictures_commands'].append(folder_name)
-            folder_command = commands.Command(ReactionImages.folder_func,
-                                              name=folder_name,
-                                              brief=folder_name,
-                                              aliases=aliases.get(folder_name,
-                                                                  []),
-                                              hidden=True)
-            folder_command.instance = self
-            folder_command.module = self.__module__
-            self.bot.add_command(folder_command)
+            self.add_pictures_dir(folder_name)
+
+    def add_pictures_dir(self, folder_name: str):
+        if folder_name in self.bot.shared['pictures_commands']:
+            return
+        self.bot.shared['pictures_commands'].append(folder_name)
+        folder_command = commands.Command(
+            ReactionImages.folder_func,
+            name=folder_name,
+            brief=folder_name,
+            aliases=self.image_aliases.get(folder_name, []),
+            hidden=True)
+        folder_command.instance = self
+        folder_command.module = self.__module__
+        self.bot.add_command(folder_command)
 
     @commands.command(aliases=["listreactions"])
     async def list_reactions(self, ctx):

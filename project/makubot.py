@@ -7,7 +7,6 @@ criticalcommands, and commandutil.
 import logging
 import discord
 import tempfile
-import asyncio
 from discord.ext import commands
 from pathlib import Path
 
