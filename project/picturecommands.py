@@ -179,7 +179,7 @@ class PictureAdder(discord.ext.commands.Cog):
 
 class ReactionImages(discord.ext.commands.Cog):
 
-    async def folder_func(ctx):
+    async def send_image_func(ctx):
         true_path = PICTURES_DIR / ctx.command.name
         file_to_send = true_path / random.choice(os.listdir(true_path))
         await ctx.channel.send(file=discord.File(file_to_send))
@@ -198,7 +198,7 @@ class ReactionImages(discord.ext.commands.Cog):
             return
         self.bot.shared['pictures_commands'].append(folder_name)
         folder_command = commands.Command(
-            ReactionImages.folder_func,
+            ReactionImages.send_image_func,
             name=folder_name,
             brief=folder_name,
             aliases=self.image_aliases.get(folder_name, []),
