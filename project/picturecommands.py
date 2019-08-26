@@ -16,9 +16,14 @@ PARENT_DIR = SCRIPT_DIR.parent
 DATA_DIR = PARENT_DIR / 'data'
 PICTURES_DIR = DATA_DIR / 'pictures'
 
-#
-# def collection_has_image_bytes(collection: str, image_bytes):
-#     collection_dir = PICTURES_DIR / collection
+
+async def collection_has_image_bytes(collection: str, image_bytes):
+    collection_dir = PICTURES_DIR / collection
+    if not collection_dir.exists():
+        return False
+    sizes = (os.path.getsize(collection_dir / picture_filename)
+             for picture_filename in os.listdir(collection_dir))
+    return len(image_bytes) in sizes
 
 
 class PictureAdder(discord.ext.commands.Cog):
@@ -27,8 +32,10 @@ class PictureAdder(discord.ext.commands.Cog):
         self.temp_save_dir = self.bot.shared['temp_dir']
 
     async def image_suggestion(self, image_dir, filename, requestor):
-        image_collection = image_dir.parts[-1]
         try:
+            image_collection = image_dir.parts[-1]
+            with open(self.temp_save_dir / filename, "rb") as f:
+                image_bytes = f.read()
             proposal = (f"Add image {filename} to {image_collection}? "
                         f"Requested by {requestor.name}"
                         if image_dir.exists() else
@@ -59,7 +66,10 @@ class PictureAdder(discord.ext.commands.Cog):
                 except Exception as e:
                     print(commandutil.get_formatted_traceback(e))
                     await asyncio.sleep(1)
-            if res[0].emoji == yes_emoji:
+            if await collection_has_image_bytes(image_collection, image_bytes):
+                await requestor.send(
+                    f"The image {filename} appears already in the collection!")
+            elif res[0].emoji == yes_emoji:
                 image_dir.mkdir(parents=True, exist_ok=True)
                 new_filename = commandutil.get_nonconflicting_filename(
                     filename, image_dir)
@@ -144,6 +154,10 @@ class PictureAdder(discord.ext.commands.Cog):
                 commandutil.slugify(url.split(r"/")[-1]), self.temp_save_dir)
             try:
                 data = await self.bot.http.get_from_cdn(url)
+                if await collection_has_image_bytes(image_collection, data):
+                    await ctx.send(f"{filename} seems to already be "
+                                   "in that collection :<")
+                    return
                 with open(self.temp_save_dir / filename, 'wb') as f:
                     f.write(data)
             except (aiohttp.client_exceptions.ClientConnectorError,
