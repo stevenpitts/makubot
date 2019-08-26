@@ -39,7 +39,8 @@ class PictureAdder(discord.ext.commands.Cog):
             proposal = (f"Add image {filename} to {image_collection}? "
                         f"Requested by {requestor.name}"
                         if image_dir.exists() else
-                        f"Add image to ***NEW*** {image_collection}? "
+                        f"Add image {filename} to ***NEW*** "
+                        f"{image_collection}? "
                         f"Requested by {requestor.name}")
             try:
                 request = await self.bot.makusu.send(

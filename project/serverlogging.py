@@ -62,6 +62,8 @@ class ServerLogging(discord.ext.commands.Cog):
 
     @commands.Cog.listener()
     async def on_message_edit(self, before, after):
+        if after.content == before.content:
+            return
         guild_description = getattr(before.guild, "name", "DMs")
         log_text = (
             f'{before.created_at}: A message from {before.author.name} '

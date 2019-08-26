@@ -312,6 +312,8 @@ class MakuCommands(discord.ext.commands.Cog):
             summary = ''.join(result.summary)[:1500]
         except wikipedia.exceptions.DisambiguationError:
             await ctx.send("Sorry, please be more specific than that ;~;")
+        except IndexError:
+            await ctx.send("Hmm, I can't find anything matching that...")
         else:
             summary = escape_markdown(summary)
             await ctx.send(f'```{summary}...```\n{result.url}')
