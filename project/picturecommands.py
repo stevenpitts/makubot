@@ -16,6 +16,10 @@ PARENT_DIR = SCRIPT_DIR.parent
 DATA_DIR = PARENT_DIR / 'data'
 PICTURES_DIR = DATA_DIR / 'pictures'
 
+#
+# def collection_has_image_bytes(collection: str, image_bytes):
+#     collection_dir = PICTURES_DIR / collection
+
 
 class PictureAdder(discord.ext.commands.Cog):
     def __init__(self, bot):
@@ -95,6 +99,7 @@ class PictureAdder(discord.ext.commands.Cog):
             if maps_to_image:
                 aliases[ref_invocation] = true_invocation
                 true_command.aliases += [ref_invocation]
+                self.bot.shared['pictures_commands'] += [ref_invocation]
                 self.bot.all_commands[ref_invocation] = true_command
                 await ctx.send("Added!")
             else:
@@ -118,6 +123,8 @@ class PictureAdder(discord.ext.commands.Cog):
         if not image_collection.isalnum():
             await ctx.send("Please only include letters and numbers.")
             return
+        image_collection = self.bot.shared['data']['alias_pictures'].get(
+            image_collection, image_collection)
         existing_command = self.bot.get_command(image_collection)
         command_taken = (existing_command is not None
                          and (not hasattr(existing_command, "instance")
@@ -169,15 +176,18 @@ class ReactionImages(discord.ext.commands.Cog):
         if folder_name in self.bot.shared['pictures_commands']:
             return
         self.bot.shared['pictures_commands'].append(folder_name)
+        collection_aliases = self.image_aliases.get(folder_name, [])
         folder_command = commands.Command(
             ReactionImages.send_image_func,
             name=folder_name,
             brief=folder_name,
-            aliases=self.image_aliases.get(folder_name, []),
+            aliases=collection_aliases,
             hidden=True)
         folder_command.instance = self
         folder_command.module = self.__module__
         self.bot.add_command(folder_command)
+        for collection_alias in collection_aliases:
+            self.bot.shared['pictures_commands'].append(collection_alias)
 
     @commands.command(aliases=["listreactions"])
     async def list_reactions(self, ctx):
