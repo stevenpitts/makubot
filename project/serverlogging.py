@@ -40,6 +40,35 @@ class ServerLogging(discord.ext.commands.Cog):
         except KeyError:
             await ctx.send("I can't find anything, sorry :(")
 
+    async def log_stuff(self, guild, channel, log_text, attachment_files):
+        log_channels = self.bot.shared['data']['log_channels']
+        log_to_channels = []
+        extra_log_channel = self.bot.get_channel(
+            int(self.bot.shared['data']['extra_log_channel']))
+        try:
+            log_channel_id = log_channels[str(guild.id)]
+            should_be_logged = log_channel_id != str(channel.id)
+        except (AttributeError, KeyError):
+            should_be_logged = False
+        if should_be_logged:
+            log_to_channels.append(self.bot.get_channel(int(log_channel_id)))
+        if channel != extra_log_channel:
+            log_to_channels.append(extra_log_channel)
+        for log_to_channel in log_to_channels:
+            discord_files = tuple(discord.File(f) for f in attachment_files)
+            await log_to_channel.send(
+                rf'```{escape_markdown(log_text)}```',
+                files=discord_files)
+
+    @commands.Cog.listener()
+    async def on_message_edit(self, before, after):
+        guild_description = getattr(before.guild, "name", "DMs")
+        log_text = (
+            f'{before.created_at}: A message from {before.author.name} '
+            f'has been edited in {before.channel} of {guild_description}.\n'
+            f'{before.content}\n--->\n{after.content}')
+        await self.log_stuff(before.guild, before.channel, log_text, [])
+
     @commands.Cog.listener()
     async def on_message_delete(self, message):
         guild_description = getattr(message.guild, "name", "DMs")
@@ -71,24 +100,8 @@ class ServerLogging(discord.ext.commands.Cog):
         self.last_deleted_message[message.channel.id] = deletion_text
         with codecs.open(DELETION_LOG_PATH, 'a', 'utf-8') as deletion_log_file:
             deletion_log_file.write(deletion_text+'\n')
-        log_channels = self.bot.shared['data']['log_channels']
-        log_to_channels = []
-        extra_log_channel = self.bot.get_channel(
-            int(self.bot.shared['data']['extra_log_channel']))
-        try:
-            log_channel_id = log_channels[str(message.guild.id)]
-            should_be_logged = log_channel_id != str(message.channel.id)
-        except (AttributeError, KeyError):
-            should_be_logged = False
-        if should_be_logged:
-            log_to_channels.append(self.bot.get_channel(int(log_channel_id)))
-        if message.channel != extra_log_channel:
-            log_to_channels.append(extra_log_channel)
-        for log_to_channel in log_to_channels:
-            discord_files = tuple(discord.File(f) for f in attachment_files)
-            await log_to_channel.send(
-                rf'```{escape_markdown(deletion_text)}```',
-                files=discord_files)
+        await self.log_stuff(
+            message.guild, message.channel, deletion_text, attachment_files)
 
 
 def setup(bot):
