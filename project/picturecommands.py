@@ -9,6 +9,7 @@ import aiohttp
 import asyncio
 import shutil
 import concurrent
+from datetime import datetime
 from . import commandutil
 
 SCRIPT_DIR = Path(__file__).parent
@@ -33,6 +34,8 @@ class PictureAdder(discord.ext.commands.Cog):
 
     async def image_suggestion(self, image_dir, filename, requestor):
         try:
+            logging.info(f"SUGGESTIONTHING1 {datetime.now()} {image_dir} "
+                         f"{filename} {requestor}")
             image_collection = image_dir.parts[-1]
             with open(self.temp_save_dir / filename, "rb") as f:
                 image_bytes = f.read()
@@ -86,7 +89,12 @@ class PictureAdder(discord.ext.commands.Cog):
                                      "Feel free to ask Maku why ^_^")
             await request.delete()
         except Exception as e:
+            logging.info(f"SUGGESTIONTHING2 {datetime.now()} {image_dir} "
+                         f"{filename} {requestor}")
             print(commandutil.get_formatted_traceback(e))
+        finally:
+            logging.info(f"SUGGESTIONTHING3 {datetime.now()} {image_dir} "
+                         f"{filename} {requestor}")
 
     @commands.command(hidden=True, aliases=["aliasimage", "aliaspicture"])
     @commands.is_owner()

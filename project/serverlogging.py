@@ -1,8 +1,8 @@
 import discord
 from discord.ext import commands
-from discord.utils import escape_markdown
 import logging
 import codecs
+from datetime import datetime
 from pathlib import Path
 
 SCRIPT_DIR = Path(__file__).parent
@@ -40,7 +40,7 @@ class ServerLogging(discord.ext.commands.Cog):
         except KeyError:
             await ctx.send("I can't find anything, sorry :(")
 
-    async def log_stuff(self, guild, channel, log_text, attachment_files):
+    async def get_log_channels(self, guild, channel):
         log_channels = self.bot.shared['data']['log_channels']
         log_to_channels = []
         extra_log_channel = self.bot.get_channel(
@@ -54,22 +54,24 @@ class ServerLogging(discord.ext.commands.Cog):
             log_to_channels.append(self.bot.get_channel(int(log_channel_id)))
         if channel != extra_log_channel:
             log_to_channels.append(extra_log_channel)
-        for log_to_channel in log_to_channels:
-            discord_files = tuple(discord.File(f) for f in attachment_files)
-            await log_to_channel.send(
-                rf'```{escape_markdown(log_text)}```',
-                files=discord_files)
+        return log_to_channels
 
     @commands.Cog.listener()
     async def on_message_edit(self, before, after):
         if after.content == before.content:
             return
         guild_description = getattr(before.guild, "name", "DMs")
-        log_text = (
-            f'{before.created_at}: A message from {before.author.name} '
-            f'has been edited in {before.channel} of {guild_description}.\n'
-            f'{before.content}\n--->\n{after.content}')
-        await self.log_stuff(before.guild, before.channel, log_text, [])
+        log_to_channels = await self.get_log_channels(
+            before.guild, before.channel)
+        embed = discord.Embed(
+            title="Edited message",
+            description=(f"A message from {before.author.name} has been "
+                         f"edited in {before.channel} of {guild_description} "
+                         f"at {datetime.now()}"))
+        embed.add_field(name="Before", value=before.content)
+        embed.add_field(name="After", value=after.content)
+        for log_to_channel in log_to_channels:
+            await log_to_channel.send(embed=embed)
 
     @commands.Cog.listener()
     async def on_message_delete(self, message):
@@ -92,18 +94,28 @@ class ServerLogging(discord.ext.commands.Cog):
                                   if num_failed else '')
         embed_content_str = '\n'.join([f"Embed: {captured_embed.to_dict()}"
                                        for captured_embed in message.embeds])
-        deletion_text = (
+        deletion_description = (
             f'{message.created_at}: A message from {message.author.name} '
             f'has been deleted in {message.channel} of {guild_description} '
             f'with {len(message.attachments)} attachment(s)'
             f'{failed_attachments_str} and '
-            f'{len(message.embeds)} embed(s): {message.content}\n'
-            f'{embed_content_str}')
+            f'{len(message.embeds)} embed(s)')
+        deletion_text = (f"{deletion_description}: "
+                         f"{message.content}\n{embed_content_str}")
         self.last_deleted_message[message.channel.id] = deletion_text
         with codecs.open(DELETION_LOG_PATH, 'a', 'utf-8') as deletion_log_file:
             deletion_log_file.write(deletion_text+'\n')
-        await self.log_stuff(
-            message.guild, message.channel, deletion_text, attachment_files)
+        log_to_channels = await self.get_log_channels(message.guild,
+                                                      message.channel)
+        embed = discord.Embed(
+            title="Deleted message",
+            description=deletion_description)
+        embed.add_field(name="Deleted content", value=message.content)
+        if embed_content_str:
+            embed.add_field(name="Deleted embed", value=embed_content_str)
+        for log_to_channel in log_to_channels:
+            discord_files = tuple(discord.File(f) for f in attachment_files)
+            await log_to_channel.send(embed=embed, files=discord_files)
 
 
 def setup(bot):

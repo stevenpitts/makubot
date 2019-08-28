@@ -309,14 +309,15 @@ class MakuCommands(discord.ext.commands.Cog):
         '''Searches Wikipedia to see what something is! Give it a try!'''
         try:
             result = wikipedia.page(wikipedia.search(query)[0])
-            summary = ''.join(result.summary)[:1500]
+            summary = ''.join(result.summary)[:1024]
         except wikipedia.exceptions.DisambiguationError:
             await ctx.send("Sorry, please be more specific than that ;~;")
         except IndexError:
             await ctx.send("Hmm, I can't find anything matching that...")
         else:
-            summary = escape_markdown(summary)
-            await ctx.send(f'```{summary}...```\n{result.url}')
+            embed = discord.Embed(title="Results", description=query)
+            embed.add_field(name=result.url, value=summary)
+            await ctx.send(embed=embed)
 
     @commands.command(hidden=True, aliases=['sayto', ])
     @commands.is_owner()
