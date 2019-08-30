@@ -68,8 +68,10 @@ class ServerLogging(discord.ext.commands.Cog):
             description=(f"A message from {before.author.name} has been "
                          f"edited in {before.channel} of {guild_description} "
                          f"at {datetime.now()}"))
-        embed.add_field(name="Before", value=before.content)
-        embed.add_field(name="After", value=after.content)
+        before_content = before.content[:1000].strip() or "[NOTHING]"
+        after_content = after.content[:1000].strip() or "[NOTHING]"
+        embed.add_field(name="Before", value=before_content)
+        embed.add_field(name="After", value=after_content)
         for log_to_channel in log_to_channels:
             await log_to_channel.send(embed=embed)
 
@@ -94,6 +96,7 @@ class ServerLogging(discord.ext.commands.Cog):
                                   if num_failed else '')
         embed_content_str = '\n'.join([f"Embed: {captured_embed.to_dict()}"
                                        for captured_embed in message.embeds])
+        embed_content_str = str(embed_content_str).strip()
         deletion_description = (
             f'{message.created_at}: A message from {message.author.name} '
             f'has been deleted in {message.channel} of {guild_description} '
@@ -110,9 +113,12 @@ class ServerLogging(discord.ext.commands.Cog):
         embed = discord.Embed(
             title="Deleted message",
             description=deletion_description)
-        embed.add_field(name="Deleted content", value=message.content)
-        if embed_content_str:
-            embed.add_field(name="Deleted embed", value=embed_content_str)
+        if message.content.strip():
+            embed.add_field(name="Deleted content",
+                            value=message.content[:1000])
+        for deleted_embed in message.embeds:
+            for field in deleted_embed.fields:
+                embed.add_field(name=field.name, value=field.value)
         for log_to_channel in log_to_channels:
             discord_files = tuple(discord.File(f) for f in attachment_files)
             await log_to_channel.send(embed=embed, files=discord_files)
