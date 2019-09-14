@@ -89,8 +89,11 @@ class ServerLogging(discord.ext.commands.Cog):
     async def on_user_update(self, before, after):
         new_username = str(before) != str(after)
         embed = discord.Embed(
-            title="Username update" if new_username else "Avatar update",
-            description=f"{after} has updated their profile")
+            title="User Profile Update",
+            description=(
+                f"{after} has updated their "
+                f"{'username' if new_username else 'avatar'}")
+            )
         if new_username:
             embed.add_field(name="Old", value=str(before))
             embed.add_field(name="New", value=str(after))
