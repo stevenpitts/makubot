@@ -46,15 +46,14 @@ def get_media_bytes_and_name(url):
 
 def convert_video(video_input, video_output):
     cmds = ['ffmpeg', '-y', '-i', video_input, video_output]
-    with open(os.devnull, 'w') as devnull:
-        p = subprocess.Popen(cmds, stdout=subprocess.PIPE,
-                             stderr=subprocess.PIPE)
-        output, err = p.communicate()
-        logging.info(f"ffmpeg output: {output}")
-        logging.info(f"ffmpeg err: {err}")
-        if not os.path.isfile(video_output):
-            raise FileNotFoundError(
-                f"ffmpeg failed to convert {video_input} to {video_output}")
+    p = subprocess.Popen(cmds, stdout=subprocess.PIPE,
+                         stderr=subprocess.PIPE)
+    output, err = p.communicate()
+    logging.info(f"ffmpeg output: {output}")
+    logging.info(f"ffmpeg err: {err}")
+    if not os.path.isfile(video_output):
+        raise FileNotFoundError(
+            f"ffmpeg failed to convert {video_input} to {video_output}")
 
 
 async def collection_has_image_bytes(collection: str, image_bytes):
@@ -217,6 +216,7 @@ class PictureAdder(discord.ext.commands.Cog):
             return
         urls = urls.split() + [attachment.url for attachment
                                in ctx.message.attachments]
+        image_suggestion_coros = []
         for url in urls:
             try:
                 data, filename = get_media_bytes_and_name(url)
@@ -233,9 +233,16 @@ class PictureAdder(discord.ext.commands.Cog):
                 raise
             else:
                 await ctx.send("Sent to Maku for approval!")
-                self.bot.loop.create_task(self.image_suggestion(
+                image_suggestion_coros.append(self.image_suggestion(
                     PICTURES_DIR / image_collection, filename, ctx.author,
                     image_bytes=data))
+        all_suggestion_coros = asyncio.gather(*image_suggestion_coros,
+                                              return_exceptions=True)
+        try:
+            await all_suggestion_coros
+        except BaseException as e:
+            print(commandutil.get_formatted_traceback(e))
+            all_suggestion_coros.cancel()
 
 
 class ReactionImages(discord.ext.commands.Cog):
