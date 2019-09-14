@@ -9,13 +9,22 @@ import aiohttp
 import asyncio
 import shutil
 import concurrent
+import subprocess
 from datetime import datetime
+import youtube_dl
 from . import commandutil
 
 SCRIPT_DIR = Path(__file__).parent
 PARENT_DIR = SCRIPT_DIR.parent
 DATA_DIR = PARENT_DIR / 'data'
 PICTURES_DIR = DATA_DIR / 'pictures'
+
+
+def convert_video(video_input, video_output):
+    cmds = ['ffmpeg', '-y', '-i', video_input, video_output]
+    with open(os.devnull, 'w') as devnull:
+        p = subprocess.Popen(cmds, stdout=devnull, stderr=devnull)
+        output, err = p.communicate()
 
 
 async def collection_has_image_bytes(collection: str, image_bytes):
@@ -33,8 +42,9 @@ class PictureAdder(discord.ext.commands.Cog):
         self.temp_save_dir = self.bot.shared['temp_dir']
 
     async def image_suggestion(self, image_dir, filename, requestor):
+        id = random.random()
         try:
-            logging.info(f"SUGGESTIONTHING1 {datetime.now()} {image_dir} "
+            logging.info(f"SUGGESTIONTHING1 {id} {datetime.now()} {image_dir} "
                          f"{filename} {requestor}")
             image_collection = image_dir.parts[-1]
             with open(self.temp_save_dir / filename, "rb") as f:
@@ -52,22 +62,34 @@ class PictureAdder(discord.ext.commands.Cog):
             except discord.errors.HTTPException:
                 await requestor.send("Sorry, that image is too large ;~;")
                 return
+            logging.info(f"SUGGESTIONTHING1.1 {id} {datetime.now()} "
+                         f"{image_dir} {filename} {requestor}")
             no_emoji, yes_emoji = "❌", "✅"
             await request.add_reaction(no_emoji)
             await request.add_reaction(yes_emoji)
 
             def reaction_check(reaction, user):
+                logging.info(f"SUGGESTIONTHING1.1.1 {id} {datetime.now()} "
+                             f"{image_dir} {filename} {requestor}")
                 return (user == self.bot.makusu
                         and reaction.message.id == request.id
                         and reaction.emoji in [no_emoji, yes_emoji])
             res = None
+            logging.info(f"SUGGESTIONTHING1.2 {id} {datetime.now()} "
+                         f"{image_dir} {filename} {requestor}")
             while not res:
                 try:
                     res = await self.bot.wait_for(
                         "reaction_add", check=reaction_check)
+                    logging.info(f"SUGGESTIONTHING1.4 {id} {datetime.now()} "
+                                 f"{image_dir} {filename} {requestor}")
                 except concurrent.futures._base.CancelledError:
+                    logging.info(f"SUGGESTIONTHING1.3 {id} {datetime.now()}"
+                                 f"{image_dir} {filename} {requestor}")
                     return
                 except Exception as e:
+                    logging.info(f"SUGGESTIONTHING1.5 {id} {datetime.now()} "
+                                 f"{image_dir} {filename} {requestor}")
                     print(commandutil.get_formatted_traceback(e))
                     await asyncio.sleep(1)
             if await collection_has_image_bytes(image_collection, image_bytes):
@@ -89,11 +111,11 @@ class PictureAdder(discord.ext.commands.Cog):
                                      "Feel free to ask Maku why ^_^")
             await request.delete()
         except Exception as e:
-            logging.info(f"SUGGESTIONTHING2 {datetime.now()} {image_dir} "
+            logging.info(f"SUGGESTIONTHING2 {id} {datetime.now()} {image_dir} "
                          f"{filename} {requestor}")
             print(commandutil.get_formatted_traceback(e))
         finally:
-            logging.info(f"SUGGESTIONTHING3 {datetime.now()} {image_dir} "
+            logging.info(f"SUGGESTIONTHING3 {id} {datetime.now()} {image_dir} "
                          f"{filename} {requestor}")
 
     @commands.command(hidden=True, aliases=["aliasimage", "aliaspicture"])
@@ -162,7 +184,23 @@ class PictureAdder(discord.ext.commands.Cog):
             filename = commandutil.get_nonconflicting_filename(
                 commandutil.slugify(url.split(r"/")[-1]), self.temp_save_dir)
             try:
-                data = await self.bot.http.get_from_cdn(url)
+                try:
+                    # TODO make the progress hook do an async sleep
+                    ydl_options = {
+                        'logger': logging,
+                        "outtmpl": f"{self.temp_save_dir}/{filename}.%(ext)s"
+                        }
+                    with youtube_dl.YoutubeDL(ydl_options) as ydl:
+                        info_dict = ydl.extract_info(url)
+                        filepath = ydl.prepare_filename(info_dict)
+                        filename = filepath.split("/")[-1]
+                        # Fix bad extension
+                        os.rename(filepath, f"{filepath}2")
+                        convert_video(f"{filepath}2", filepath)
+                        with open(filepath, "rb") as downloaded_file:
+                            data = downloaded_file.read()
+                except youtube_dl.utils.DownloadError:
+                    data = await self.bot.http.get_from_cdn(url)
                 if await collection_has_image_bytes(image_collection, data):
                     await ctx.send(f"{filename} seems to already be "
                                    "in that collection :<")
@@ -173,6 +211,9 @@ class PictureAdder(discord.ext.commands.Cog):
                     aiohttp.client_exceptions.InvalidURL,
                     discord.errors.HTTPException):
                 await ctx.send("I can't download that image, sorry!")
+            except BaseException:
+                await ctx.send("Something went wrong ;a;")
+                raise
             else:
                 await ctx.send("Sent to Maku for approval!")
                 self.bot.loop.create_task(self.image_suggestion(

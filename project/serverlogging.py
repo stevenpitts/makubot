@@ -65,15 +65,25 @@ class ServerLogging(discord.ext.commands.Cog):
             before.guild, before.channel)
         embed = discord.Embed(
             title="Edited message",
-            description=(f"A message from {before.author.name} has been "
-                         f"edited in {before.channel} of {guild_description} "
-                         f"at {datetime.now()}"))
+            description=(f"{datetime.now()}: A message from "
+                         f"{before.author.name} has been "
+                         f"edited in {before.channel} of {guild_description}.")
+            )
         before_content = before.content[:1000].strip() or "[NOTHING]"
         after_content = after.content[:1000].strip() or "[NOTHING]"
         embed.add_field(name="Before", value=before_content)
         embed.add_field(name="After", value=after_content)
         for log_to_channel in log_to_channels:
             await log_to_channel.send(embed=embed)
+
+    @commands.Cog.listener()
+    async def on_member_remove(self, member):
+        guild = member.guild
+        leave_message = f"{datetime.now()}: {member} has left the server."
+        log_to_channels = await self.get_log_channels(
+            guild, guild.system_channel)
+        for log_to_channel in log_to_channels:
+            await log_to_channel.send(leave_message)
 
     @commands.Cog.listener()
     async def on_message_delete(self, message):
@@ -98,7 +108,7 @@ class ServerLogging(discord.ext.commands.Cog):
                                        for captured_embed in message.embeds])
         embed_content_str = str(embed_content_str).strip()
         deletion_description = (
-            f'{message.created_at}: A message from {message.author.name} '
+            f'{datetime.now()}: A message from {message.author.name} '
             f'has been deleted in {message.channel} of {guild_description} '
             f'with {len(message.attachments)} attachment(s)'
             f'{failed_attachments_str} and '

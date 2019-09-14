@@ -13,7 +13,10 @@ from pathlib import Path
 SCRIPT_DIR = Path(__file__).parent
 PARENT_DIR = SCRIPT_DIR.parent
 DATA_DIR = PARENT_DIR / 'data'
-logging.basicConfig(filename=DATA_DIR/'makubot.log', level=logging.INFO)
+LOGGING_FORMAT = ('%(asctime)-15s %(levelname)s in %(funcName)s '
+                  'at %(pathname)s:%(lineno)d: %(message)s')
+logging.basicConfig(filename=DATA_DIR/'makubot.log', level=logging.INFO,
+                    format=LOGGING_FORMAT)
 
 
 class MakuBot(commands.Bot):
@@ -25,6 +28,7 @@ class MakuBot(commands.Bot):
         self.shared = {}
         self.temp_dir_pointer = tempfile.TemporaryDirectory()
         self.shared['temp_dir'] = Path(self.temp_dir_pointer.name)
+        self.loop.set_debug(True)
         for extension in ['makucommands',
                           'reminders',
                           'picturecommands',
