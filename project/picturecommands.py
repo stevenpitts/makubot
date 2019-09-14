@@ -21,33 +21,47 @@ DATA_DIR = PARENT_DIR / 'data'
 PICTURES_DIR = DATA_DIR / 'pictures'
 
 
-def get_media_bytes_and_name(url):
+async def get_media_bytes_and_name(url, status_message=None):
     with tempfile.TemporaryDirectory() as temp_dir:
-        filename = commandutil.slugify(url.split(r"/")[-1])
-        # TODO make the progress hook do an async sleep
         ydl_options = {
             'logger': logging,
-            "outtmpl": f"{temp_dir}/{filename}.%(ext)s"
+            "outtmpl": f"{temp_dir}/%(title)s-%(id)s.%(ext)s"
             }
         with youtube_dl.YoutubeDL(ydl_options) as ydl:
-            info_dict = ydl.extract_info(url)
-            filepath = ydl.prepare_filename(info_dict)
-            filename = filepath.split("/")[-1]
-            if not os.path.isfile(filepath):
+            if status_message:
+                await status_message.edit(content="Downloading...")
+            await asyncio.get_running_loop().run_in_executor(
+                None, ydl.extract_info, url)
+            files_in_dir = os.listdir(temp_dir)
+            if len(files_in_dir) == 0:
                 raise youtube_dl.utils.DownloadError("No file found")
+            elif len(files_in_dir) > 1:
+                logging.warning(
+                    f"youtube_dl got more than one file: {files_in_dir}")
+                raise youtube_dl.utils.DownloadError("Multiple files received")
+            filename = files_in_dir[0]
+            filepath = f"{temp_dir}/{filename}"
             # Fix bad extension
             temp_filepath = f"{filepath}2"
             os.rename(filepath, temp_filepath)
-            convert_video(temp_filepath, filepath)
+            if filepath.endswith(".mkv"):
+                filepath += ".webm"
+                filename += ".webm"
+            if status_message:
+                await status_message.edit(content=(
+                    "Processing... (This can take a long time for videos)"))
+            await convert_video(temp_filepath, filepath)
             with open(filepath, "rb") as downloaded_file:
                 data = downloaded_file.read()
             return data, filename
 
 
-def convert_video(video_input, video_output):
+async def convert_video(video_input, video_output):
     cmds = ['ffmpeg', '-y', '-i', video_input, video_output]
     p = subprocess.Popen(cmds, stdout=subprocess.PIPE,
                          stderr=subprocess.PIPE)
+    while p.poll() is None:
+        await asyncio.sleep(0)
     output, err = p.communicate()
     logging.info(f"ffmpeg output: {output}")
     logging.info(f"ffmpeg err: {err}")
@@ -219,20 +233,26 @@ class PictureAdder(discord.ext.commands.Cog):
         image_suggestion_coros = []
         for url in urls:
             try:
-                data, filename = get_media_bytes_and_name(url)
+                status_message = await ctx.send("Querying...")
+                data, filename = await get_media_bytes_and_name(
+                    url, status_message=status_message)
             except(youtube_dl.utils.DownloadError,
                    aiohttp.client_exceptions.ClientConnectorError,
                    aiohttp.client_exceptions.InvalidURL,
                    discord.errors.HTTPException,
                    FileNotFoundError) as e:
-                await ctx.send("I can't download that image, sorry!")
+                await status_message.edit(content="I can't download that ;a;")
                 traceback = commandutil.get_formatted_traceback(e)
                 logging.warning(f"Couldn't download image: {traceback}")
+            except concurrent.futures._base.CancelledError:
+                await status_message.edit(
+                    content="Sorry, the download messed up; please try again!")
+                return
             except BaseException:
-                await ctx.send("Something went wrong ;a;")
+                await status_message.edit(content="Something went wrong ;a;")
                 raise
             else:
-                await ctx.send("Sent to Maku for approval!")
+                await status_message.edit(content="Sent to Maku for approval!")
                 image_suggestion_coros.append(self.image_suggestion(
                     PICTURES_DIR / image_collection, filename, ctx.author,
                     image_bytes=data))
