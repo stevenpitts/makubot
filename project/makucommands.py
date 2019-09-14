@@ -398,6 +398,12 @@ class MakuCommands(discord.ext.commands.Cog):
             return
         await ctx.send(f'I choose {random.choice(args)}!')
 
+    @commands.command(hidden=True)
+    @commands.is_owner()
+    async def long_computation(self, ctx):
+        result = 2 ** 1000000
+        await ctx.send(str(result)[:1000])
+
     @commands.Cog.listener()
     async def on_command_error(self, ctx,
                                caught_exception: CommandError):

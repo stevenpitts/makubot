@@ -79,11 +79,27 @@ class ServerLogging(discord.ext.commands.Cog):
     @commands.Cog.listener()
     async def on_member_remove(self, member):
         guild = member.guild
-        leave_message = f"{datetime.now()}: {member} has left the server."
+        leave_message = f"{datetime.now()}: {member} has left {guild}"
         log_to_channels = await self.get_log_channels(
             guild, guild.system_channel)
         for log_to_channel in log_to_channels:
             await log_to_channel.send(leave_message)
+
+    @commands.Cog.listener()
+    async def on_user_update(self, before, after):
+        embed = discord.Embed(
+            title="User update",
+            description="User has updated their profile",
+            image=after.avatar_url)
+        embed.add_field(name="Old", value=str(before))
+        embed.add_field(name="New", value=str(after))
+        shared_servers = (server for server in self.guilds
+                          if server.get_member(after.id))
+        log_to_channels = set(channel for server in shared_servers
+                              for channel in await self.get_log_channels(
+                                  server, server.system_channel))
+        for log_to_channel in log_to_channels:
+            await log_to_channel.send(embed=embed)
 
     @commands.Cog.listener()
     async def on_message_delete(self, message):
