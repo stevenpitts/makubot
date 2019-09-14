@@ -12,6 +12,7 @@ import concurrent
 import subprocess
 from datetime import datetime
 import youtube_dl
+import tempfile
 from . import commandutil
 
 SCRIPT_DIR = Path(__file__).parent
@@ -20,11 +21,40 @@ DATA_DIR = PARENT_DIR / 'data'
 PICTURES_DIR = DATA_DIR / 'pictures'
 
 
+def get_media_bytes_and_name(url):
+    with tempfile.TemporaryDirectory() as temp_dir:
+        filename = commandutil.slugify(url.split(r"/")[-1])
+        # TODO make the progress hook do an async sleep
+        ydl_options = {
+            'logger': logging,
+            "outtmpl": f"{temp_dir}/{filename}.%(ext)s"
+            }
+        with youtube_dl.YoutubeDL(ydl_options) as ydl:
+            info_dict = ydl.extract_info(url)
+            filepath = ydl.prepare_filename(info_dict)
+            filename = filepath.split("/")[-1]
+            if not os.path.isfile(filepath):
+                raise youtube_dl.utils.DownloadError("No file found")
+            # Fix bad extension
+            temp_filepath = f"{filepath}2"
+            os.rename(filepath, temp_filepath)
+            convert_video(temp_filepath, filepath)
+            with open(filepath, "rb") as downloaded_file:
+                data = downloaded_file.read()
+            return data, filename
+
+
 def convert_video(video_input, video_output):
     cmds = ['ffmpeg', '-y', '-i', video_input, video_output]
     with open(os.devnull, 'w') as devnull:
-        p = subprocess.Popen(cmds, stdout=devnull, stderr=devnull)
+        p = subprocess.Popen(cmds, stdout=subprocess.PIPE,
+                             stderr=subprocess.PIPE)
         output, err = p.communicate()
+        logging.info(f"ffmpeg output: {output}")
+        logging.info(f"ffmpeg err: {err}")
+        if not os.path.isfile(video_output):
+            raise FileNotFoundError(
+                f"ffmpeg failed to convert {video_input} to {video_output}")
 
 
 async def collection_has_image_bytes(collection: str, image_bytes):
@@ -41,14 +71,21 @@ class PictureAdder(discord.ext.commands.Cog):
         self.bot = bot
         self.temp_save_dir = self.bot.shared['temp_dir']
 
-    async def image_suggestion(self, image_dir, filename, requestor):
+    async def image_suggestion(self, image_dir, filename, requestor,
+                               image_bytes=None):
         id = random.random()
         try:
+            if image_bytes is None:
+                with open(self.temp_save_dir / filename, "rb") as f:
+                    image_bytes = f.read()
+            else:
+                filename = commandutil.get_nonconflicting_filename(
+                    filename, self.temp_save_dir)
+                with open(self.temp_save_dir / filename, "wb") as f:
+                    f.write(image_bytes)
             logging.info(f"SUGGESTIONTHING1 {id} {datetime.now()} {image_dir} "
                          f"{filename} {requestor}")
             image_collection = image_dir.parts[-1]
-            with open(self.temp_save_dir / filename, "rb") as f:
-                image_bytes = f.read()
             proposal = (f"Add image {filename} to {image_collection}? "
                         f"Requested by {requestor.name}"
                         if image_dir.exists() else
@@ -181,48 +218,24 @@ class PictureAdder(discord.ext.commands.Cog):
         urls = urls.split() + [attachment.url for attachment
                                in ctx.message.attachments]
         for url in urls:
-            filename = commandutil.get_nonconflicting_filename(
-                commandutil.slugify(url.split(r"/")[-1]), self.temp_save_dir)
             try:
-                try:
-                    # TODO make the progress hook do an async sleep
-                    ydl_options = {
-                        'logger': logging,
-                        "outtmpl": f"{self.temp_save_dir}/{filename}.%(ext)s"
-                        }
-                    with youtube_dl.YoutubeDL(ydl_options) as ydl:
-                        info_dict = ydl.extract_info(url)
-                        filepath = ydl.prepare_filename(info_dict)
-                        filename = filepath.split("/")[-1]
-                        if not os.path.isfile(filepath):
-                            raise youtube_dl.utils.DownloadError(
-                                "No file found")
-                        # Fix bad extension
-                        os.rename(filepath, f"{filepath}2")
-                        convert_video(f"{filepath}2", filepath)
-                        with open(filepath, "rb") as downloaded_file:
-                            data = downloaded_file.read()
-                except youtube_dl.utils.DownloadError:
-                    raise FileNotFoundError("youtube_dl failed")
-                    # data = await self.bot.http.get_from_cdn(url)
-                if await collection_has_image_bytes(image_collection, data):
-                    await ctx.send(f"{filename} seems to already be "
-                                   "in that collection :<")
-                    return
-                with open(self.temp_save_dir / filename, 'wb') as f:
-                    f.write(data)
-            except (aiohttp.client_exceptions.ClientConnectorError,
-                    aiohttp.client_exceptions.InvalidURL,
-                    discord.errors.HTTPException,
-                    FileNotFoundError):
+                data, filename = get_media_bytes_and_name(url)
+            except(youtube_dl.utils.DownloadError,
+                   aiohttp.client_exceptions.ClientConnectorError,
+                   aiohttp.client_exceptions.InvalidURL,
+                   discord.errors.HTTPException,
+                   FileNotFoundError) as e:
                 await ctx.send("I can't download that image, sorry!")
+                traceback = commandutil.get_formatted_traceback(e)
+                logging.warning(f"Couldn't download image: {traceback}")
             except BaseException:
                 await ctx.send("Something went wrong ;a;")
                 raise
             else:
                 await ctx.send("Sent to Maku for approval!")
                 self.bot.loop.create_task(self.image_suggestion(
-                    PICTURES_DIR / image_collection, filename, ctx.author))
+                    PICTURES_DIR / image_collection, filename, ctx.author,
+                    image_bytes=data))
 
 
 class ReactionImages(discord.ext.commands.Cog):
