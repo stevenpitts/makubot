@@ -14,7 +14,7 @@ SCRIPT_DIR = Path(__file__).parent
 PARENT_DIR = SCRIPT_DIR.parent
 DATA_DIR = PARENT_DIR / 'data'
 LOGGING_FORMAT = ('%(asctime)-15s %(levelname)s in %(funcName)s '
-                  'at %(pathname)s:%(lineno)d: %(message)s')
+                  'at %(pathname)s:%(lineno)d:%(name)s %(message)s')
 logging.basicConfig(filename=DATA_DIR/'makubot.log', level=logging.INFO,
                     format=LOGGING_FORMAT)
 

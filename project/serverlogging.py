@@ -54,7 +54,7 @@ class ServerLogging(discord.ext.commands.Cog):
             log_to_channels.append(self.bot.get_channel(int(log_channel_id)))
         if channel != extra_log_channel:
             log_to_channels.append(extra_log_channel)
-        return log_to_channels
+        return tuple(log_to_channels)
 
     @commands.Cog.listener()
     async def on_message_edit(self, before, after):
@@ -87,17 +87,20 @@ class ServerLogging(discord.ext.commands.Cog):
 
     @commands.Cog.listener()
     async def on_user_update(self, before, after):
+        new_username = str(before) != str(after)
         embed = discord.Embed(
-            title="User update",
-            description="User has updated their profile",
-            image=after.avatar_url)
-        embed.add_field(name="Old", value=str(before))
-        embed.add_field(name="New", value=str(after))
-        shared_servers = (server for server in self.guilds
-                          if server.get_member(after.id))
-        log_to_channels = set(channel for server in shared_servers
-                              for channel in await self.get_log_channels(
-                                  server, server.system_channel))
+            title="Username update" if new_username else "Avatar update",
+            description=f"{after} has updated their profile")
+        if new_username:
+            embed.add_field(name="Old", value=str(before))
+            embed.add_field(name="New", value=str(after))
+        else:
+            embed.set_image(url=after.avatar_url)
+        log_to_channels = set.union(*[
+            set(await self.get_log_channels(server,
+                                            server.system_channel))
+            for server in self.bot.guilds
+            if server.get_member(after.id)])
         for log_to_channel in log_to_channels:
             await log_to_channel.send(embed=embed)
 
