@@ -194,13 +194,17 @@ class PictureAdder(discord.ext.commands.Cog):
                         info_dict = ydl.extract_info(url)
                         filepath = ydl.prepare_filename(info_dict)
                         filename = filepath.split("/")[-1]
+                        if not os.path.isfile(filepath):
+                            raise youtube_dl.utils.DownloadError(
+                                "No file found")
                         # Fix bad extension
                         os.rename(filepath, f"{filepath}2")
                         convert_video(f"{filepath}2", filepath)
                         with open(filepath, "rb") as downloaded_file:
                             data = downloaded_file.read()
                 except youtube_dl.utils.DownloadError:
-                    data = await self.bot.http.get_from_cdn(url)
+                    raise FileNotFoundError("youtube_dl failed")
+                    # data = await self.bot.http.get_from_cdn(url)
                 if await collection_has_image_bytes(image_collection, data):
                     await ctx.send(f"{filename} seems to already be "
                                    "in that collection :<")
@@ -209,7 +213,8 @@ class PictureAdder(discord.ext.commands.Cog):
                     f.write(data)
             except (aiohttp.client_exceptions.ClientConnectorError,
                     aiohttp.client_exceptions.InvalidURL,
-                    discord.errors.HTTPException):
+                    discord.errors.HTTPException,
+                    FileNotFoundError):
                 await ctx.send("I can't download that image, sorry!")
             except BaseException:
                 await ctx.send("Something went wrong ;a;")
