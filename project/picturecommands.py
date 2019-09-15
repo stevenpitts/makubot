@@ -24,7 +24,9 @@ PICTURES_DIR = DATA_DIR / 'pictures'
 async def get_media_bytes_and_name(url, status_message=None):
     with tempfile.TemporaryDirectory() as temp_dir:
         ydl_options = {
-            'logger': logging,
+            # 'logger': logging,
+            'quiet': True,
+            'no_warnings': True,
             "outtmpl": f"{temp_dir}/%(title)s-%(id)s.%(ext)s"
             }
         with youtube_dl.YoutubeDL(ydl_options) as ydl:
