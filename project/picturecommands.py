@@ -85,8 +85,7 @@ class PictureAdder(discord.ext.commands.Cog):
         self.temp_save_dir = self.bot.shared['temp_dir']
 
     async def image_suggestion(self, image_dir, filename, requestor,
-                               image_bytes=None):
-        id = random.random()
+                               image_bytes=None, status_message=None):
         try:
             if image_bytes is None:
                 with open(self.temp_save_dir / filename, "rb") as f:
@@ -96,8 +95,6 @@ class PictureAdder(discord.ext.commands.Cog):
                     filename, self.temp_save_dir)
                 with open(self.temp_save_dir / filename, "wb") as f:
                     f.write(image_bytes)
-            logging.info(f"SUGGESTIONTHING1 {id} {datetime.now()} {image_dir} "
-                         f"{filename} {requestor}")
             image_collection = image_dir.parts[-1]
             proposal = (f"Add image {filename} to {image_collection}? "
                         f"Requested by {requestor.name}"
@@ -109,43 +106,56 @@ class PictureAdder(discord.ext.commands.Cog):
                 request = await self.bot.makusu.send(
                     proposal, file=discord.File(self.temp_save_dir
                                                 / filename))
+                if status_message:
+                    await status_message.edit(content="Sent to Maku!")
             except discord.errors.HTTPException:
-                await requestor.send("Sorry, that image is too large ;~;")
+                response = f"Sorry, {filename} is too large ;~;"
+                await requestor.send(response)
+                if status_message:
+                    await status_message.edit(content=response)
                 return
-            logging.info(f"SUGGESTIONTHING1.1 {id} {datetime.now()} "
-                         f"{image_dir} {filename} {requestor}")
             no_emoji, yes_emoji = "❌", "✅"
             await request.add_reaction(no_emoji)
             await request.add_reaction(yes_emoji)
+            start_time = datetime.now()
 
-            def reaction_check(reaction, user):
-                logging.info(f"SUGGESTIONTHING1.1.1 {id} {datetime.now()} "
-                             f"{image_dir} {filename} {requestor}")
-                return (user == self.bot.makusu
-                        and reaction.message.id == request.id
-                        and reaction.emoji in [no_emoji, yes_emoji])
-            res = None
-            logging.info(f"SUGGESTIONTHING1.2 {id} {datetime.now()} "
-                         f"{image_dir} {filename} {requestor}")
-            while not res:
+            async def get_approval(request_id):
+                while True:
+                    request = await self.bot.makusu.fetch_message(request_id)
+                    reactions_from_maku = [
+                        reaction.emoji for reaction in request.reactions
+                        if reaction.count == 2 and reaction.emoji in (
+                            no_emoji, yes_emoji)]
+                    if len(reactions_from_maku) > 1:
+                        await self.bot.makusu.send("You reacted twice...")
+                    elif len(reactions_from_maku) == 1:
+                        assert reactions_from_maku[0] in (yes_emoji, no_emoji)
+                        return reactions_from_maku[0] == yes_emoji
+                    await asyncio.sleep(0)
+
+            async def keep_updating_status():
                 try:
-                    res = await self.bot.wait_for(
-                        "reaction_add", check=reaction_check)
-                    logging.info(f"SUGGESTIONTHING1.4 {id} {datetime.now()} "
-                                 f"{image_dir} {filename} {requestor}")
-                except concurrent.futures._base.CancelledError:
-                    logging.info(f"SUGGESTIONTHING1.3 {id} {datetime.now()}"
-                                 f"{image_dir} {filename} {requestor}")
-                    return
-                except Exception as e:
-                    logging.info(f"SUGGESTIONTHING1.5 {id} {datetime.now()} "
-                                 f"{image_dir} {filename} {requestor}")
+                    while True:
+                        if status_message:
+                            time_delta = datetime.now() - start_time
+                            time_delta_str = str(time_delta).split(".")[0]
+                            await status_message.edit(content=(
+                                f"Waiting for response from Maku... "
+                                f"({time_delta_str} since submission)"))
+                        await asyncio.sleep(5)
+                except BaseException as e:
                     print(commandutil.get_formatted_traceback(e))
-                    await asyncio.sleep(1)
+
+            status_task = asyncio.create_task(keep_updating_status())
+            approved = await get_approval(request.id)
+            status_task.cancel()
             if await collection_has_image_bytes(image_collection, image_bytes):
-                await requestor.send(
+                response = (
                     f"The image {filename} appears already in the collection!")
-            elif res[0].emoji == yes_emoji:
+                await requestor.send(response)
+                if status_message:
+                    await status_message.edit(content=response)
+            elif approved:
                 image_dir.mkdir(parents=True, exist_ok=True)
                 new_filename = commandutil.get_nonconflicting_filename(
                     filename, image_dir)
@@ -153,20 +163,26 @@ class PictureAdder(discord.ext.commands.Cog):
                             image_dir / new_filename)
                 self.bot.get_cog("ReactionImages").add_pictures_dir(
                     image_collection)
-                await requestor.send(f"Your image {new_filename} "
-                                     "was approved!")
+                response = f"Your image {new_filename} was approved!"
+                await requestor.send(response)
+                if status_message:
+                    await status_message.edit(content=response)
+
             else:
-                await requestor.send(f"Your image {filename} "
-                                     "was not approved. "
-                                     "Feel free to ask Maku why ^_^")
+                response = (f"Your image {filename} was not approved. "
+                            "Feel free to ask Maku why ^_^")
+                await requestor.send(response)
+                if status_message:
+                    await status_message.edit(content=response)
             await request.delete()
-        except Exception as e:
-            logging.info(f"SUGGESTIONTHING2 {id} {datetime.now()} {image_dir} "
-                         f"{filename} {requestor}")
+        except concurrent.futures._base.CancelledError:
+            print(f"Cancelled error on {filename}")
+        except BaseException as e:
             print(commandutil.get_formatted_traceback(e))
-        finally:
-            logging.info(f"SUGGESTIONTHING3 {id} {datetime.now()} {image_dir} "
-                         f"{filename} {requestor}")
+            response = f"Something went wrong with {filename}, sorry!"
+            await requestor.send(response)
+            if status_message:
+                await status_message.edit(response)
 
     @commands.command(hidden=True, aliases=["aliasimage", "aliaspicture"])
     @commands.is_owner()
@@ -255,7 +271,7 @@ class PictureAdder(discord.ext.commands.Cog):
                 await status_message.edit(content="Sent to Maku for approval!")
                 image_suggestion_coros.append(self.image_suggestion(
                     PICTURES_DIR / image_collection, filename, ctx.author,
-                    image_bytes=data))
+                    image_bytes=data, status_message=status_message))
         all_suggestion_coros = asyncio.gather(*image_suggestion_coros,
                                               return_exceptions=True)
         try:
