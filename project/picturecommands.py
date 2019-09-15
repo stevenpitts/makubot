@@ -64,15 +64,16 @@ async def get_media_bytes_and_name(url, status_message=None):
             return data, filename
 
 
-async def convert_video(video_input, video_output):
+async def convert_video(video_input, video_output, log=False):
     cmds = ['ffmpeg', '-y', '-i', video_input, video_output]
     p = subprocess.Popen(cmds, stdout=subprocess.PIPE,
                          stderr=subprocess.PIPE)
     while p.poll() is None:
         await asyncio.sleep(0)
     output, err = p.communicate()
-    logging.info(f"ffmpeg output: {output}")
-    logging.info(f"ffmpeg err: {err}")
+    if log:
+        logging.info(f"ffmpeg output: {output}")
+        logging.info(f"ffmpeg err: {err}")
     if not os.path.isfile(video_output):
         raise FileNotFoundError(
             f"ffmpeg failed to convert {video_input} to {video_output}")
