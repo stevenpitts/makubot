@@ -2,8 +2,11 @@ import traceback
 import re
 from pathlib import Path
 import asteval
+import asyncio
 from io import StringIO
 import itertools
+import concurrent
+from datetime import datetime
 from discord.utils import escape_markdown
 
 
@@ -54,3 +57,21 @@ def aeval(to_evaluate, return_error=True) -> str:
         return f'{output_str}{result_str}'
     elif return_error:
         return 'No result'
+
+
+def readable_timedelta(old, new):
+    return str(new - old).split('.')[0]
+
+
+async def keep_updating_message_timedelta(message, message_format, delay=5):
+    try:
+        start_time = datetime.now()
+        while True:
+            timedelta_str = readable_timedelta(start_time, datetime.now())
+            message_formatted = message_format.format(timedelta_str)
+            await message.edit(content=message_formatted)
+            await asyncio.sleep(delay)
+    except concurrent.futures._base.CancelledError:
+        raise
+    except BaseException as e:
+        print(get_formatted_traceback(e))

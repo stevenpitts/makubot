@@ -10,7 +10,6 @@ import asyncio
 import shutil
 import concurrent
 import subprocess
-from datetime import datetime
 import youtube_dl
 import tempfile
 from . import commandutil
@@ -30,10 +29,13 @@ async def get_media_bytes_and_name(url, status_message=None):
             "outtmpl": f"{temp_dir}/%(title)s-%(id)s.%(ext)s"
             }
         with youtube_dl.YoutubeDL(ydl_options) as ydl:
-            if status_message:
-                await status_message.edit(content="Downloading...")
+            status_message_format = "Downloading... ({} elapsed for download)"
+            status_task = asyncio.create_task(
+                commandutil.keep_updating_message_timedelta(
+                    status_message, status_message_format))
             await asyncio.get_running_loop().run_in_executor(
                 None, ydl.extract_info, url)
+            status_task.cancel()
             files_in_dir = os.listdir(temp_dir)
             if len(files_in_dir) == 0:
                 raise youtube_dl.utils.DownloadError("No file found")
@@ -49,10 +51,14 @@ async def get_media_bytes_and_name(url, status_message=None):
             if filepath.endswith(".mkv"):
                 filepath += ".webm"
                 filename += ".webm"
-            if status_message:
-                await status_message.edit(content=(
-                    "Processing... (This can take a long time for videos)"))
+            status_message_format = ("Processing... (This can take a long "
+                                     "time for videos; {} elapsed "
+                                     "of processing)")
+            status_task = asyncio.create_task(
+                commandutil.keep_updating_message_timedelta(
+                    status_message, status_message_format))
             await convert_video(temp_filepath, filepath)
+            status_task.cancel()
             with open(filepath, "rb") as downloaded_file:
                 data = downloaded_file.read()
             return data, filename
@@ -119,7 +125,6 @@ class PictureAdder(discord.ext.commands.Cog):
             no_emoji, yes_emoji = "❌", "✅"
             await request.add_reaction(no_emoji)
             await request.add_reaction(yes_emoji)
-            start_time = datetime.now()
 
             async def get_approval(request_id):
                 while True:
@@ -135,20 +140,11 @@ class PictureAdder(discord.ext.commands.Cog):
                         return reactions_from_maku[0] == yes_emoji
                     await asyncio.sleep(0)
 
-            async def keep_updating_status():
-                try:
-                    while True:
-                        if status_message:
-                            time_delta = datetime.now() - start_time
-                            time_delta_str = str(time_delta).split(".")[0]
-                            await status_message.edit(content=(
-                                f"Waiting for response from Maku... "
-                                f"({time_delta_str} since submission)"))
-                        await asyncio.sleep(5)
-                except BaseException as e:
-                    print(commandutil.get_formatted_traceback(e))
-
-            status_task = asyncio.create_task(keep_updating_status())
+            status_message_format = (
+                "Waiting for response from Maku... ({} since submission)")
+            status_task = asyncio.create_task(
+                commandutil.keep_updating_message_timedelta(
+                    status_message, status_message_format))
             approved = await get_approval(request.id)
             status_task.cancel()
             if await collection_has_image_bytes(image_collection, image_bytes):
