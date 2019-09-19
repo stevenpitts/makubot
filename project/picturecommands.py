@@ -105,12 +105,16 @@ class PictureAdder(discord.ext.commands.Cog):
                 with open(self.temp_save_dir / filename, "wb") as f:
                     f.write(image_bytes)
             image_collection = image_dir.parts[-1]
-            proposal = (f"Add image {filename} to {image_collection}? "
-                        f"Requested by {requestor.name}"
-                        if image_dir.exists() else
-                        f"Add image {filename} to ***NEW*** "
-                        f"{image_collection}? "
-                        f"Requested by {requestor.name}")
+            if await collection_has_image_bytes(image_collection, image_bytes):
+                response = (
+                    f"The image {filename} appears already in the collection!")
+                await requestor.send(response)
+                if status_message:
+                    await status_message.edit(content=response)
+                return
+            new_addition = '' if image_dir.exists() else '***NEW*** '
+            proposal = (f"Add image {filename} to {new_addition}"
+                        f"{image_collection}? Requested by {requestor.name}")
             try:
                 request = await self.bot.makusu.send(
                     proposal, file=discord.File(self.temp_save_dir

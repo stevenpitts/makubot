@@ -2,6 +2,7 @@ import discord
 from discord.ext import commands
 import logging
 import codecs
+import aiohttp
 from datetime import datetime
 from pathlib import Path
 
@@ -58,6 +59,8 @@ class ServerLogging(discord.ext.commands.Cog):
 
     @commands.Cog.listener()
     async def on_message_edit(self, before, after):
+        if after.author.bot:
+            return
         if after.content == before.content:
             return
         guild_description = getattr(before.guild, "name", "DMs")
@@ -105,10 +108,16 @@ class ServerLogging(discord.ext.commands.Cog):
             for server in self.bot.guilds
             if server.get_member(after.id)])
         for log_to_channel in log_to_channels:
-            await log_to_channel.send(embed=embed)
+            try:
+                await log_to_channel.send(embed=embed)
+            except aiohttp.client_exceptions.ClientConnectorError:
+                await embed.set_image(None)
+                await log_to_channel.send(embed=embed)
 
     @commands.Cog.listener()
     async def on_message_delete(self, message):
+        if message.author.bot:
+            return
         guild_description = getattr(message.guild, "name", "DMs")
         attachment_files = []
         for attachment in message.attachments:

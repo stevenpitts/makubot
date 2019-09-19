@@ -59,19 +59,22 @@ def aeval(to_evaluate, return_error=True) -> str:
         return 'No result'
 
 
-def readable_timedelta(old, new):
+def readable_timedelta(old, new=None):
+    new = new or datetime.now()
     return str(new - old).split('.')[0]
 
 
-async def keep_updating_message_timedelta(message, message_format, delay=5):
+async def keep_updating_message_timedelta(message, message_format):
     try:
         start_time = datetime.now()
-        while True:
-            timedelta_str = readable_timedelta(start_time, datetime.now())
+        for shift in itertools.count():
+            timedelta_str = readable_timedelta(start_time)
             message_formatted = message_format.format(timedelta_str)
             await message.edit(content=message_formatted)
-            await asyncio.sleep(delay)
+            await asyncio.sleep(1 << shift)
     except concurrent.futures._base.CancelledError:
-        raise
+        return
     except BaseException as e:
+        await message.edit(
+            content=f"Something borked after {readable_timedelta(start_time)}")
         print(get_formatted_traceback(e))
