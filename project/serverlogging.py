@@ -72,10 +72,23 @@ class ServerLogging(discord.ext.commands.Cog):
                          f"{before.author.name} has been "
                          f"edited in {before.channel} of {guild_description}.")
             )
-        before_content = before.content[:1000].strip() or "[NOTHING]"
-        after_content = after.content[:1000].strip() or "[NOTHING]"
-        embed.add_field(name="Before", value=before_content)
-        embed.add_field(name="After", value=after_content)
+        if after.content != before.content:
+            before_content = before.content[:1000].strip() or "[NOTHING]"
+            after_content = after.content[:1000].strip() or "[NOTHING]"
+            embed.add_field(name="Before", value=before_content)
+            embed.add_field(name="After", value=after_content)
+        before_fields = [field for before_embed in before.embeds
+                         for field in before_embed.fields()]
+        after_fields = [field for after_embed in after.embeds
+                        for field in after_embed.fields()]
+        removed_fields = set(before_fields) - set(after_fields)
+        added_fields = set(after_fields) - set(before_fields)
+        for field in removed_fields:
+            embed.add_field(
+                name=f"Removed field ({field.name})", value=field.value)
+        for field in added_fields:
+            embed.add_field(
+                name=f"Added field ({field.name})", value=field.value)
         for log_to_channel in log_to_channels:
             await log_to_channel.send(embed=embed)
 
