@@ -127,7 +127,7 @@ class PictureAdder(discord.ext.commands.Cog):
                 if status_message:
                     await status_message.edit(content=response)
                 return
-            no_emoji, yes_emoji = "❌", "✅"
+            no_emoji, yes_emoji, thinking_emoji = "❌", "✅", "💬"
             await request.add_reaction(no_emoji)
             await request.add_reaction(yes_emoji)
 
@@ -152,6 +152,7 @@ class PictureAdder(discord.ext.commands.Cog):
                     status_message, status_message_format))
             approved = await get_approval(request.id)
             status_task.cancel()
+            await request.add_reaction(thinking_emoji)
             if await collection_has_image_bytes(image_collection, image_bytes):
                 response = (
                     f"The image {filename} appears already in the collection!")
