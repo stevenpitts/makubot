@@ -2,8 +2,9 @@ from . import makubot
 import sys
 import os
 from pathlib import Path
-import cProfile
-import pstats
+import asyncio
+import time
+import threading
 try:
     from . import tokens
 except ImportError:
@@ -14,6 +15,15 @@ except ImportError:
 SCRIPT_DIR = Path(__file__).parent
 PARENT_DIR = SCRIPT_DIR.parent
 DATA_DIR = PARENT_DIR / 'data'
+
+
+def profile_bot(bot):
+    while True:
+        time.sleep(1)
+        current_task = asyncio.current_task(loop=bot.loop)
+        if current_task:
+            print("Current task: ", current_task._repr_info())
+        # print("Current task: ", asyncio.current_task(loop=bot.loop))
 
 
 def main():
@@ -37,13 +47,12 @@ def main():
         raise ValueError('You must replace realToken in tokens.py '
                          'with your own token first.')
     token = tokens.testToken if 'test' in sys.argv else tokens.realToken
+    makubot_bot = makubot.MakuBot()
     if "profile" in sys.argv:
-        cProfile.run(f"makubot.MakuBot().run('{token}')",
-                     DATA_DIR / 'profile.txt')
-        p = pstats.Stats(str(DATA_DIR / 'profile.txt'))
-        p.sort_stats('cumtime').print_stats(r'[\/,\\]project')
-    else:
-        makubot.MakuBot().run(token)
+        profile_thread = threading.Thread(
+            target=profile_bot, args=[makubot_bot])
+        profile_thread.start()
+    makubot_bot.run(token)
 
 
 if __name__ == "__main__":

@@ -6,13 +6,14 @@ import sys
 import importlib
 from pathlib import Path
 from io import StringIO
-import datetime
 import json
 import logging
+from datetime import datetime
+import time
 from googleapiclient.discovery import build
 import httplib2
 import discord
-from discord.ext import commands
+from discord.ext import commands, tasks
 from discord.ext.commands.errors import (CommandError, CommandNotFound,
                                          CommandOnCooldown, NotOwner,
                                          MissingPermissions,
@@ -77,6 +78,9 @@ class MakuCommands(discord.ext.commands.Cog):
         with open(DATAFILE_PATH, 'r') as open_file:
             self.bot.shared['data'] = json.load(open_file)
 
+        self.last_delay_time = time.time()
+        self.test_delay.start()
+
     @commands.command(hidden=True, aliases=['status'])
     @commands.is_owner()
     async def getstatus(self, ctx):
@@ -130,9 +134,17 @@ class MakuCommands(discord.ext.commands.Cog):
         of the Smithsonian Institution in Washington, D.C.
         due to its cultural impact.
         '''
-        time_passed = datetime.datetime.utcnow() - ctx.message.created_at
+        time_passed = datetime.utcnow() - ctx.message.created_at
         ms_passed = time_passed.microseconds/1000
         await ctx.send(f'pong! It took me {ms_passed}ms to get the ping.')
+
+    @tasks.loop(seconds=0)
+    async def test_delay(self):
+        new_delay_time = time.time()
+        delta_time = new_delay_time-self.last_delay_time
+        if delta_time > 0.1:
+            logging.warning(f"{datetime.now()}: Time delay: {delta_time}")
+        self.last_delay_time = new_delay_time
 
     @commands.command(aliases=['are you free',
                                'areyoufree?',
@@ -195,6 +207,7 @@ class MakuCommands(discord.ext.commands.Cog):
         if self.bot.shared['data']:
             with open(DATAFILE_PATH, 'w') as open_file:
                 json.dump(self.bot.shared['data'], open_file)
+        self.test_delay.stop()
 
     @commands.command(aliases=['yt'])
     async def youtube(self, ctx, *, search_term: str):

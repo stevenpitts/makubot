@@ -78,9 +78,9 @@ class ServerLogging(discord.ext.commands.Cog):
             embed.add_field(name="Before", value=before_content)
             embed.add_field(name="After", value=after_content)
         before_fields = [field for before_embed in before.embeds
-                         for field in before_embed.fields()]
+                         for field in before_embed.fields]
         after_fields = [field for after_embed in after.embeds
-                        for field in after_embed.fields()]
+                        for field in after_embed.fields]
         removed_fields = set(before_fields) - set(after_fields)
         added_fields = set(after_fields) - set(before_fields)
         for field in removed_fields:
