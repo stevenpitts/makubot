@@ -21,47 +21,57 @@ PICTURES_DIR = DATA_DIR / 'pictures'
 
 
 async def get_media_bytes_and_name(url, status_message=None):
-    with tempfile.TemporaryDirectory() as temp_dir:
-        ydl_options = {
-            # 'logger': logging,
-            'quiet': True,
-            'no_warnings': True,
-            "outtmpl": f"{temp_dir}/%(title)s-%(id)s.%(ext)s"
-            }
-        with youtube_dl.YoutubeDL(ydl_options) as ydl:
-            status_message_format = "Downloading... ({} elapsed for download)"
-            status_task = asyncio.create_task(
-                commandutil.keep_updating_message_timedelta(
-                    status_message, status_message_format))
-            await asyncio.get_running_loop().run_in_executor(
-                None, ydl.extract_info, url)
+    status_task = None
+    try:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            ydl_options = {
+                # 'logger': logging,
+                'quiet': True,
+                'no_warnings': True,
+                "outtmpl": f"{temp_dir}/%(title)s-%(id)s.%(ext)s"
+                }
+            with youtube_dl.YoutubeDL(ydl_options) as ydl:
+                status_message_format = (
+                    "Downloading... ({} elapsed for download)")
+                status_task = asyncio.create_task(
+                    commandutil.keep_updating_message_timedelta(
+                        status_message, status_message_format))
+                await asyncio.get_running_loop().run_in_executor(
+                    None, ydl.extract_info, url)
+                status_task.cancel()
+                files_in_dir = os.listdir(temp_dir)
+                if len(files_in_dir) == 0:
+                    raise youtube_dl.utils.DownloadError("No file found")
+                elif len(files_in_dir) > 1:
+                    logging.warning(
+                        f"youtube_dl got more than one file: {files_in_dir}")
+                    raise youtube_dl.utils.DownloadError(
+                        "Multiple files received")
+                filename = files_in_dir[0]
+                filepath = f"{temp_dir}/{filename}"
+                # Fix bad extension
+                temp_filepath = f"{filepath}2"
+                os.rename(filepath, temp_filepath)
+                if filepath.endswith(".mkv"):
+                    filepath += ".webm"
+                    filename += ".webm"
+                status_message_format = ("Processing... (This can take a long "
+                                         "time for videos; {} elapsed "
+                                         "of processing)")
+                status_task = asyncio.create_task(
+                    commandutil.keep_updating_message_timedelta(
+                        status_message, status_message_format))
+                await convert_video(temp_filepath, filepath)
+                status_task.cancel()
+                with open(filepath, "rb") as downloaded_file:
+                    data = downloaded_file.read()
+                return data, filename
+    except BaseException:
+        try:
             status_task.cancel()
-            files_in_dir = os.listdir(temp_dir)
-            if len(files_in_dir) == 0:
-                raise youtube_dl.utils.DownloadError("No file found")
-            elif len(files_in_dir) > 1:
-                logging.warning(
-                    f"youtube_dl got more than one file: {files_in_dir}")
-                raise youtube_dl.utils.DownloadError("Multiple files received")
-            filename = files_in_dir[0]
-            filepath = f"{temp_dir}/{filename}"
-            # Fix bad extension
-            temp_filepath = f"{filepath}2"
-            os.rename(filepath, temp_filepath)
-            if filepath.endswith(".mkv"):
-                filepath += ".webm"
-                filename += ".webm"
-            status_message_format = ("Processing... (This can take a long "
-                                     "time for videos; {} elapsed "
-                                     "of processing)")
-            status_task = asyncio.create_task(
-                commandutil.keep_updating_message_timedelta(
-                    status_message, status_message_format))
-            await convert_video(temp_filepath, filepath)
-            status_task.cancel()
-            with open(filepath, "rb") as downloaded_file:
-                data = downloaded_file.read()
-            return data, filename
+        except BaseException:
+            pass
+        raise
 
 
 async def convert_video(video_input, video_output, log=False):
