@@ -186,7 +186,7 @@ class MakuCommands(discord.ext.commands.Cog):
             await ctx.send(f'{self.bot.makusu.mention} '
                            'HELP I\'M BEING BULLIED ;a;')
         else:
-            await ctx.send('M-makusu? W-where are you? Help!!!!')
+            await ctx.send('M-maku? W-where are you? Help!!!!')
 
     @commands.command(aliases=['hug me'])
     async def hugme(self, ctx):
