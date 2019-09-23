@@ -128,6 +128,11 @@ class ServerLogging(discord.ext.commands.Cog):
                 await log_to_channel.send(embed=embed)
 
     @commands.Cog.listener()
+    async def on_bulk_message_delete(self, messages):
+        for message in messages:
+            await self.on_message_delete(message)
+
+    @commands.Cog.listener()
     async def on_message_delete(self, message):
         if message.author.bot:
             return
