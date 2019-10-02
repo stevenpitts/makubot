@@ -124,7 +124,7 @@ class ServerLogging(discord.ext.commands.Cog):
             try:
                 await log_to_channel.send(embed=embed)
             except aiohttp.client_exceptions.ClientConnectorError:
-                await embed.set_image(url=(
+                embed.set_image(url=(
                     r"https://t7.rbxcdn.com/"
                     r"b108964694f35a0db26262e4ba1d3d86"))
                 await log_to_channel.send(embed=embed)
