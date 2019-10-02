@@ -189,9 +189,9 @@ class PictureAdder(discord.ext.commands.Cog):
             else:
                 response = (f"Your image {filename} was not approved. "
                             "Feel free to ask Maku why ^_^")
-                await requestor.send(response)
-                if status_message:
-                    await status_message.edit(content=response)
+                await status_message.edit(content=response)
+                if status_message.channel != requestor.dm_channel:
+                    await requestor.send(response)
         except concurrent.futures._base.CancelledError:
             print(f"Cancelled error on {filename}")
         except BaseException as e:
