@@ -180,7 +180,11 @@ class PictureAdder(discord.ext.commands.Cog):
                 response = f"Your image {new_filename} was approved!"
                 await requestor.send(response)
                 if status_message:
-                    await status_message.edit(content=response)
+                    try:
+                        await status_message.edit(content=response)
+                    except discord.errors.NotFound:
+                        print(f"{new_filename}, {request.id}, "
+                              f"{requestor.name}")
 
             else:
                 response = (f"Your image {filename} was not approved. "
