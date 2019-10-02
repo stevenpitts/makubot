@@ -447,6 +447,8 @@ class MakuCommands(discord.ext.commands.Cog):
     @commands.Cog.listener()
     async def on_message(self, message: discord.Message):
         if message.author != self.bot.user:
+            if f"hug {self.bot.mention}" in message.content.lower():
+                await message.channel.send("!!! *hug*")
             if (message.guild
                     and (message.guild.id
                          in self.bot.shared['data']['free_guilds'])
