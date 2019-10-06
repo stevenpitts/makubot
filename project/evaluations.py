@@ -29,9 +29,16 @@ class Evaluations(discord.ext.commands.Cog):
                    "print(result or 'No Result')")
         eval_path = r"http://0.0.0.0:8060/eval"
         eval_data = {"input": to_eval}
-        async with aiohttp.ClientSession() as session:
-            async with session.post(eval_path, json=eval_data) as resp:
-                result_text = await resp.text()
+        try:
+            async with aiohttp.ClientSession() as session:
+                async with session.post(eval_path,
+                                        json=eval_data) as resp:
+                    result_text = await resp.text()
+        except aiohttp.client_exceptions.ClientConnectorError:
+            await ctx.send(
+                "The eval function isn't currently running, sorry!")
+            print("Failed eval due to not running")
+            return
         result_dict = json.loads(result_text)
         if result_dict.get("stdout", ""):
             await ctx.send(f"```{result_dict['stdout']}```")
