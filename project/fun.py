@@ -105,7 +105,7 @@ class Fun(discord.ext.commands.Cog):
         shared_emojis = set(text_emojis) & set(present_emojis)
         if shared_emojis:
             await ctx.send("Cannot add, some used emojis are already present "
-                           f"in the message: {''.join(shared_emojis)}")
+                           f"in the message: {' '.join(shared_emojis)}")
             return
         for emoji in text_emojis:
             await message.add_reaction(emoji)

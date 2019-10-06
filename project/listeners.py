@@ -7,7 +7,8 @@ from discord.ext.commands.errors import (CommandError, CommandNotFound,
                                          MissingPermissions,
                                          BotMissingPermissions,
                                          BadUnionArgument,
-                                         MissingRequiredArgument)
+                                         MissingRequiredArgument,
+                                         BadArgument)
 from . import commandutil
 
 SCRIPT_DIR = Path(__file__).parent
@@ -50,7 +51,8 @@ class Listeners(discord.ext.commands.Cog):
         elif isinstance(caught_exception, (MissingPermissions,
                                            BotMissingPermissions,
                                            BadUnionArgument,
-                                           MissingRequiredArgument)):
+                                           MissingRequiredArgument,
+                                           BadArgument)):
             await ctx.send(str(caught_exception))
         else:
             print(commandutil.get_formatted_traceback(caught_exception))
