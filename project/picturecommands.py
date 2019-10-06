@@ -303,7 +303,8 @@ class ReactionImages(discord.ext.commands.Cog):
     async def send_image_func(ctx):
         true_path = PICTURES_DIR / ctx.command.name
         file_to_send = true_path / random.choice(os.listdir(true_path))
-        await ctx.channel.send(file=discord.File(file_to_send))
+        async with ctx.typing():
+            await ctx.channel.send(file=discord.File(file_to_send))
 
     def __init__(self, bot):
         self.bot = bot
