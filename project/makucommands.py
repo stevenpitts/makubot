@@ -409,11 +409,10 @@ class MakuCommands(discord.ext.commands.Cog):
                                caught_exception: CommandError):
         if isinstance(caught_exception, CommandNotFound):
             if self.bot.user.mention in ctx.message.content:
-                to_asteval = ctx.message.content.replace(
+                to_eval = ctx.message.content.replace(
                     self.bot.user.mention, '').strip()
-                astevald = commandutil.aeval(to_asteval, return_error=False)
-                if astevald:
-                    await ctx.send(astevald)
+                await self.bot.get_cog("Evaluations").eval_and_respond(
+                    ctx, to_eval, force_reply=False)
         elif isinstance(caught_exception, NotOwner):
             await ctx.send('Sorry, only Maku can use that command :(')
         elif isinstance(caught_exception, CommandOnCooldown):

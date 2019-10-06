@@ -15,15 +15,7 @@ class Evaluations(discord.ext.commands.Cog):
     def __init__(self, bot):
         self.bot = bot
 
-    @commands.command(aliases=["eval"])
-    async def evaluate(self, ctx, *, to_eval: str):
-        r'''Evals a statement. Feel free to inject malicious code \o/
-        Example:
-            @makubot eval 3+3
-            >>>6
-            @makubot eval self.__import__(
-                'EZ_sql_inject_api').destroy_maku_computer_operating_system()
-            >>>ERROR ERROR MAJOR ERROR SELF DESTRUCT SEQUENCE INITIALIZE'''
+    async def eval_and_respond(self, ctx, to_eval: str, force_reply=False):
         to_eval = to_eval.strip().strip('`').strip()
         to_eval = (f"result=eval(\"\"\"\n{to_eval}\n\"\"\"); "
                    "print(result or 'No Result')")
@@ -42,13 +34,24 @@ class Evaluations(discord.ext.commands.Cog):
         result_dict = json.loads(result_text)
         if result_dict.get("stdout", ""):
             await ctx.send(f"```{result_dict['stdout']}```")
-        else:
+        elif force_reply:
             returncode = result_dict.get("returncode", None)
             if returncode in (137, 139):
                 await ctx.send("That looks way too difficult NGL")
             else:
                 print("Eval didn't have stdout: ", to_eval, result_dict)
                 await ctx.send("Something went wrong, sorry!")
+
+    @commands.command(aliases=["eval"])
+    async def evaluate(self, ctx, *, to_eval: str):
+        r'''Evals a statement. Feel free to inject malicious code \o/
+        Example:
+            @makubot eval 3+3
+            >>>6
+            @makubot eval self.__import__(
+                'EZ_sql_inject_api').destroy_maku_computer_operating_system()
+            >>>ERROR ERROR MAJOR ERROR SELF DESTRUCT SEQUENCE INITIALIZE'''
+        await self.eval_and_respond(ctx, to_eval, force_reply=True)
 
 
 def setup(bot):
