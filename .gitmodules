@@ -1,0 +1,3 @@
+[submodule "snekbox"]
+	path = snekbox
+	url = https://github.com/python-discord/snekbox.git
