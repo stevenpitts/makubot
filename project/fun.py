@@ -4,6 +4,8 @@ from discord.errors import (NotFound)
 import logging
 from pathlib import Path
 import random
+import asyncio
+import itertools
 
 SCRIPT_DIR = Path(__file__).parent
 PARENT_DIR = SCRIPT_DIR.parent
@@ -58,13 +60,18 @@ class Fun(discord.ext.commands.Cog):
     @commands.bot_has_permissions(add_reactions=True)
     async def emojispam(self, ctx):
         '''Prepare to be spammed by the greatest emojis you've ever seen'''
+        max_reacts = 20
         emojis_random_order = iter(sorted(self.bot.emojis,
                                    key=lambda *args: random.random()))
-        for emoji_to_add in emojis_random_order:
-            try:
-                await ctx.message.add_reaction(emoji_to_add)
-            except discord.errors.Forbidden:
-                return
+        emojis_to_add = itertools.islice(emojis_random_order, max_reacts)
+        emoji_futures = [ctx.message.add_reaction(emoji_to_add)
+                         for emoji_to_add in emojis_to_add]
+        all_emoji_futures = asyncio.gather(*emoji_futures,
+                                           return_exceptions=True)
+        try:
+            await all_emoji_futures
+        except discord.errors.Forbidden:
+            return
 
     @commands.command(aliases=["english"], hidden=True)
     async def translate(self, ctx, *, text: str):
