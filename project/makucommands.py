@@ -101,7 +101,8 @@ class MakuCommands(discord.ext.commands.Cog):
                           'picturecommands',
                           'serverlogging',
                           'makucommands',
-                          'movement']:
+                          'movement',
+                          'evaluations']:
             try:
                 ctx.bot.reload_extension(f"project.{to_reload}")
             except Exception as e:
@@ -231,20 +232,6 @@ class MakuCommands(discord.ext.commands.Cog):
         """Translate some text into English!
         Idea stolen from KitchenSink."""
         await ctx.send("Not implemented :<")
-
-    @commands.command(aliases=["eval"])
-    async def evaluate(self, ctx, *, to_eval: str):
-        r'''Evals a statement. Feel free to inject malicious code \o/
-        Example:
-            @makubot eval 3+3
-            >>>6
-            @makubot eval self.__import__(
-                'EZ_sql_inject_api').destroy_maku_computer_operating_system()
-            >>>ERROR ERROR MAJOR ERROR SELF DESTRUCT SEQUENCE INITIALIZE'''
-        try:
-            await ctx.send(commandutil.aeval(to_eval))
-        except AttributeError:
-            logging.error(f"Couldn't get a match on {ctx.message.content}.")
 
     @commands.command()
     async def fact(self, ctx):
@@ -439,6 +426,7 @@ class MakuCommands(discord.ext.commands.Cog):
             await ctx.send(str(caught_exception))
         else:
             print(commandutil.get_formatted_traceback(caught_exception))
+            await ctx.send("Something went wrong, sorry!")
 
     @commands.Cog.listener()
     async def on_error(self, ctx, caught_exception):

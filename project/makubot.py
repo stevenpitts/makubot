@@ -33,7 +33,8 @@ class MakuBot(commands.Bot):
                           'reminders',
                           'picturecommands',
                           'serverlogging',
-                          'movement'
+                          'movement',
+                          'evaluations'
                           ]:
             self.load_extension(f'project.{extension}')
 
