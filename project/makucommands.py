@@ -15,7 +15,6 @@ import httplib2
 import discord
 from discord.ext import commands, tasks
 from discord.errors import (NotFound)
-import wikipedia
 from . import tokens
 from . import commandutil
 from discord.utils import escape_markdown
@@ -97,7 +96,8 @@ class MakuCommands(discord.ext.commands.Cog):
                           'makucommands',
                           'movement',
                           'evaluations',
-                          'listeners'
+                          'listeners',
+                          'wikisearch'
                           ]:
             try:
                 ctx.bot.reload_extension(f"project.{to_reload}")
@@ -299,21 +299,6 @@ class MakuCommands(discord.ext.commands.Cog):
             await ctx.send("Ah, I couldn't find any text file, sorry!")
         else:
             await displaytxt(out_text)
-
-    @commands.command()
-    async def whatis(self, ctx, *, query):
-        '''Searches Wikipedia to see what something is! Give it a try!'''
-        try:
-            result = wikipedia.page(wikipedia.search(query)[0])
-            summary = ''.join(result.summary)[:1024]
-        except wikipedia.exceptions.DisambiguationError:
-            await ctx.send("Sorry, please be more specific than that ;~;")
-        except IndexError:
-            await ctx.send("Hmm, I can't find anything matching that...")
-        else:
-            embed = discord.Embed(title="Results", description=query)
-            embed.add_field(name=result.url, value=summary)
-            await ctx.send(embed=embed)
 
     @commands.command(hidden=True, aliases=['sayto', ])
     @commands.is_owner()

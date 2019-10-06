@@ -34,7 +34,9 @@ class MakuBot(commands.Bot):
                           'picturecommands',
                           'serverlogging',
                           'movement',
-                          'evaluations'
+                          'evaluations',
+                          'listeners',
+                          'wikisearch'
                           ]:
             self.load_extension(f'project.{extension}')
 
