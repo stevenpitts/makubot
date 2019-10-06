@@ -35,7 +35,8 @@ class MakuBot(commands.Bot):
                                              'movement',
                                              'evaluations',
                                              'listeners',
-                                             'wikisearch'
+                                             'wikisearch',
+                                             'ytsearch'
                                              ]
         self.loop.set_debug(True)
         for extension in self.shared['default_extensions']:

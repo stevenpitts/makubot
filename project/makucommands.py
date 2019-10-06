@@ -10,12 +10,9 @@ import json
 import logging
 from datetime import datetime
 import time
-from googleapiclient.discovery import build
-import httplib2
 import discord
 from discord.ext import commands, tasks
 from discord.errors import (NotFound)
-from . import tokens
 from . import commandutil
 from discord.utils import escape_markdown
 
@@ -45,14 +42,6 @@ Expiration dates are just suggestions
 Cake am lie
 Oh dang is that a gun -Uncle Ben
 With great power comes great responsibility -Uncle Ben'''.split('\n')
-
-
-try:
-    YOUTUBE_SEARCH = tokens.googleAPI and build('youtube', 'v3',
-                                                developerKey=tokens.googleAPI,
-                                                ).search()
-except httplib2.ServerNotFoundError:
-    YOUTUBE_SEARCH = None
 
 
 class MakuCommands(discord.ext.commands.Cog):
@@ -197,23 +186,6 @@ class MakuCommands(discord.ext.commands.Cog):
             with open(DATAFILE_PATH, 'w') as open_file:
                 json.dump(self.bot.shared['data'], open_file)
         self.test_delay.stop()
-
-    @commands.command(aliases=['yt'])
-    async def youtube(self, ctx, *, search_term: str):
-        '''Post a YouTube video based on a search phrase!
-        Idea stolen from KitchenSink'''
-        if YOUTUBE_SEARCH is None:
-            await ctx.send('Sorry, I can\'t connect to Google API!')
-            return
-        search_response = YOUTUBE_SEARCH.list(q=search_term,
-                                              part='id',
-                                              maxResults=10).execute()
-        search_results = (search_result['id']['videoId']
-                          for search_result in search_response.get('items', [])
-                          if search_result['id']['kind'] == 'youtube#video')
-        search_result = next(search_results, None)
-        await ctx.send(f'https://www.youtube.com/watch?v={search_result}'
-                       if search_result else 'Sowwy, I can\'t find it :(')
 
     @commands.command(aliases=["english"], hidden=True)
     async def translate(self, ctx, *, text: str):
