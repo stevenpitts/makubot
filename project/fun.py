@@ -93,7 +93,6 @@ class Fun(discord.ext.commands.Cog):
     @commands.is_owner()
     async def reactionspeak(self, ctx, message: discord.Message, *, text: str):
         """Adds an emoji reaction to a message!"""
-        # channel = self.bot.get_channel(int(channel_id))
         text = text.lower()
         if not text.isalpha():
             await ctx.send("I can only add letters :<")
@@ -101,14 +100,6 @@ class Fun(discord.ext.commands.Cog):
         elif len(set(text)) < len(text):
             await ctx.send("I can't do duplicate letters :<")
             return
-        # elif channel is None:
-        #     await ctx.send("That channel is invalid")
-        #     return
-        # try:
-        #     message = await channel.fetch_message(int(message_id))
-        # except NotFound:
-        #     await ctx.send("That message is invalid")
-        #     return
         text_emojis = [chr(ord('🇦')+ord(letter)-ord('a')) for letter in text]
         present_emojis = [reaction.emoji for reaction in message.reactions]
         shared_emojis = set(text_emojis) & set(present_emojis)
