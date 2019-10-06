@@ -28,16 +28,17 @@ class MakuBot(commands.Bot):
         self.shared = {}
         self.temp_dir_pointer = tempfile.TemporaryDirectory()
         self.shared['temp_dir'] = Path(self.temp_dir_pointer.name)
+        self.shared['default_extensions'] = ['makucommands',
+                                             'reminders',
+                                             'picturecommands',
+                                             'serverlogging',
+                                             'movement',
+                                             'evaluations',
+                                             'listeners',
+                                             'wikisearch'
+                                             ]
         self.loop.set_debug(True)
-        for extension in ['makucommands',
-                          'reminders',
-                          'picturecommands',
-                          'serverlogging',
-                          'movement',
-                          'evaluations',
-                          'listeners',
-                          'wikisearch'
-                          ]:
+        for extension in self.shared['default_extensions']:
             self.load_extension(f'project.{extension}')
 
     async def on_ready(self):

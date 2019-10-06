@@ -90,15 +90,7 @@ class MakuCommands(discord.ext.commands.Cog):
         logging.info('---Reloading makucommands and commandutil---')
         importlib.reload(commandutil)
         reload_response = ''
-        for to_reload in ['reminders',
-                          'picturecommands',
-                          'serverlogging',
-                          'makucommands',
-                          'movement',
-                          'evaluations',
-                          'listeners',
-                          'wikisearch'
-                          ]:
+        for to_reload in self.bot.shared['default_extensions']:
             try:
                 ctx.bot.reload_extension(f"project.{to_reload}")
             except Exception as e:
