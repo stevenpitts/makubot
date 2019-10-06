@@ -17,6 +17,8 @@ DATA_DIR = PARENT_DIR / 'data'
 class Debugging(discord.ext.commands.Cog):
     def __init__(self, bot):
         self.bot = bot
+        self.last_delay_time = time.time()
+        self.test_delay.start()
 
     @commands.command(hidden=True)
     @commands.is_owner()
@@ -105,6 +107,9 @@ class Debugging(discord.ext.commands.Cog):
         current_servers_string = 'Current servers: {}'.format(
             {guild.name: guild.id for guild in self.bot.guilds})
         await self.bot.makusu.send(f"```{current_servers_string}```")
+
+    def cog_unload(self):
+        self.test_delay.stop()
 
 
 def setup(bot):
