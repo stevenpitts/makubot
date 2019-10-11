@@ -243,7 +243,7 @@ class PictureAdder(discord.ext.commands.Cog):
         """Requests an image be added.
         mb.addimage nao http://static.zerochan.net/Tomori.Nao.full.1901643.jpg
         Then, it'll be sent to maku for approval!"""
-        image_collection = image_collection.lower()
+        image_collection = image_collection.strip().lower().replace(' ', '_')
         if not image_collection.isalnum():
             await ctx.send("Please only include letters and numbers.")
             return
