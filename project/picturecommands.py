@@ -276,9 +276,11 @@ class PictureAdder(discord.ext.commands.Cog):
                    aiohttp.client_exceptions.InvalidURL,
                    discord.errors.HTTPException,
                    FileNotFoundError) as e:
-                await status_message.edit(content="I can't download that ;a;")
                 traceback = commandutil.get_formatted_traceback(e)
                 logging.warning(f"Couldn't download image: {traceback}")
+                await asyncio.sleep(1)  # TODO fix race condition, added to
+                # counter status message update from separate thread
+                await status_message.edit(content="I can't download that ;a;")
             except concurrent.futures._base.CancelledError:
                 await status_message.edit(
                     content="Sorry, the download messed up; please try again!")
