@@ -192,7 +192,8 @@ class PictureAdder(discord.ext.commands.Cog):
                 await status_message.edit(content=response)
                 if status_message.channel != requestor.dm_channel:
                     await requestor.send(response)
-        except concurrent.futures._base.CancelledError:
+        except (concurrent.futures._base.CancelledError,
+                asyncio.exceptions.CancelledError):
             print(f"Cancelled error on {filename}")
         except BaseException as e:
             print(commandutil.get_formatted_traceback(e))
@@ -281,7 +282,8 @@ class PictureAdder(discord.ext.commands.Cog):
                 await asyncio.sleep(1)  # TODO fix race condition, added to
                 # counter status message update from separate thread
                 await status_message.edit(content="I can't download that ;a;")
-            except concurrent.futures._base.CancelledError:
+            except (concurrent.futures._base.CancelledError,
+                    asyncio.exceptions.CancelledError):
                 await status_message.edit(
                     content="Sorry, the download messed up; please try again!")
                 return

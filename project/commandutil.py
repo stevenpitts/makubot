@@ -72,7 +72,8 @@ async def keep_updating_message_timedelta(message, message_format):
             message_formatted = message_format.format(timedelta_str)
             await message.edit(content=message_formatted)
             await asyncio.sleep(1 << shift)
-    except concurrent.futures._base.CancelledError:
+    except (concurrent.futures._base.CancelledError,
+            asyncio.exceptions.CancelledError):
         return
     except BaseException as e:
         await message.edit(

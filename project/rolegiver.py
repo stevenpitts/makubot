@@ -49,7 +49,8 @@ class RoleGiver(discord.ext.commands.Cog):
                 self.update_rolegiver_message(*rolegiver_ids)
                 for rolegiver_ids in self.bot.shared["data"]["rolegivers"]]
             await asyncio.gather(*rolegiver_tasks, return_exceptions=True)
-        except concurrent.futures._base.CancelledError:
+        except (concurrent.futures._base.CancelledError,
+                asyncio.exceptions.CancelledError):
             return
         except Exception as e:
             print(commandutil.get_formatted_traceback(e))
