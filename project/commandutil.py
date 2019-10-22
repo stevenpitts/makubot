@@ -1,13 +1,10 @@
 import traceback
 import re
 from pathlib import Path
-import asteval
 import asyncio
-from io import StringIO
 import itertools
 import concurrent
 from datetime import datetime
-from discord.utils import escape_markdown
 
 
 def get_formatted_traceback(e):
@@ -35,28 +32,6 @@ def get_nonconflicting_filename(candidate_filename: str, directory: Path):
         if not (directory / candidate_filename).is_file():
             return candidate_filename
     raise AssertionError("Shouldn't ever get here")
-
-
-def aeval(to_evaluate, return_error=True) -> str:
-    is_dangerous_input = (any([char.isalpha() and char not in 'eE'
-                               for char in to_evaluate])
-                          or "**" in to_evaluate
-                          or "=" in to_evaluate)
-    if is_dangerous_input:
-        return "Sorry, that looks dangerous; please use me for simple math!"
-    temp_string_io = StringIO()
-    aeval_interpreter = asteval.Interpreter(writer=temp_string_io,
-                                            err_writer=temp_string_io)
-    result = aeval_interpreter(to_evaluate)
-    output = temp_string_io.getvalue()
-    output = output and escape_markdown(str(output))
-    result = result and escape_markdown(str(result))
-    if result or output:
-        output_str = f'```{output}```\n' if output else ''
-        result_str = f'```Result: {result}```' if result else 'No Result.'
-        return f'{output_str}{result_str}'
-    elif return_error:
-        return 'No result'
 
 
 def readable_timedelta(old, new=None):
