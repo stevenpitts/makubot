@@ -23,7 +23,6 @@ def profile_bot(bot):
         current_task = asyncio.current_task(loop=bot.loop)
         if current_task:
             print("Current task: ", current_task._repr_info())
-        # print("Current task: ", asyncio.current_task(loop=bot.loop))
 
 
 def main():
