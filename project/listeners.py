@@ -65,6 +65,7 @@ class Listeners(discord.ext.commands.Cog):
     async def on_message(self, message: discord.Message):
         if message.author.bot or not message.guild:
             return
+        is_free = message.guild.id in self.bot.shared['data']['free_guilds']
         if ("+hug" in message.content.lower()
                 and str(self.bot.user.id) in message.content):
             hug_responses = (
@@ -75,17 +76,15 @@ class Listeners(discord.ext.commands.Cog):
                 "*Hug u bak*",
                 "*Hugs you!!*")
             await message.channel.send(random.choice(hug_responses))
-        if ((message.guild.id in self.bot.shared['data']['free_guilds'])
-                and message.mention_everyone):
-            await message.channel.send(message.author.mention+' grr')
-        if ((message.guild.id in self.bot.shared['data']['free_guilds'])
-                and 'vore' in message.content.split()
-                and random.random() > 0.8):
-            await message.pin()
-        if (message.guild.id in self.bot.shared['data']['free_guilds']
-                or self.bot.user in message.mentions):
+        if is_free or self.bot.user in message.mentions:
             new_activity = discord.Game(name=message.author.name)
             await self.bot.change_presence(activity=new_activity)
+        if not is_free:
+            return
+        if message.mention_everyone:
+            await message.channel.send(message.author.mention+' grr')
+        if 'vore' in message.content.split() and random.random() > 0.8:
+            await message.pin()
 
 
 def setup(bot):
