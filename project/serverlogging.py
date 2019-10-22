@@ -5,6 +5,7 @@ import codecs
 import aiohttp
 from datetime import datetime
 from pathlib import Path
+import asyncio
 
 SCRIPT_DIR = Path(__file__).parent
 PARENT_DIR = SCRIPT_DIR.parent
@@ -131,8 +132,7 @@ class ServerLogging(discord.ext.commands.Cog):
 
     @commands.Cog.listener()
     async def on_bulk_message_delete(self, messages):
-        for message in messages:
-            await self.on_message_delete(message)
+        asyncio.gather(*[self.on_message_delete(msg) for msg in messages])
 
     @commands.Cog.listener()
     async def on_message_delete(self, message):
