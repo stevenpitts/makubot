@@ -63,35 +63,29 @@ class Listeners(discord.ext.commands.Cog):
 
     @commands.Cog.listener()
     async def on_message(self, message: discord.Message):
-        if message.author != self.bot.user:
-            if ("+hug" in message.content.lower()
-                    and str(self.bot.user.id) in message.content):
-                hug_responses = (
-                    "!!! *hug*",
-                    "!!! *hug u*",
-                    "*Hugs*!",
-                    "Awwh!!! <333",
-                    "*Hug u bak*",
-                    "*Hugs you!!*")
-                await message.channel.send(random.choice(hug_responses))
-            if (message.guild
-                    and (message.guild.id
-                         in self.bot.shared['data']['free_guilds'])
-                    and message.mention_everyone):
-                await message.channel.send(message.author.mention+' grr')
-            if (message.guild
-                    and (message.guild.id
-                         in self.bot.shared['data']['free_guilds'])
-                    and 'vore' in message.content.split()
-                    and random.random() > 0.8):
-                await message.pin()
-            if (not message.author.bot
-                and ((message.guild and self.bot.user in message.mentions)
-                     or (message.guild
-                         and (message.guild.id
-                              in self.bot.shared['data']['free_guilds'])))):
-                new_activity = discord.Game(name=message.author.name)
-                await self.bot.change_presence(activity=new_activity)
+        if message.author.bot or not message.guild:
+            return
+        if ("+hug" in message.content.lower()
+                and str(self.bot.user.id) in message.content):
+            hug_responses = (
+                "!!! *hug*",
+                "!!! *hug u*",
+                "*Hugs*!",
+                "Awwh!!! <333",
+                "*Hug u bak*",
+                "*Hugs you!!*")
+            await message.channel.send(random.choice(hug_responses))
+        if ((message.guild.id in self.bot.shared['data']['free_guilds'])
+                and message.mention_everyone):
+            await message.channel.send(message.author.mention+' grr')
+        if ((message.guild.id in self.bot.shared['data']['free_guilds'])
+                and 'vore' in message.content.split()
+                and random.random() > 0.8):
+            await message.pin()
+        if (message.guild.id in self.bot.shared['data']['free_guilds']
+                or self.bot.user in message.mentions):
+            new_activity = discord.Game(name=message.author.name)
+            await self.bot.change_presence(activity=new_activity)
 
 
 def setup(bot):
