@@ -22,7 +22,13 @@ def profile_bot(bot):
         time.sleep(1)
         current_task = asyncio.current_task(loop=bot.loop)
         if current_task:
-            print("Current task: ", current_task._repr_info())
+            print("Current task: ")
+            current_task.print_stack()
+            print("\n")
+        print("All tasks: ")
+        for task in asyncio.all_tasks(loop=bot.loop):
+            task.print_stack(limit=3)
+        print("\n\n\n\n")
 
 
 def main():
