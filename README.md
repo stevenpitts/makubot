@@ -1,6 +1,6 @@
 # Project Information
 
-I’m Makubot! I’m a dumb bot made by a person who codes stuff.
+I’m Makubot! I do a lot of generic things, but I also have a unique image collection that you can add to; try `mb.help addimage`!
 
 [Botlist link](https://discord.bots.gg/bots/363924877981253633)
 
