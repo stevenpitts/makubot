@@ -18,7 +18,7 @@ class Evaluations(discord.ext.commands.Cog):
     async def eval_and_respond(self, ctx, to_eval: str, force_reply=False):
         to_eval = to_eval.strip().strip('`').strip()
         to_eval = (f"result=eval(\"\"\"\n{to_eval}\n\"\"\"); "
-                   "print(result or 'No Result')")
+                   "print(str(result) or 'No Result')")
         eval_path = r"http://0.0.0.0:8060/eval"
         eval_data = {"input": to_eval}
         try:
