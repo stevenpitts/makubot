@@ -124,6 +124,31 @@ class Fun(discord.ext.commands.Cog):
             return
         await ctx.send(f'I choose {random.choice(args)}!')
 
+    @commands.command()
+    async def poll(self, ctx, *args):
+        '''
+        Starts a poll from the choices you provide!
+        Separated  by spaces, but you can put options in quotes
+        to allow spaces in a single option.
+        For example: `mb.poll "North Carolina" Maine "Rhode Island"`
+        '''
+        if not args:
+            await ctx.send(f"You gotta give options!\n{ctx.command.help}")
+        elif len(args) == 1:
+            await ctx.send(f"That's only one option, {args[0]}...")
+        elif len(set(args)) != len(args):
+            await ctx.send("You're repeating options...")
+        else:
+            associated_emoji = {
+                arg: chr(i+ord('🇦')) for i, arg in enumerate(args)}
+            choices_str = '\n'.join([f"{emoji} `{arg}`"
+                                     for arg, emoji
+                                     in associated_emoji.items()])
+            message = await ctx.send(
+                f"Reply with the emoji to vote:\n{choices_str}")
+            for emoji in associated_emoji.values():
+                await message.add_reaction(emoji)
+
 
 def setup(bot):
     logging.info('fun starting setup')
