@@ -146,7 +146,8 @@ class PictureAdder(discord.ext.commands.Cog):
                     try:
                         request = await self.bot.makusu.fetch_message(
                             request_id)
-                    except aiohttp.client_exceptions.ServerDisconnectedError:
+                    except (aiohttp.client_exceptions.ServerDisconnectedError,
+                            aiohttp.client_exceptions.ClientOSError):
                         logging.warning(
                             f"Got ServerDisconnectedError on {request_id}")
                         await asyncio.sleep(10)
