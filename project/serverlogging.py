@@ -124,7 +124,8 @@ class ServerLogging(discord.ext.commands.Cog):
         for log_to_channel in log_to_channels:
             try:
                 await log_to_channel.send(embed=embed)
-            except aiohttp.client_exceptions.ClientConnectorError:
+            except (aiohttp.client_exceptions.ClientConnectorError,
+                    asyncio.TimeoutError):
                 embed.set_image(url=(
                     r"https://t7.rbxcdn.com/"
                     r"b108964694f35a0db26262e4ba1d3d86"))

@@ -147,9 +147,10 @@ class PictureAdder(discord.ext.commands.Cog):
                         request = await self.bot.makusu.fetch_message(
                             request_id)
                     except (aiohttp.client_exceptions.ServerDisconnectedError,
-                            aiohttp.client_exceptions.ClientOSError):
+                            aiohttp.client_exceptions.ClientOSError,
+                            discord.errors.HTTPException):
                         logging.warning(
-                            f"Got ServerDisconnectedError on {request_id}")
+                            f"Got error on {request_id}")
                         await asyncio.sleep(10)
                     reactions_from_maku = [
                         reaction.emoji for reaction in request.reactions
