@@ -17,6 +17,7 @@ LOGGING_FORMAT = ('%(asctime)-15s %(levelname)s in %(funcName)s '
                   'at %(pathname)s:%(lineno)d: %(message)s')
 logging.basicConfig(filename=DATA_DIR/'makubot.log', level=logging.INFO,
                     format=LOGGING_FORMAT)
+logger = logging.getLogger()
 
 
 class MakuBot(commands.Bot):

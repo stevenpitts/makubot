@@ -19,6 +19,8 @@ SCRIPT_DIR = Path(__file__).parent
 PARENT_DIR = SCRIPT_DIR.parent
 DATA_DIR = PARENT_DIR / 'data'
 
+logger = logging.getLogger()
+
 
 class YTSearch(discord.ext.commands.Cog):
     def __init__(self, bot):
@@ -43,6 +45,6 @@ class YTSearch(discord.ext.commands.Cog):
 
 
 def setup(bot):
-    logging.info('ytsearch starting setup')
+    logger.info('ytsearch starting setup')
     bot.add_cog(YTSearch(bot))
-    logging.info('ytsearch ending setup')
+    logger.info('ytsearch ending setup')

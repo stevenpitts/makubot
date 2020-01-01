@@ -17,6 +17,8 @@ PARENT_DIR = SCRIPT_DIR.parent
 DATA_DIR = PARENT_DIR / 'data'
 DATAFILE_PATH = DATA_DIR / 'data.json'
 
+logger = logging.getLogger()
+
 
 class MakuCommands(discord.ext.commands.Cog):
     def __init__(self, bot):
@@ -40,7 +42,7 @@ class MakuCommands(discord.ext.commands.Cog):
         '''
         Reloads my command cogs. Works even in fatal situations. Sometimes.
         '''
-        logging.info('---Reloading makucommands and commandutil---')
+        logger.info('---Reloading makucommands and commandutil---')
         importlib.reload(commandutil)
         reload_response = ''
         for to_reload in self.bot.shared['default_extensions']:
@@ -51,7 +53,7 @@ class MakuCommands(discord.ext.commands.Cog):
                 fail_tb = commandutil.get_formatted_traceback(e)
                 fail_message = f"Error reloading {to_reload}: \n{fail_tb}\n\n"
                 print(fail_message)
-                logging.info(fail_message)
+                logger.info(fail_message)
         reload_response += "Done!"
         await ctx.send(reload_response)
         print("Reloaded")
@@ -141,6 +143,6 @@ class MakuCommands(discord.ext.commands.Cog):
 
 
 def setup(bot):
-    logging.info('makucommands starting setup')
+    logger.info('makucommands starting setup')
     bot.add_cog(MakuCommands(bot))
-    logging.info('makucommands ending setup')
+    logger.info('makucommands ending setup')

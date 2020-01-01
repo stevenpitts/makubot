@@ -13,6 +13,8 @@ SCRIPT_DIR = Path(__file__).parent
 PARENT_DIR = SCRIPT_DIR.parent
 DATA_DIR = PARENT_DIR / 'data'
 
+logger = logging.getLogger()
+
 
 class Debugging(discord.ext.commands.Cog):
     def __init__(self, bot):
@@ -74,7 +76,7 @@ class Debugging(discord.ext.commands.Cog):
         new_delay_time = time.time()
         delta_time = new_delay_time-self.last_delay_time
         if delta_time > 0.1:
-            logging.warning(f"{datetime.now()}: Time delay: {delta_time}")
+            logger.warning(f"{datetime.now()}: Time delay: {delta_time}")
         self.last_delay_time = new_delay_time
 
     @commands.command()
@@ -113,6 +115,6 @@ class Debugging(discord.ext.commands.Cog):
 
 
 def setup(bot):
-    logging.info('debugging starting setup')
+    logger.info('debugging starting setup')
     bot.add_cog(Debugging(bot))
-    logging.info('debugging ending setup')
+    logger.info('debugging ending setup')

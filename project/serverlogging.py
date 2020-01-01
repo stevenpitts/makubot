@@ -12,6 +12,8 @@ PARENT_DIR = SCRIPT_DIR.parent
 DATA_DIR = PARENT_DIR / 'data'
 DELETION_LOG_PATH = DATA_DIR / 'deletion_log.txt'
 
+logger = logging.getLogger()
+
 
 class ServerLogging(discord.ext.commands.Cog):
     def __init__(self, bot):
@@ -187,6 +189,6 @@ class ServerLogging(discord.ext.commands.Cog):
 
 
 def setup(bot):
-    logging.info('serverlogging starting setup')
+    logger.info('serverlogging starting setup')
     bot.add_cog(ServerLogging(bot))
-    logging.info('serverlogging ending setup')
+    logger.info('serverlogging ending setup')

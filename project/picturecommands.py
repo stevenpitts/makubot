@@ -20,6 +20,8 @@ PARENT_DIR = SCRIPT_DIR.parent
 DATA_DIR = PARENT_DIR / 'data'
 PICTURES_DIR = DATA_DIR / 'pictures'
 
+logger = logging.getLogger()
+
 
 class NotVideo(Exception):
     pass
@@ -28,7 +30,7 @@ class NotVideo(Exception):
 async def get_media_bytes_and_name(url, status_message=None):
     with tempfile.TemporaryDirectory() as temp_dir:
         ydl_options = {
-            # 'logger': logging,
+            # 'logger': logger,
             'quiet': True,
             'no_warnings': True,
             'format': 'best[filesize<8M]/worst',
@@ -40,12 +42,12 @@ async def get_media_bytes_and_name(url, status_message=None):
             await asyncio.get_running_loop().run_in_executor(
                 None, ydl.extract_info, url)
             download_time = datetime.now() - download_start_time
-            logging.info(f"{url} took {download_time} to download")
+            logger.info(f"{url} took {download_time} to download")
             files_in_dir = os.listdir(temp_dir)
             if len(files_in_dir) == 0:
                 raise youtube_dl.utils.DownloadError("No file found")
             elif len(files_in_dir) > 1:
-                logging.warning(
+                logger.warning(
                     f"youtube_dl got more than one file: {files_in_dir}")
                 raise youtube_dl.utils.DownloadError(
                     "Multiple files received")
@@ -64,7 +66,7 @@ async def get_media_bytes_and_name(url, status_message=None):
             except NotVideo:
                 os.rename(temp_filepath, filepath)
             processing_time = datetime.now() - processing_start_time
-            logging.info(f"{url} took {processing_time} to process")
+            logger.info(f"{url} took {processing_time} to process")
             with open(filepath, "rb") as downloaded_file:
                 data = downloaded_file.read()
             return data, filename
@@ -115,8 +117,8 @@ async def convert_video(video_input, video_output, log=False):
         await asyncio.sleep(0)
     output, err = p.communicate()
     if log:
-        logging.info(f"ffmpeg output: {output}")
-        logging.info(f"ffmpeg err: {err}")
+        logger.info(f"ffmpeg output: {output}")
+        logger.info(f"ffmpeg err: {err}")
     if not os.path.isfile(video_output):
         raise FileNotFoundError(
             f"ffmpeg failed to convert {video_input} to {video_output}")
@@ -182,7 +184,7 @@ class PictureAdder(discord.ext.commands.Cog):
                     except (aiohttp.client_exceptions.ServerDisconnectedError,
                             aiohttp.client_exceptions.ClientOSError,
                             discord.errors.HTTPException):
-                        logging.warning(
+                        logger.warning(
                             f"Got error on {request_id}")
                         await asyncio.sleep(10)
                     reactions_from_maku = [
@@ -200,7 +202,7 @@ class PictureAdder(discord.ext.commands.Cog):
             approval_start_time = datetime.now()
             approved = await get_approval(request.id)
             approval_time = datetime.now() - approval_start_time
-            logging.info(f"{filename} took {approval_time} to get approved")
+            logger.info(f"{filename} took {approval_time} to get approved")
             await request.delete()
             if await collection_has_image_bytes(image_collection, image_bytes):
                 response = (
@@ -317,7 +319,7 @@ class PictureAdder(discord.ext.commands.Cog):
                    discord.errors.HTTPException,
                    FileNotFoundError) as e:
                 traceback = commandutil.get_formatted_traceback(e)
-                logging.warning(f"Couldn't download image: {traceback}")
+                logger.warning(f"Couldn't download image: {traceback}")
                 await asyncio.sleep(1)  # TODO fix race condition, added to
                 # counter status message update from separate thread
                 await status_message.edit(content="I can't download that ;a;")
@@ -389,7 +391,7 @@ class ReactionImages(discord.ext.commands.Cog):
 
 
 def setup(bot):
-    logging.info('picturecommands starting setup')
+    logger.info('picturecommands starting setup')
     bot.add_cog(ReactionImages(bot))
     bot.add_cog(PictureAdder(bot))
-    logging.info('picturecommands ending setup')
+    logger.info('picturecommands ending setup')

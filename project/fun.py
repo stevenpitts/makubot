@@ -10,6 +10,7 @@ SCRIPT_DIR = Path(__file__).parent
 PARENT_DIR = SCRIPT_DIR.parent
 DATA_DIR = PARENT_DIR / 'data'
 
+logger = logging.getLogger()
 
 FACTS = '''Geese are NEAT
 How can mirrors be real if our eyes aren't real
@@ -158,6 +159,6 @@ class Fun(discord.ext.commands.Cog):
 
 
 def setup(bot):
-    logging.info('fun starting setup')
+    logger.info('fun starting setup')
     bot.add_cog(Fun(bot))
-    logging.info('fun ending setup')
+    logger.info('fun ending setup')

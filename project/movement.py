@@ -10,6 +10,8 @@ DATA_DIR = PARENT_DIR / 'data'
 
 MOVE_EMOTE = '\U0001f232'
 
+logger = logging.getLogger()
+
 
 class Movement(discord.ext.commands.Cog):
     def __init__(self, bot):
@@ -49,7 +51,7 @@ class Movement(discord.ext.commands.Cog):
                         'Hmmm, that looks like a channel but I am unable '
                         'to figure out what it is. It has already '
                         'been logged for Maku to debug.')
-                    logging.error(
+                    logger.error(
                         'Could not figure out what channel {} was.'
                         .format(channel_id))
                 else:
@@ -107,6 +109,6 @@ class Movement(discord.ext.commands.Cog):
 
 
 def setup(bot):
-    logging.info('movement starting setup')
+    logger.info('movement starting setup')
     bot.add_cog(Movement(bot))
-    logging.info('movement ending setup')
+    logger.info('movement ending setup')

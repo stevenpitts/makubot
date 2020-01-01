@@ -10,6 +10,8 @@ SCRIPT_DIR = Path(__file__).parent
 PARENT_DIR = SCRIPT_DIR.parent
 DATA_DIR = PARENT_DIR / 'data'
 
+logger = logging.getLogger()
+
 
 class RoleGiver(discord.ext.commands.Cog):
     def __init__(self, bot):
@@ -71,6 +73,6 @@ class RoleGiver(discord.ext.commands.Cog):
 
 
 def setup(bot):
-    logging.info('rolegiver starting setup')
+    logger.info('rolegiver starting setup')
     bot.add_cog(RoleGiver(bot))
-    logging.info('rolegiver ending setup')
+    logger.info('rolegiver ending setup')

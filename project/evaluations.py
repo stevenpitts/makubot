@@ -10,6 +10,8 @@ SCRIPT_DIR = Path(__file__).parent
 PARENT_DIR = SCRIPT_DIR.parent
 DATA_DIR = PARENT_DIR / 'data'
 
+logger = logging.getLogger()
+
 
 class Evaluations(discord.ext.commands.Cog):
     def __init__(self, bot):
@@ -55,6 +57,6 @@ class Evaluations(discord.ext.commands.Cog):
 
 
 def setup(bot):
-    logging.info('evaluations starting setup')
+    logger.info('evaluations starting setup')
     bot.add_cog(Evaluations(bot))
-    logging.info('evaluations ending setup')
+    logger.info('evaluations ending setup')

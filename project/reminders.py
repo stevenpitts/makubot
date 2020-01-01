@@ -15,6 +15,8 @@ from dateutil.parser import parse as date_parse
 SCRIPT_DIR = Path(__file__).parent
 PARENT_DIR = SCRIPT_DIR.parent
 
+logger = logging.getLogger()
+
 
 class RemindersDB:
     def __init__(self, db=PARENT_DIR / 'data' / 'reminders.db'):
@@ -251,6 +253,6 @@ class ReminderCommands(discord.ext.commands.Cog):
 
 
 def setup(bot):
-    logging.info('remindercommands starting setup')
+    logger.info('remindercommands starting setup')
     bot.add_cog(ReminderCommands(bot))
-    logging.info('remindercommands ending setup')
+    logger.info('remindercommands ending setup')

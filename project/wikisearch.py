@@ -8,6 +8,8 @@ SCRIPT_DIR = Path(__file__).parent
 PARENT_DIR = SCRIPT_DIR.parent
 DATA_DIR = PARENT_DIR / 'data'
 
+logger = logging.getLogger()
+
 
 class Wikisearch(discord.ext.commands.Cog):
     def __init__(self, bot):
@@ -30,6 +32,6 @@ class Wikisearch(discord.ext.commands.Cog):
 
 
 def setup(bot):
-    logging.info('wikisearch starting setup')
+    logger.info('wikisearch starting setup')
     bot.add_cog(Wikisearch(bot))
-    logging.info('wikisearch ending setup')
+    logger.info('wikisearch ending setup')
