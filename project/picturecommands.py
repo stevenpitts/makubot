@@ -35,7 +35,6 @@ async def get_media_bytes_and_name(url, status_message=None):
             "outtmpl": f"{temp_dir}/%(title)s-%(id)s.%(ext)s"
             }
         with youtube_dl.YoutubeDL(ydl_options) as ydl:
-            # Note downloading
             await status_message.edit(content="Downloading...")
             download_start_time = datetime.now()
             await asyncio.get_running_loop().run_in_executor(
@@ -58,7 +57,6 @@ async def get_media_bytes_and_name(url, status_message=None):
             if filepath.endswith(".mkv"):
                 filepath += ".webm"
                 filename += ".webm"
-            # Note processing
             await status_message.edit(content="Processing...")
             processing_start_time = datetime.now()
             try:
@@ -198,7 +196,6 @@ class PictureAdder(discord.ext.commands.Cog):
                         return reactions_from_maku[0] == yes_emoji
                     await asyncio.sleep(0)
 
-            # Note waiting for response
             await status_message.edit(content="Waiting for maku approval...")
             approval_start_time = datetime.now()
             approved = await get_approval(request.id)
