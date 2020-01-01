@@ -34,8 +34,7 @@ def profile_bot(bot):
 def main():
     os.makedirs(str(DATA_DIR / 'pictures'), exist_ok=True)
 
-    default_text = {'reminders.txt': '[]',
-                    'makubot.log': '',
+    default_text = {'makubot.log': '',
                     'data.json': '{}',
                     'deletion_log.txt': ''}
     for filename, to_write in default_text.items():
