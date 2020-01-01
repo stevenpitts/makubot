@@ -128,23 +128,30 @@ class Fun(discord.ext.commands.Cog):
     async def poll(self, ctx, *args):
         '''
         Starts a poll from the choices you provide!
-        Separated  by spaces, but you can put options in quotes
+        The first argument should be the question of the poll, \
+        followed by choices.
+        Arguments are separated by spaces, but you can put options in quotes \
         to allow spaces in a single option.
-        For example: `mb.poll "North Carolina" Maine "Rhode Island"`
+        For example: `mb.poll "Favorite state?" \
+        "North Carolina" Maine "Rhode Island"`
         '''
         if not args:
-            await ctx.send(f"You gotta give options!\n{ctx.command.help}")
+            await ctx.send(f"You gotta give a question and options!")
         elif len(args) == 1:
-            await ctx.send(f"That's only one option, {args[0]}...")
+            await ctx.send("That's just a question, you need options!")
+        elif len(args) == 2:
+            await ctx.send(f"That's only one option, {args[1]}...")
         elif len(set(args)) != len(args):
             await ctx.send("You're repeating options...")
         else:
+            question = args[0]
             associated_emoji = {
-                arg: chr(i+ord('🇦')) for i, arg in enumerate(args)}
+                arg: chr(i+ord('🇦')) for i, arg in enumerate(args[1:])}
             choices_str = '\n'.join([f"{emoji} `{arg}`"
                                      for arg, emoji
                                      in associated_emoji.items()])
             message = await ctx.send(
+                f"Poll: `{question}`\n"
                 f"Reply with the emoji to vote:\n{choices_str}")
             for emoji in associated_emoji.values():
                 await message.add_reaction(emoji)
