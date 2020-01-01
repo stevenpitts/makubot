@@ -20,6 +20,10 @@ DATA_DIR = PARENT_DIR / 'data'
 PICTURES_DIR = DATA_DIR / 'pictures'
 
 
+class NotVideo(Exception):
+    pass
+
+
 async def get_media_bytes_and_name(url, status_message=None):
     status_task = None
     try:
@@ -28,6 +32,7 @@ async def get_media_bytes_and_name(url, status_message=None):
                 # 'logger': logging,
                 'quiet': True,
                 'no_warnings': True,
+                'format': 'best[filesize<8M]/worst',
                 "outtmpl": f"{temp_dir}/%(title)s-%(id)s.%(ext)s"
                 }
             with youtube_dl.YoutubeDL(ydl_options) as ydl:
@@ -61,7 +66,10 @@ async def get_media_bytes_and_name(url, status_message=None):
                 status_task = asyncio.create_task(
                     commandutil.keep_updating_message_timedelta(
                         status_message, status_message_format))
-                await convert_video(temp_filepath, filepath)
+                try:
+                    await convert_video(temp_filepath, filepath)
+                except NotVideo:
+                    os.rename(temp_filepath, filepath)
                 status_task.cancel()
                 with open(filepath, "rb") as downloaded_file:
                     data = downloaded_file.read()
@@ -74,10 +82,47 @@ async def get_media_bytes_and_name(url, status_message=None):
         raise
 
 
+async def get_video_length(video_input):
+    cmds = ['ffprobe',
+            '-v', 'error',
+            '-show_entries',
+            'format=duration',
+            '-of',
+            'default=noprint_wrappers=1:nokey=1',
+            video_input
+            ]
+    p = subprocess.Popen(cmds, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+    while p.poll() is None:
+        await asyncio.sleep(0)
+    output, err = p.communicate()
+    try:
+        video_length = float(output)
+    except ValueError:
+        raise NotVideo()
+    return video_length
+
+
+async def suggest_audio_video_bitrate(video_input):
+    audio_bitrate = 64e3  # bits
+    video_length = await get_video_length(video_input)
+    max_size = 32e6  # bits. Technically 64e6 but there's some error.
+    video_bitrate = (max_size / video_length) - audio_bitrate
+    video_bitrate = max(int(video_bitrate), 1e3)
+    return audio_bitrate, video_bitrate
+
+
 async def convert_video(video_input, video_output, log=False):
-    cmds = ['ffmpeg', '-y', '-i', video_input, video_output]
-    p = subprocess.Popen(cmds, stdout=subprocess.PIPE,
-                         stderr=subprocess.PIPE)
+    audio_bitrate, video_bitrate = await suggest_audio_video_bitrate(
+        video_input)
+    cmds = ['ffmpeg',
+            '-y',
+            '-i', video_input,
+            # '-vf', "scale=300:200",
+            '-b:v', str(video_bitrate),
+            '-b:a', str(audio_bitrate),
+            video_output
+            ]
+    p = subprocess.Popen(cmds, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
     while p.poll() is None:
         await asyncio.sleep(0)
     output, err = p.communicate()
