@@ -12,6 +12,7 @@ import concurrent
 import subprocess
 import youtube_dl
 import tempfile
+from datetime import datetime
 from . import commandutil
 
 SCRIPT_DIR = Path(__file__).parent
@@ -25,61 +26,50 @@ class NotVideo(Exception):
 
 
 async def get_media_bytes_and_name(url, status_message=None):
-    status_task = None
-    try:
-        with tempfile.TemporaryDirectory() as temp_dir:
-            ydl_options = {
-                # 'logger': logging,
-                'quiet': True,
-                'no_warnings': True,
-                'format': 'best[filesize<8M]/worst',
-                "outtmpl": f"{temp_dir}/%(title)s-%(id)s.%(ext)s"
-                }
-            with youtube_dl.YoutubeDL(ydl_options) as ydl:
-                status_message_format = (
-                    "Downloading... ({} elapsed for download)")
-                status_task = asyncio.create_task(
-                    commandutil.keep_updating_message_timedelta(
-                        status_message, status_message_format))
-                await asyncio.get_running_loop().run_in_executor(
-                    None, ydl.extract_info, url)
-                status_task.cancel()
-                files_in_dir = os.listdir(temp_dir)
-                if len(files_in_dir) == 0:
-                    raise youtube_dl.utils.DownloadError("No file found")
-                elif len(files_in_dir) > 1:
-                    logging.warning(
-                        f"youtube_dl got more than one file: {files_in_dir}")
-                    raise youtube_dl.utils.DownloadError(
-                        "Multiple files received")
-                filename = files_in_dir[0]
-                filepath = f"{temp_dir}/{filename}"
-                # Fix bad extension
-                temp_filepath = f"{filepath}2"
-                os.rename(filepath, temp_filepath)
-                if filepath.endswith(".mkv"):
-                    filepath += ".webm"
-                    filename += ".webm"
-                status_message_format = ("Processing... (This can take a long "
-                                         "time for videos; {} elapsed "
-                                         "of processing)")
-                status_task = asyncio.create_task(
-                    commandutil.keep_updating_message_timedelta(
-                        status_message, status_message_format))
-                try:
-                    await convert_video(temp_filepath, filepath)
-                except NotVideo:
-                    os.rename(temp_filepath, filepath)
-                status_task.cancel()
-                with open(filepath, "rb") as downloaded_file:
-                    data = downloaded_file.read()
-                return data, filename
-    except BaseException:
-        try:
-            status_task.cancel()
-        except BaseException:
-            pass
-        raise
+    with tempfile.TemporaryDirectory() as temp_dir:
+        ydl_options = {
+            # 'logger': logging,
+            'quiet': True,
+            'no_warnings': True,
+            'format': 'best[filesize<8M]/worst',
+            "outtmpl": f"{temp_dir}/%(title)s-%(id)s.%(ext)s"
+            }
+        with youtube_dl.YoutubeDL(ydl_options) as ydl:
+            # Note downloading
+            await status_message.edit(content="Downloading...")
+            download_start_time = datetime.now()
+            await asyncio.get_running_loop().run_in_executor(
+                None, ydl.extract_info, url)
+            download_time = datetime.now() - download_start_time
+            logging.info(f"{url} took {download_time} to download")
+            files_in_dir = os.listdir(temp_dir)
+            if len(files_in_dir) == 0:
+                raise youtube_dl.utils.DownloadError("No file found")
+            elif len(files_in_dir) > 1:
+                logging.warning(
+                    f"youtube_dl got more than one file: {files_in_dir}")
+                raise youtube_dl.utils.DownloadError(
+                    "Multiple files received")
+            filename = files_in_dir[0]
+            filepath = f"{temp_dir}/{filename}"
+            # Fix bad extension
+            temp_filepath = f"{filepath}2"
+            os.rename(filepath, temp_filepath)
+            if filepath.endswith(".mkv"):
+                filepath += ".webm"
+                filename += ".webm"
+            # Note processing
+            await status_message.edit(content="Processing...")
+            processing_start_time = datetime.now()
+            try:
+                await convert_video(temp_filepath, filepath)
+            except NotVideo:
+                os.rename(temp_filepath, filepath)
+            processing_time = datetime.now() - processing_start_time
+            logging.info(f"{url} took {processing_time} to process")
+            with open(filepath, "rb") as downloaded_file:
+                data = downloaded_file.read()
+            return data, filename
 
 
 async def get_video_length(video_input):
@@ -208,13 +198,12 @@ class PictureAdder(discord.ext.commands.Cog):
                         return reactions_from_maku[0] == yes_emoji
                     await asyncio.sleep(0)
 
-            status_message_format = (
-                "Waiting for response from Maku... ({} since submission)")
-            status_task = asyncio.create_task(
-                commandutil.keep_updating_message_timedelta(
-                    status_message, status_message_format))
+            # Note waiting for response
+            await status_message.edit(content="Waiting for maku approval...")
+            approval_start_time = datetime.now()
             approved = await get_approval(request.id)
-            status_task.cancel()
+            approval_time = datetime.now() - approval_start_time
+            logging.info(f"{filename} took {approval_time} to get approved")
             await request.delete()
             if await collection_has_image_bytes(image_collection, image_bytes):
                 response = (

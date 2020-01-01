@@ -1,9 +1,7 @@
 import traceback
 import re
 from pathlib import Path
-import asyncio
 import itertools
-import concurrent
 from datetime import datetime
 
 
@@ -37,20 +35,3 @@ def get_nonconflicting_filename(candidate_filename: str, directory: Path):
 def readable_timedelta(old, new=None):
     new = new or datetime.now()
     return str(new - old).split('.')[0]
-
-
-async def keep_updating_message_timedelta(message, message_format):
-    try:
-        start_time = datetime.now()
-        for shift in itertools.count():
-            timedelta_str = readable_timedelta(start_time)
-            message_formatted = message_format.format(timedelta_str)
-            await message.edit(content=message_formatted)
-            await asyncio.sleep(1 << shift)
-    except (concurrent.futures._base.CancelledError,
-            asyncio.exceptions.CancelledError):
-        return
-    except BaseException as e:
-        await message.edit(
-            content=f"Something borked after {readable_timedelta(start_time)}")
-        print(get_formatted_traceback(e))
