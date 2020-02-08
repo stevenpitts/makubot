@@ -28,13 +28,14 @@ class NotVideo(Exception):
     pass
 
 
-async def get_media_bytes_and_name(url, status_message=None):
+async def get_media_bytes_and_name(url, status_message=None, do_raw=False):
     with tempfile.TemporaryDirectory() as temp_dir:
+        quality_format = 'best' if do_raw else 'best[filesize<8M]/worst'
         ydl_options = {
             # 'logger': logger,
             'quiet': True,
             'no_warnings': True,
-            'format': 'best[filesize<8M]/worst',
+            'format': quality_format,
             "outtmpl": f"{temp_dir}/%(title)s-%(id)s.%(ext)s"
             }
         with youtube_dl.YoutubeDL(ydl_options) as ydl:
@@ -62,10 +63,13 @@ async def get_media_bytes_and_name(url, status_message=None):
                 filename += ".webm"
             await status_message.edit(content="Processing...")
             processing_start_time = datetime.now()
-            try:
-                await convert_video(temp_filepath, filepath)
-            except NotVideo:
+            if do_raw:
                 os.rename(temp_filepath, filepath)
+            else:
+                try:
+                    await convert_video(temp_filepath, filepath)
+                except NotVideo:
+                    os.rename(temp_filepath, filepath)
             processing_time = datetime.now() - processing_start_time
             logger.info(f"{url} took {processing_time} to process")
             with open(filepath, "rb") as downloaded_file:
@@ -284,11 +288,12 @@ class PictureAdder(discord.ext.commands.Cog):
         chosen_file = random.choice(files)
         await ctx.send(file=discord.File(chosen_file))
 
-    @commands.command(aliases=["addimage"])
+    @commands.command(aliases=["addimage", "addimageraw"])
     async def add_image(self, ctx, image_collection: str, *, urls: str = ""):
         """Requests an image be added.
         mb.addimage nao http://static.zerochan.net/Tomori.Nao.full.1901643.jpg
         Then, it'll be sent to maku for approval!"""
+        do_raw = ctx.invoked_with == "addimageraw"
         if ' ' in image_collection:
             await ctx.send("Spaces replaced with underscores")
         image_collection = image_collection.strip().lower().replace(' ', '_')
@@ -316,7 +321,7 @@ class PictureAdder(discord.ext.commands.Cog):
             try:
                 status_message = await ctx.send("Querying...")
                 data, filename = await get_media_bytes_and_name(
-                    url, status_message=status_message)
+                    url, status_message=status_message, do_raw=do_raw)
             except(youtube_dl.utils.DownloadError,
                    aiohttp.client_exceptions.ClientConnectorError,
                    aiohttp.client_exceptions.InvalidURL,
