@@ -5,6 +5,7 @@ from pathlib import Path
 import random
 import asyncio
 import itertools
+import re
 from . import commandutil
 
 SCRIPT_DIR = Path(__file__).parent
@@ -150,27 +151,52 @@ class Fun(discord.ext.commands.Cog):
         Arguments are separated by spaces.
         You can put options in quotes to allow spaces in a single option.
         Example: `mb.poll "Favorite state?" "North Carolina" Maine Iowa`
+        You can also add "timeout=SECONDS" after the question
+        to limit the poll.
+        Example: `mb.poll timeout=30 "Favorite state?" RI MA`
         '''
         args = [await commandutil.clean(ctx, arg) for arg in args]
         if not args:
             await ctx.send(f"You gotta give a question and options!")
-        elif len(args) == 1:
+            return
+        if len(args) == 1:
             await ctx.send("That's just a question, you need options!")
-        elif len(args) == 2:
+            return
+        if len(args) == 2:
             await ctx.send(f"That's only one option, {args[1]}...")
-        elif len(set(args)) != len(args):
+            return
+        if len(set(args)) != len(args):
             await ctx.send("You're repeating options...")
+            return
+        if len(args) > 3 and re.match(r"timeout=\d+", args[0]):
+            timeout = int(args[0].split("=")[-1])
+            question = args[1]
+            choices = args[2:]
         else:
-            associated_emoji = {arg: chr(i+ord('🇦'))
-                                for i, arg in enumerate(args[1:])}
-            choices_str = '\n'.join([f"{emoji} {arg}"
-                                     for arg, emoji
-                                     in associated_emoji.items()])
-            message = await ctx.send(
-                f"Poll: {args[0]}\n"
-                f"Reply with the emoji to vote:\n{choices_str}")
-            for emoji in associated_emoji.values():
-                await message.add_reaction(emoji)
+            timeout = None
+            question = args[0]
+            choices = args[1:]
+        choice_to_emoji = {choice: chr(i+ord('🇦'))
+                           for i, choice in enumerate(choices)}
+        choices_str = '\n'.join([f"{emoji} {choice}"
+                                 for choice, emoji
+                                 in choice_to_emoji.items()])
+        message = await ctx.send(
+            f"Poll: {question}\n"
+            f"Reply with the emoji to vote:\n{choices_str}")
+        for emoji in choice_to_emoji.values():
+            await message.add_reaction(emoji)
+        if not timeout:
+            return
+        await asyncio.sleep(timeout)
+        message = await ctx.fetch_message(message.id)
+        choice_to_reaction = {
+            choice: discord.utils.get(message.reactions, emoji=emoji)
+            for choice, emoji in choice_to_emoji.items()}
+        choice_clauses = [f"{reaction.count - 1} for \"{choice}\""
+                          for choice, reaction in choice_to_reaction.items()]
+        results = ", ".join(choice_clauses)
+        await message.edit(content=f"{message.content}\nResults: {results}")
 
 
 def setup(bot):
