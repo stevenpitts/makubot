@@ -144,9 +144,9 @@ class Fun(discord.ext.commands.Cog):
         elif len(set(args)) != len(args):
             await ctx.send("You're repeating options...")
         else:
-            question = await commandutil.clean_convert(ctx, args[0])
+            question = await commandutil.clean(ctx, args[0])
             associated_emoji = {
-                await commandutil.clean_convert(ctx, arg): chr(i+ord('🇦'))
+                await commandutil.clean(ctx, arg): chr(i+ord('🇦'))
                 for i, arg in enumerate(args[1:])}
             choices_str = '\n'.join([f"{emoji} {arg}"
                                      for arg, emoji

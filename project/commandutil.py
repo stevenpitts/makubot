@@ -38,6 +38,6 @@ def readable_timedelta(old, new=None):
     return str(new - old).split('.')[0]
 
 
-async def clean_convert(ctx, s):
+async def clean(ctx, s):
     converter = discord.ext.commands.converter.clean_content()
     return await converter.convert(ctx, s)

@@ -152,6 +152,7 @@ class ReminderCommands(discord.ext.commands.Cog):
         '''
         total_seconds, reminder_message = parse_remind_me(
             time_and_reminder)
+        reminder_message = await commandutil.clean(ctx, reminder_message)
         total_seconds = total_seconds and int(total_seconds)
         if total_seconds is None or reminder_message is None:
             await ctx.send(
@@ -160,6 +161,7 @@ class ReminderCommands(discord.ext.commands.Cog):
         elif total_seconds < 0:
             await ctx.send("That's a time in the past :?")
             return
+        reminder_cleaned = await commandutil.clean(ctx, reminder_message)
         remind_set_time = int(time.time())
         remind_time = remind_set_time + total_seconds
         user_id = str(ctx.message.author.id)
@@ -167,11 +169,11 @@ class ReminderCommands(discord.ext.commands.Cog):
         try:
             self.reminders_db.add_reminder(
                 remind_set_time, remind_time, user_id, channel_id,
-                reminder_message)
+                reminder_cleaned)
         except OverflowError:
             await ctx.send("I can't handle a number that big, sorry!")
         else:
-            await ctx.send(f"Coolio I'll remind you `{reminder_message}` "
+            await ctx.send(f"Coolio I'll remind you '{reminder_cleaned}' "
                            f"in {get_human_delay(total_seconds)}.")
 
     @commands.command(aliases=["listreminders"])
@@ -208,7 +210,7 @@ class ReminderCommands(discord.ext.commands.Cog):
             return
         self.reminders_db.drop_reminder(choice)
         await ctx.send(f"Reminder deleted: "
-                       f"`{chosen_reminder['reminder_message']}`")
+                       f"'{chosen_reminder['reminder_message']}'")
 
     async def send_reminder(self, reminder):
         reminder_channel = self.bot.get_channel(int(reminder["channel_id"]))
