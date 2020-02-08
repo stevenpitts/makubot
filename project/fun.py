@@ -156,7 +156,8 @@ class Fun(discord.ext.commands.Cog):
         elif len(args) == 1:
             await ctx.send("That's just a question, you need options!")
         elif len(args) == 2:
-            await ctx.send(f"That's only one option, {args[1]}...")
+            first_option = await commandutil.clean(ctx, args[1])
+            await ctx.send(f"That's only one option, {first_option}...")
         elif len(set(args)) != len(args):
             await ctx.send("You're repeating options...")
         else:
