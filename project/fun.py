@@ -125,7 +125,7 @@ class Fun(discord.ext.commands.Cog):
             return
         await ctx.send(f'I choose {random.choice(args)}!')
 
-    @commands.command()
+    @commands.command(aliases=["vote"])
     async def poll(self, ctx, *args):
         '''
         Starts a poll from the choices you provide!
