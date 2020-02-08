@@ -12,6 +12,7 @@ import concurrent
 import subprocess
 import youtube_dl
 import tempfile
+import hashlib
 from datetime import datetime
 from . import commandutil
 
@@ -128,9 +129,12 @@ async def collection_has_image_bytes(collection: str, image_bytes):
     collection_dir = PICTURES_DIR / collection
     if not collection_dir.exists():
         return False
-    sizes = (os.path.getsize(collection_dir / picture_filename)
-             for picture_filename in os.listdir(collection_dir))
-    return len(image_bytes) in sizes
+    existing_files = (collection_dir / picture_filename
+                      for picture_filename in os.listdir(collection_dir))
+    existing_bytes = (file.read_bytes() for file in existing_files)
+    existing_checksums = (hashlib.sha1(bytes).hexdigest()
+                          for bytes in existing_bytes)
+    return hashlib.sha1(image_bytes).hexdigest() in existing_checksums
 
 
 class PictureAdder(discord.ext.commands.Cog):
