@@ -5,6 +5,7 @@ from pathlib import Path
 import random
 import asyncio
 import itertools
+from . import commandutil
 
 SCRIPT_DIR = Path(__file__).parent
 PARENT_DIR = SCRIPT_DIR.parent
@@ -134,9 +135,6 @@ class Fun(discord.ext.commands.Cog):
         You can put options in quotes to allow spaces in a single option.
         Example: `mb.poll "Favorite state?" "North Carolina" Maine Iowa`
         '''
-        async def clean_convert(s):
-            converter = discord.ext.commands.converter.clean_content()
-            return await converter.convert(ctx, s)
         if not args:
             await ctx.send(f"You gotta give a question and options!")
         elif len(args) == 1:
@@ -146,9 +144,9 @@ class Fun(discord.ext.commands.Cog):
         elif len(set(args)) != len(args):
             await ctx.send("You're repeating options...")
         else:
-            question = await clean_convert(args[0])
+            question = await commandutil.clean_convert(ctx, args[0])
             associated_emoji = {
-                await clean_convert(arg): chr(i+ord('🇦'))
+                await commandutil.clean_convert(ctx, arg): chr(i+ord('🇦'))
                 for i, arg in enumerate(args[1:])}
             choices_str = '\n'.join([f"{emoji} {arg}"
                                      for arg, emoji
