@@ -129,12 +129,10 @@ class Fun(discord.ext.commands.Cog):
     async def poll(self, ctx, *args):
         '''
         Starts a poll from the choices you provide!
-        The first argument should be the question of the poll, \
-        followed by choices.
-        Arguments are separated by spaces, but you can put options in quotes \
-        to allow spaces in a single option.
-        For example: `mb.poll "Favorite state?" \
-        "North Carolina" Maine "Rhode Island"`
+        The first argument should be the question, followed by choices.
+        Arguments are separated by spaces.
+        You can put options in quotes to allow spaces in a single option.
+        Example: `mb.poll "Favorite state?" "North Carolina" Maine Iowa`
         '''
         if not args:
             await ctx.send(f"You gotta give a question and options!")
