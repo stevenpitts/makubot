@@ -151,25 +151,23 @@ class Fun(discord.ext.commands.Cog):
         You can put options in quotes to allow spaces in a single option.
         Example: `mb.poll "Favorite state?" "North Carolina" Maine Iowa`
         '''
+        args = [await commandutil.clean(ctx, arg) for arg in args]
         if not args:
             await ctx.send(f"You gotta give a question and options!")
         elif len(args) == 1:
             await ctx.send("That's just a question, you need options!")
         elif len(args) == 2:
-            first_option = await commandutil.clean(ctx, args[1])
-            await ctx.send(f"That's only one option, {first_option}...")
+            await ctx.send(f"That's only one option, {args[1]}...")
         elif len(set(args)) != len(args):
             await ctx.send("You're repeating options...")
         else:
-            question = await commandutil.clean(ctx, args[0])
-            associated_emoji = {
-                await commandutil.clean(ctx, arg): chr(i+ord('🇦'))
-                for i, arg in enumerate(args[1:])}
+            associated_emoji = {arg: chr(i+ord('🇦'))
+                                for i, arg in enumerate(args[1:])}
             choices_str = '\n'.join([f"{emoji} {arg}"
                                      for arg, emoji
                                      in associated_emoji.items()])
             message = await ctx.send(
-                f"Poll: {question}\n"
+                f"Poll: {args[0]}\n"
                 f"Reply with the emoji to vote:\n{choices_str}")
             for emoji in associated_emoji.values():
                 await message.add_reaction(emoji)
