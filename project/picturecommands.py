@@ -28,7 +28,8 @@ class NotVideo(Exception):
     pass
 
 
-async def get_media_bytes_and_name(url, status_message=None, do_raw=False):
+async def get_media_bytes_and_name(url, status_message=None, do_raw=False,
+                                   loading_emoji=""):
     with tempfile.TemporaryDirectory() as temp_dir:
         quality_format = 'best' if do_raw else 'best[filesize<8M]/worst'
         ydl_options = {
@@ -39,7 +40,7 @@ async def get_media_bytes_and_name(url, status_message=None, do_raw=False):
             "outtmpl": f"{temp_dir}/%(title)s-%(id)s.%(ext)s"
             }
         with youtube_dl.YoutubeDL(ydl_options) as ydl:
-            await status_message.edit(content="Downloading...")
+            await status_message.edit(content=f"Downloading...{loading_emoji}")
             download_start_time = datetime.now()
             await asyncio.get_running_loop().run_in_executor(
                 None, ydl.extract_info, url)
@@ -61,7 +62,7 @@ async def get_media_bytes_and_name(url, status_message=None, do_raw=False):
             if filepath.endswith(".mkv"):
                 filepath += ".webm"
                 filename += ".webm"
-            await status_message.edit(content="Processing...")
+            await status_message.edit(content=f"Processing...{loading_emoji}")
             processing_start_time = datetime.now()
             if do_raw:
                 os.rename(temp_filepath, filepath)
@@ -317,11 +318,14 @@ class PictureAdder(discord.ext.commands.Cog):
         urls = urls.split() + [attachment.url for attachment
                                in ctx.message.attachments]
         image_suggestion_coros = []
+        loading_emoji = discord.utils.get(self.bot.emojis,
+                                          name="makubot_loading")
         for url in urls:
             try:
-                status_message = await ctx.send("Querying...")
+                status_message = await ctx.send(f"Querying... {loading_emoji}")
                 data, filename = await get_media_bytes_and_name(
-                    url, status_message=status_message, do_raw=do_raw)
+                    url, status_message=status_message, do_raw=do_raw,
+                    loading_emoji=loading_emoji)
             except(youtube_dl.utils.DownloadError,
                    aiohttp.client_exceptions.ClientConnectorError,
                    aiohttp.client_exceptions.InvalidURL,
