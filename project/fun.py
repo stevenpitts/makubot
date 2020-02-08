@@ -93,6 +93,22 @@ class Fun(discord.ext.commands.Cog):
 
     @commands.command(hidden=True)
     @commands.is_owner()
+    async def thisify(self, ctx, message: discord.Message):
+        this_emojis = [emoji for emoji in self.bot.emojis
+                       if emoji.name.startswith("this")
+                       and len(emoji.name) < 8
+                       ]
+        all_emoji_futures = [message.add_reaction(this_emoji)
+                             for this_emoji in this_emojis]
+        all_emoji_futures = asyncio.gather(*all_emoji_futures,
+                                           return_exceptions=True)
+        try:
+            await all_emoji_futures
+        except discord.errors.Forbidden:
+            return
+
+    @commands.command(hidden=True)
+    @commands.is_owner()
     async def reactionspeak(self, ctx, message: discord.Message, *, text: str):
         """Adds an emoji reaction to a message!"""
         text = text.lower()
