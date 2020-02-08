@@ -44,7 +44,7 @@ class MakuBot(commands.Bot):
                                              ]
         self.loop.set_debug(True)
         for extension in self.shared['default_extensions']:
-            self.load_extension(f'project.{extension}')
+            self.load_extension(f'src.{extension}')
 
     async def on_ready(self):
         '''

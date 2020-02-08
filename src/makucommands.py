@@ -47,7 +47,7 @@ class MakuCommands(discord.ext.commands.Cog):
         reload_response = ''
         for to_reload in self.bot.shared['default_extensions']:
             try:
-                ctx.bot.reload_extension(f"project.{to_reload}")
+                ctx.bot.reload_extension(f"src.{to_reload}")
             except Exception as e:
                 reload_response += f"Failed to reload {to_reload}\n"
                 fail_tb = commandutil.get_formatted_traceback(e)
