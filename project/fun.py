@@ -5,6 +5,7 @@ from pathlib import Path
 import random
 import asyncio
 import itertools
+from . import commandutil
 
 SCRIPT_DIR = Path(__file__).parent
 PARENT_DIR = SCRIPT_DIR.parent
@@ -92,6 +93,22 @@ class Fun(discord.ext.commands.Cog):
 
     @commands.command(hidden=True)
     @commands.is_owner()
+    async def thisify(self, ctx, message: discord.Message):
+        this_emojis = [emoji for emoji in self.bot.emojis
+                       if emoji.name.startswith("this")
+                       and len(emoji.name) < 8
+                       ]
+        all_emoji_futures = [message.add_reaction(this_emoji)
+                             for this_emoji in this_emojis]
+        all_emoji_futures = asyncio.gather(*all_emoji_futures,
+                                           return_exceptions=True)
+        try:
+            await all_emoji_futures
+        except discord.errors.Forbidden:
+            return
+
+    @commands.command(hidden=True)
+    @commands.is_owner()
     async def reactionspeak(self, ctx, message: discord.Message, *, text: str):
         """Adds an emoji reaction to a message!"""
         text = text.lower()
@@ -125,16 +142,14 @@ class Fun(discord.ext.commands.Cog):
             return
         await ctx.send(f'I choose {random.choice(args)}!')
 
-    @commands.command()
+    @commands.command(aliases=["vote"])
     async def poll(self, ctx, *args):
         '''
         Starts a poll from the choices you provide!
-        The first argument should be the question of the poll, \
-        followed by choices.
-        Arguments are separated by spaces, but you can put options in quotes \
-        to allow spaces in a single option.
-        For example: `mb.poll "Favorite state?" \
-        "North Carolina" Maine "Rhode Island"`
+        The first argument should be the question, followed by choices.
+        Arguments are separated by spaces.
+        You can put options in quotes to allow spaces in a single option.
+        Example: `mb.poll "Favorite state?" "North Carolina" Maine Iowa`
         '''
         if not args:
             await ctx.send(f"You gotta give a question and options!")
@@ -145,14 +160,15 @@ class Fun(discord.ext.commands.Cog):
         elif len(set(args)) != len(args):
             await ctx.send("You're repeating options...")
         else:
-            question = args[0]
+            question = await commandutil.clean(ctx, args[0])
             associated_emoji = {
-                arg: chr(i+ord('🇦')) for i, arg in enumerate(args[1:])}
-            choices_str = '\n'.join([f"{emoji} `{arg}`"
+                await commandutil.clean(ctx, arg): chr(i+ord('🇦'))
+                for i, arg in enumerate(args[1:])}
+            choices_str = '\n'.join([f"{emoji} {arg}"
                                      for arg, emoji
                                      in associated_emoji.items()])
             message = await ctx.send(
-                f"Poll: `{question}`\n"
+                f"Poll: {question}\n"
                 f"Reply with the emoji to vote:\n{choices_str}")
             for emoji in associated_emoji.values():
                 await message.add_reaction(emoji)

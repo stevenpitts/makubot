@@ -3,6 +3,7 @@ import re
 from pathlib import Path
 import itertools
 from datetime import datetime
+import discord
 
 
 def get_formatted_traceback(e):
@@ -35,3 +36,8 @@ def get_nonconflicting_filename(candidate_filename: str, directory: Path):
 def readable_timedelta(old, new=None):
     new = new or datetime.now()
     return str(new - old).split('.')[0]
+
+
+async def clean(ctx, s):
+    converter = discord.ext.commands.converter.clean_content()
+    return await converter.convert(ctx, s)
