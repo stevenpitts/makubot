@@ -3,6 +3,7 @@ from discord.ext import commands
 import logging
 import re
 import asyncio
+from . import commandutil
 from pathlib import Path
 
 SCRIPT_DIR = Path(__file__).parent
@@ -81,7 +82,7 @@ class Movement(discord.ext.commands.Cog):
         save_pin_futures = []
         for message in await ctx.channel.pins():
             pin_embed_dict = {
-                "title": message.content,
+                "title": await commandutil.clean(ctx, message.content),
                 "footer": {"text": f"In {message.channel.name}"},
                 "author": {"name": message.author.name,
                            "icon_url": str(message.author.avatar_url)
