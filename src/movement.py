@@ -61,17 +61,22 @@ class Movement(discord.ext.commands.Cog):
                                                     message.author)
 
     @commands.command(aliases=["savepins"])
-    @commands.bot_has_permissions(manage_messages=True)
     async def save_pins(self, ctx, pins_channel: discord.TextChannel):
         """
         Send all the pins in the current channel
         to a dedicated pins channel!
         Remember to use mb.deleteallpins after this!
         """
+        bot_as_member = ctx.guild.get_member(self.bot.user.id)
         member_can_move_messages = pins_channel.permissions_for(
-            ctx.message.author).manage_messages
+            ctx.message.author).send_messages
+        bot_can_send_messages = pins_channel.permissions_for(
+            bot_as_member).send_messages
         if not member_can_move_messages:
             await ctx.send("I'm not sure if you're allowed to do that, sorry!")
+            return
+        if not bot_can_send_messages:
+            await ctx.send("I don't have permissions to send messages there!")
             return
         save_pin_futures = []
         for message in await ctx.channel.pins():
