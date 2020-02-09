@@ -2,6 +2,7 @@ import discord
 from discord.ext import commands
 import logging
 import re
+import asyncio
 from pathlib import Path
 
 SCRIPT_DIR = Path(__file__).parent
@@ -58,6 +59,49 @@ class Movement(discord.ext.commands.Cog):
                     await self.move_message_attempt(reaction.message,
                                                     channel_to_move_to,
                                                     message.author)
+
+    @commands.command(aliases=["savepins"])
+    @commands.bot_has_permissions(manage_messages=True)
+    async def save_pins(self, ctx, pins_channel: discord.TextChannel):
+        """
+        Send all the pins in the current channel
+        to a dedicated pins channel!
+        Remember to use mb.deleteallpins after this!
+        """
+        member_can_move_messages = ctx.channel.permissions_for(
+            ctx.message.author).manage_messages
+        if not member_can_move_messages:
+            await ctx.send("I'm not sure if you're allowed to do that, sorry!")
+            return
+        save_pin_futures = []
+        for message in await ctx.channel.pins():
+            pin_embed_dict = {
+                "title": message.content,
+                "footer": {"text": f"In {message.channel.name}"},
+                "author": {"name": message.author.name,
+                           "icon_url": str(message.author.avatar_url)
+                           },
+                "timestamp": message.created_at.isoformat()
+             }
+            pin_embed = discord.Embed.from_dict(pin_embed_dict)
+            save_pin_futures.append(pins_channel.send(embed=pin_embed))
+        await asyncio.gather(*save_pin_futures, return_exceptions=True)
+        await ctx.send("Done!")
+
+    @commands.command(aliases=["deleteallpins"])
+    @commands.bot_has_permissions(manage_messages=True)
+    async def delete_all_pins(self, ctx):
+        """
+        Delete all pins from the current channel. I'll really do it!
+        """
+        member_can_move_messages = ctx.channel.permissions_for(
+            ctx.message.author).manage_messages
+        if not member_can_move_messages:
+            await ctx.send("I'm not sure if you're allowed to do that, sorry!")
+            return
+        for pin in await ctx.channel.pins():
+            await pin.unpin()
+        await ctx.send("Done!")
 
     async def move_message_attempt(self, message: discord.Message,
                                    channel: discord.TextChannel,
