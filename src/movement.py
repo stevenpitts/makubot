@@ -68,7 +68,7 @@ class Movement(discord.ext.commands.Cog):
         to a dedicated pins channel!
         Remember to use mb.deleteallpins after this!
         """
-        member_can_move_messages = ctx.channel.permissions_for(
+        member_can_move_messages = pins_channel.permissions_for(
             ctx.message.author).manage_messages
         if not member_can_move_messages:
             await ctx.send("I'm not sure if you're allowed to do that, sorry!")
