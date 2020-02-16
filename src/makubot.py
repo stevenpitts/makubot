@@ -21,8 +21,9 @@ logger = logging.getLogger()
 
 
 class MakuBot(commands.Bot):
-    def __init__(self):
-        commands.Bot.__init__(self, command_prefix=commands.when_mentioned,
+    def __init__(self, s3_bucket=False):
+        commands.Bot.__init__(self,
+                              command_prefix=commands.when_mentioned,
                               case_insensitive=True,
                               owner_id=203285581004931072)
         self.makusu = None
@@ -42,6 +43,7 @@ class MakuBot(commands.Bot):
                                              'debugging',
                                              'rolegiver'
                                              ]
+        self.s3_bucket = s3_bucket
         self.loop.set_debug(True)
         for extension in self.shared['default_extensions']:
             self.load_extension(f'src.{extension}')

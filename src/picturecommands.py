@@ -12,8 +12,14 @@ import concurrent
 import subprocess
 import youtube_dl
 import tempfile
+import urllib
 import hashlib
 from datetime import datetime
+try:
+    import boto3
+    S3 = boto3.client("s3")
+except ImportError:
+    pass  # Let the exception get raised later, they might be running locally
 from . import commandutil
 
 SCRIPT_DIR = Path(__file__).parent
@@ -26,6 +32,21 @@ logger = logging.getLogger()
 
 class NotVideo(Exception):
     pass
+
+
+def url_from_s3_key(s3_bucket, s3_key, validate=True):
+    bucket_location = S3.get_bucket_location(Bucket=s3_bucket)
+    bucket_location = bucket_location['LocationConstraint']
+    url = (f"https://{s3_bucket}.s3.{bucket_location}"
+           f".amazonaws.com/{s3_key}")
+    if validate:
+        # Raise HTTPError if url 404s or whatever
+        try:
+            urllib.request.urlopen(url)
+        except urllib.error.HTTPError as e:
+            print(f"URL {url} failed due to {e.code} {e.reason}")
+            raise
+    return url
 
 
 async def get_media_bytes_and_name(url, status_message=None, do_raw=False,
@@ -130,16 +151,27 @@ async def convert_video(video_input, video_output, log=False):
             f"ffmpeg failed to convert {video_input} to {video_output}")
 
 
-async def collection_has_image_bytes(collection: str, image_bytes):
-    collection_dir = PICTURES_DIR / collection
-    if not collection_dir.exists():
-        return False
-    existing_files = (collection_dir / picture_filename
-                      for picture_filename in os.listdir(collection_dir))
-    existing_bytes = (file.read_bytes() for file in existing_files)
-    existing_checksums = (hashlib.sha1(bytes).hexdigest()
-                          for bytes in existing_bytes)
-    return hashlib.sha1(image_bytes).hexdigest() in existing_checksums
+async def collection_has_image_bytes(collection: str,
+                                     image_bytes,
+                                     s3_bucket=False):
+    image_hash = hashlib.md5(image_bytes).hexdigest()
+    if s3_bucket:
+        existing_files = S3.list_objects_v2(Bucket=s3_bucket,
+                                            Prefix=f"pictures/{collection}/",
+                                            )['Contents']
+        existing_checksums = (existing_file['ETag']
+                              for existing_file in existing_files)
+        return image_hash in existing_checksums
+    else:
+        collection_dir = PICTURES_DIR / collection
+        if not collection_dir.exists():
+            return False
+        existing_files = (collection_dir / picture_filename
+                          for picture_filename in os.listdir(collection_dir))
+        existing_bytes = (file.read_bytes() for file in existing_files)
+        existing_checksums = (hashlib.md5(bytes).hexdigest()
+                              for bytes in existing_bytes)
+        return image_hash in existing_checksums
 
 
 class PictureAdder(discord.ext.commands.Cog):
@@ -147,8 +179,9 @@ class PictureAdder(discord.ext.commands.Cog):
         self.bot = bot
         self.temp_save_dir = self.bot.shared['temp_dir']
 
-    async def image_suggestion(self, image_dir, filename, requestor,
+    async def image_suggestion(self, image_collection, filename, requestor,
                                image_bytes=None, status_message=None):
+        image_dir = PICTURES_DIR / image_collection
         try:
             if image_bytes is None:
                 with open(self.temp_save_dir / filename, "rb") as f:
@@ -158,7 +191,6 @@ class PictureAdder(discord.ext.commands.Cog):
                     filename, self.temp_save_dir)
                 with open(self.temp_save_dir / filename, "wb") as f:
                     f.write(image_bytes)
-            image_collection = image_dir.parts[-1]
             if await collection_has_image_bytes(image_collection, image_bytes):
                 response = (
                     f"The image {filename} appears already in the collection!")
@@ -166,7 +198,14 @@ class PictureAdder(discord.ext.commands.Cog):
                 if status_message:
                     await status_message.edit(content=response)
                 return
-            new_addition = '' if image_dir.exists() else '***NEW*** '
+            if self.bot.s3_bucket:
+                list_query = S3.list_objects_v2(
+                    Bucket=self.bot.s3_bucket,
+                    Prefix=(f"pictures/{image_collection}"))
+                is_new = list_query["KeyCount"] == 0
+            else:
+                is_new = image_dir.exists()
+            new_addition = '' if is_new else '***NEW*** '
             proposal = (f"Add image {filename} to {new_addition}"
                         f"{image_collection}? Requested by {requestor.name}")
             try:
@@ -220,11 +259,20 @@ class PictureAdder(discord.ext.commands.Cog):
                 if status_message:
                     await status_message.edit(content=response)
             elif approved:
-                image_dir.mkdir(parents=True, exist_ok=True)
-                new_filename = commandutil.get_nonconflicting_filename(
-                    filename, image_dir)
-                shutil.move(self.temp_save_dir / filename,
-                            image_dir / new_filename)
+                if self.bot.s3_bucket:
+                    new_filename = commandutil.get_nonconflicting_filename(
+                        filename, image_dir, s3_bucket=self.bot.s3_bucket)
+                    S3.upload_file(
+                        str(self.temp_save_dir / filename),
+                        self.bot.s3_bucket,
+                        f"pictures/{image_collection}/{new_filename}",
+                        ExtraArgs={'ACL': 'public-read'})
+                else:
+                    image_dir.mkdir(parents=True, exist_ok=True)
+                    new_filename = commandutil.get_nonconflicting_filename(
+                        filename, image_dir)
+                    shutil.move(self.temp_save_dir / filename,
+                                image_dir / new_filename)
                 self.bot.get_cog("ReactionImages").add_pictures_dir(
                     image_collection)
                 response = f"Your image {new_filename} was approved!"
@@ -283,11 +331,22 @@ class PictureAdder(discord.ext.commands.Cog):
     @commands.command(aliases=["randomimage", "yo", "hey", "makubot"])
     async def random_image(self, ctx):
         """For true shitposting."""
-        files = [Path(dirpath) / Path(filename)
-                 for dirpath, dirnames, filenames in os.walk(PICTURES_DIR)
-                 for filename in filenames]
-        chosen_file = random.choice(files)
-        await ctx.send(file=discord.File(chosen_file))
+        if self.bot.s3_bucket:
+            s3_objects = S3.list_objects_v2(Bucket=self.bot.s3_bucket,
+                                            Prefix="pictures/"
+                                            )["Contents"]
+            chosen_object = random.choice(s3_objects)
+            chosen_key = chosen_object["Key"]
+            chosen_url = url_from_s3_key(self.bot.s3_bucket, chosen_key)
+            image_embed_dict = {"image": {"url": chosen_url}}
+            image_embed = discord.Embed.from_dict(image_embed_dict)
+            await ctx.send(embed=image_embed)
+        else:
+            files = [Path(dirpath) / Path(filename)
+                     for dirpath, dirnames, filenames in os.walk(PICTURES_DIR)
+                     for filename in filenames]
+            chosen_file = random.choice(files)
+            await ctx.send(file=discord.File(chosen_file))
 
     @commands.command(aliases=["addimage", "addimageraw"])
     async def add_image(self, ctx, image_collection: str, *, urls: str = ""):
@@ -347,7 +406,7 @@ class PictureAdder(discord.ext.commands.Cog):
             else:
                 await status_message.edit(content="Sent to Maku for approval!")
                 image_suggestion_coros.append(self.image_suggestion(
-                    PICTURES_DIR / image_collection, filename, ctx.author,
+                    image_collection, filename, ctx.author,
                     image_bytes=data, status_message=status_message))
         all_suggestion_coros = asyncio.gather(*image_suggestion_coros,
                                               return_exceptions=True)
@@ -361,10 +420,22 @@ class PictureAdder(discord.ext.commands.Cog):
 class ReactionImages(discord.ext.commands.Cog):
 
     async def send_image_func(ctx):
-        true_path = PICTURES_DIR / ctx.command.name
-        file_to_send = true_path / random.choice(os.listdir(true_path))
-        async with ctx.typing():
-            await ctx.channel.send(file=discord.File(file_to_send))
+        if ctx.bot.s3_bucket:
+            s3_objects = S3.list_objects_v2(Bucket=ctx.bot.s3_bucket,
+                                            Prefix=("pictures/"
+                                                    f"{ctx.command.name}")
+                                            )["Contents"]
+            chosen_object = random.choice(s3_objects)
+            chosen_key = chosen_object["Key"]
+            chosen_url = url_from_s3_key(ctx.bot.s3_bucket, chosen_key)
+            image_embed_dict = {"image": {"url": chosen_url}}
+            image_embed = discord.Embed.from_dict(image_embed_dict)
+            await ctx.send(embed=image_embed)
+        else:
+            true_path = PICTURES_DIR / ctx.command.name
+            file_to_send = true_path / random.choice(os.listdir(true_path))
+            async with ctx.typing():
+                await ctx.channel.send(file=discord.File(file_to_send))
 
     def __init__(self, bot):
         self.bot = bot
@@ -372,8 +443,18 @@ class ReactionImages(discord.ext.commands.Cog):
         self.image_aliases = {}
         for key, val in self.bot.shared['data']['alias_pictures'].items():
             self.image_aliases[val] = self.image_aliases.get(val, []) + [key]
-        for folder_name in os.listdir(PICTURES_DIR):
-            self.add_pictures_dir(folder_name)
+        if bot.s3_bucket:
+            toplevel_query = S3.list_objects_v2(Bucket=bot.s3_bucket,
+                                                Prefix="pictures/",
+                                                Delimiter="/")
+            toplevel_dirs = [prefix['Prefix'].split("/")[-2]
+                             for prefix
+                             in toplevel_query.get("CommonPrefixes", [])]
+            for folder_name in toplevel_dirs:
+                self.add_pictures_dir(folder_name)
+        else:
+            for folder_name in os.listdir(PICTURES_DIR):
+                self.add_pictures_dir(folder_name)
 
     def add_pictures_dir(self, folder_name: str):
         if folder_name in self.bot.shared['pictures_commands']:

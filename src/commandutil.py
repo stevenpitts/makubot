@@ -3,7 +3,23 @@ import re
 from pathlib import Path
 import itertools
 from datetime import datetime
+try:
+    import boto3
+    import botocore
+    S3 = boto3.client("s3")
+except ImportError:
+    pass  # Might just be running locally
 import discord
+
+
+def s3_object_exists(s3_bucket, key):
+    try:
+        S3.head_object(Bucket=s3_bucket,
+                       Key=key)
+    except botocore.exceptions.ClientError:
+        return False
+    else:
+        return True
 
 
 def get_formatted_traceback(e):
@@ -19,18 +35,37 @@ def slugify(candidate_filename: str):
     return slugified
 
 
-def get_nonconflicting_filename(candidate_filename: str, directory: Path):
-    if not (directory / candidate_filename).is_file():
-        return candidate_filename
-    try:
-        filename_prefix, filename_suffix = candidate_filename.split(".", 1)
-    except ValueError:
-        raise("Filename was not valid (needs prefix and suffix")
-    for addition in itertools.count():
-        candidate_filename = f"{filename_prefix}{addition}.{filename_suffix}"
+def get_nonconflicting_filename(candidate_filename: str,
+                                directory: Path,
+                                s3_bucket=None):
+    if s3_bucket:
+        if not s3_object_exists(s3_bucket, candidate_filename):
+            return candidate_filename
+        try:
+            filename_prefix, filename_suffix = candidate_filename.split(".", 1)
+        except ValueError:
+            raise("Filename was not valid (needs prefix and suffix")
+        for addition in itertools.count():
+            candidate_filename = (f"{filename_prefix}"
+                                  f"{addition}."
+                                  f"{filename_suffix}")
+            if not s3_object_exists(s3_bucket, candidate_filename):
+                return candidate_filename
+        raise AssertionError("Shouldn't ever get here")
+    else:
         if not (directory / candidate_filename).is_file():
             return candidate_filename
-    raise AssertionError("Shouldn't ever get here")
+        try:
+            filename_prefix, filename_suffix = candidate_filename.split(".", 1)
+        except ValueError:
+            raise("Filename was not valid (needs prefix and suffix")
+        for addition in itertools.count():
+            candidate_filename = (f"{filename_prefix}"
+                                  f"{addition}."
+                                  f"{filename_suffix}")
+            if not (directory / candidate_filename).is_file():
+                return candidate_filename
+        raise AssertionError("Shouldn't ever get here")
 
 
 def readable_timedelta(old, new=None):
