@@ -34,6 +34,34 @@ class NotVideo(Exception):
     pass
 
 
+def s3_keys(Bucket, Prefix='/', Delimiter='/', start_after=''):
+    s3_paginator = boto3.client('s3').get_paginator('list_objects_v2')
+    Prefix = Prefix[1:] if Prefix.startswith(Delimiter) else Prefix
+    start_after = ((start_after or Prefix) if Prefix.endswith(Delimiter)
+                   else start_after)
+    keys = []
+    for page in s3_paginator.paginate(Bucket=Bucket,
+                                      Prefix=Prefix,
+                                      StartAfter=start_after):
+        for content in page.get('Contents', ()):
+            keys.append(content['Key'])
+    return keys
+
+
+def s3_hashes(Bucket, Prefix='/', Delimiter='/', start_after=''):
+    s3_paginator = boto3.client('s3').get_paginator('list_objects_v2')
+    Prefix = Prefix[1:] if Prefix.startswith(Delimiter) else Prefix
+    start_after = ((start_after or Prefix) if Prefix.endswith(Delimiter)
+                   else start_after)
+    hashes = []
+    for page in s3_paginator.paginate(Bucket=Bucket,
+                                      Prefix=Prefix,
+                                      StartAfter=start_after):
+        for content in page.get('Contents', ()):
+            hashes.append(content['ETag'].strip('"').strip("'"))
+    return hashes
+
+
 def url_from_s3_key(s3_bucket, s3_key, validate=True):
     bucket_location = S3.get_bucket_location(Bucket=s3_bucket)
     bucket_location = bucket_location['LocationConstraint']
@@ -175,11 +203,9 @@ async def collection_has_image_bytes(collection: str,
                                      s3_bucket=False):
     image_hash = hashlib.md5(image_bytes).hexdigest()
     if s3_bucket:
-        existing_files = S3.list_objects_v2(Bucket=s3_bucket,
-                                            Prefix=f"pictures/{collection}/",
-                                            )['Contents']
-        existing_checksums = (existing_file['ETag']
-                              for existing_file in existing_files)
+        existing_checksums = s3_hashes(Bucket=s3_bucket,
+                                       Prefix=f"pictures/{collection}/"
+                                       )
         return image_hash in existing_checksums
     else:
         collection_dir = PICTURES_DIR / collection
@@ -210,7 +236,9 @@ class PictureAdder(discord.ext.commands.Cog):
                     filename, self.temp_save_dir)
                 with open(self.temp_save_dir / filename, "wb") as f:
                     f.write(image_bytes)
-            if await collection_has_image_bytes(image_collection, image_bytes):
+            if await collection_has_image_bytes(image_collection,
+                                                image_bytes,
+                                                self.bot.s3_bucket):
                 response = (
                     f"The image {filename} appears already in the collection!")
                 await requestor.send(response)
@@ -271,7 +299,9 @@ class PictureAdder(discord.ext.commands.Cog):
             approval_time = datetime.now() - approval_start_time
             logger.info(f"{filename} took {approval_time} to get approved")
             await request.delete()
-            if await collection_has_image_bytes(image_collection, image_bytes):
+            if await collection_has_image_bytes(image_collection,
+                                                image_bytes,
+                                                self.bot.s3_bucket):
                 response = (
                     f"The image {filename} appears already in the collection!")
                 await requestor.send(response)
@@ -351,11 +381,8 @@ class PictureAdder(discord.ext.commands.Cog):
     async def random_image(self, ctx):
         """For true shitposting."""
         if self.bot.s3_bucket:
-            s3_objects = S3.list_objects_v2(Bucket=self.bot.s3_bucket,
-                                            Prefix="pictures/"
-                                            )["Contents"]
-            chosen_object = random.choice(s3_objects)
-            chosen_key = chosen_object["Key"]
+            chosen_key = random.choice(s3_keys(Bucket=self.bot.s3_bucket,
+                                               Prefix="pictures/"))
             chosen_url = url_from_s3_key(self.bot.s3_bucket, chosen_key)
             image_embed = await generate_image_embed(ctx, chosen_url)
             await ctx.send(embed=image_embed)
@@ -439,12 +466,13 @@ class ReactionImages(discord.ext.commands.Cog):
 
     async def send_image_func(ctx):
         if ctx.bot.s3_bucket:
-            s3_objects = S3.list_objects_v2(Bucket=ctx.bot.s3_bucket,
-                                            Prefix=("pictures/"
-                                                    f"{ctx.command.name}")
-                                            )["Contents"]
-            chosen_object = random.choice(s3_objects)
-            chosen_key = chosen_object["Key"]
+            keys = s3_keys(Bucket=ctx.bot.s3_bucket,
+                           Prefix=(f"pictures/{ctx.command.name}")
+                           )
+            # s3_objects = s3_response["Contents"]
+            # chosen_object = random.choice(s3_objects)
+            # chosen_key = chosen_object["Key"]
+            chosen_key = random.choice(keys)
             chosen_url = url_from_s3_key(ctx.bot.s3_bucket, chosen_key)
             image_embed = await generate_image_embed(ctx, chosen_url)
             await ctx.send(embed=image_embed)
