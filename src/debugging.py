@@ -99,9 +99,10 @@ class Debugging(discord.ext.commands.Cog):
         of the Smithsonian Institution in Washington, D.C.
         due to its cultural impact.
         '''
-        time_passed = datetime.utcnow() - ctx.message.created_at
-        ms_passed = time_passed.microseconds/1000
-        await ctx.send(f'pong! It took me {ms_passed}ms to get the ping.')
+        response = await ctx.send(f'pong!')
+        time_delta = response.created_at - ctx.message.created_at
+        latency_ms = int((time_delta).total_seconds() * 1000)
+        await response.edit(content=f"pong! My latency is {latency_ms} ms.")
 
     @commands.command(hidden=True, aliases=['status'])
     @commands.is_owner()
