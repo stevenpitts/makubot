@@ -52,13 +52,15 @@ def url_from_s3_key(s3_bucket, s3_key, validate=True):
 async def generate_image_embed(ctx, url):
     bot_nick = ctx.me.nick or ctx.me.name
     invocation = f"{ctx.prefix}{ctx.invoked_with}"
-    query = f"{bot_nick},{ctx.message.content[len(invocation):]}"
+    content_without_invocation = ctx.message.content[len(invocation):]
+    has_content = bool(content_without_invocation.strip())
+    query = f"{bot_nick},{content_without_invocation}"
     cleaned_query = await commandutil.clean(ctx, query)
     image_embed_dict = {
-        "description": cleaned_query,
+        "description": cleaned_query if has_content else "",
         "author": {"name": ctx.author.name,
                    "icon_url": str(ctx.author.avatar_url)
-                   },
+                   } if has_content else {},
         "image": {"url": url},
         "footer": {"text": f"-{bot_nick}", "icon_url": str(ctx.me.avatar_url)},
         }
