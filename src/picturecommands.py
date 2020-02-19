@@ -49,6 +49,23 @@ def url_from_s3_key(s3_bucket, s3_key, validate=True):
     return url
 
 
+async def generate_image_embed(ctx, url):
+    bot_nick = ctx.me.nick or ctx.me.name
+    invocation = f"{ctx.prefix}{ctx.invoked_with}"
+    query = f"{bot_nick},{ctx.message.content[len(invocation):]}"
+    cleaned_query = await commandutil.clean(ctx, query)
+    image_embed_dict = {
+        "description": cleaned_query,
+        "author": {"name": ctx.author.name,
+                   "icon_url": str(ctx.author.avatar_url)
+                   },
+        "image": {"url": url},
+        "footer": {"text": f"-{bot_nick}", "icon_url": str(ctx.me.avatar_url)},
+        }
+    image_embed = discord.Embed.from_dict(image_embed_dict)
+    return image_embed
+
+
 async def get_media_bytes_and_name(url, status_message=None, do_raw=False,
                                    loading_emoji=""):
     with tempfile.TemporaryDirectory() as temp_dir:
@@ -338,8 +355,7 @@ class PictureAdder(discord.ext.commands.Cog):
             chosen_object = random.choice(s3_objects)
             chosen_key = chosen_object["Key"]
             chosen_url = url_from_s3_key(self.bot.s3_bucket, chosen_key)
-            image_embed_dict = {"image": {"url": chosen_url}}
-            image_embed = discord.Embed.from_dict(image_embed_dict)
+            image_embed = await generate_image_embed(ctx, chosen_url)
             await ctx.send(embed=image_embed)
         else:
             files = [Path(dirpath) / Path(filename)
@@ -428,8 +444,7 @@ class ReactionImages(discord.ext.commands.Cog):
             chosen_object = random.choice(s3_objects)
             chosen_key = chosen_object["Key"]
             chosen_url = url_from_s3_key(ctx.bot.s3_bucket, chosen_key)
-            image_embed_dict = {"image": {"url": chosen_url}}
-            image_embed = discord.Embed.from_dict(image_embed_dict)
+            image_embed = await generate_image_embed(ctx, chosen_url)
             await ctx.send(embed=image_embed)
         else:
             true_path = PICTURES_DIR / ctx.command.name
