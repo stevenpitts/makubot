@@ -34,7 +34,7 @@ class NotVideo(Exception):
     pass
 
 
-def s3_keys(Bucket, Prefix='/', Delimiter='/', start_after=''):
+async def s3_keys(Bucket, Prefix='/', Delimiter='/', start_after=''):
     s3_paginator = boto3.client('s3').get_paginator('list_objects_v2')
     Prefix = Prefix[1:] if Prefix.startswith(Delimiter) else Prefix
     start_after = ((start_after or Prefix) if Prefix.endswith(Delimiter)
@@ -45,10 +45,11 @@ def s3_keys(Bucket, Prefix='/', Delimiter='/', start_after=''):
                                       StartAfter=start_after):
         for content in page.get('Contents', ()):
             keys.append(content['Key'])
+        await asyncio.sleep(0)
     return keys
 
 
-def s3_hashes(Bucket, Prefix='/', Delimiter='/', start_after=''):
+async def s3_hashes(Bucket, Prefix='/', Delimiter='/', start_after=''):
     s3_paginator = boto3.client('s3').get_paginator('list_objects_v2')
     Prefix = Prefix[1:] if Prefix.startswith(Delimiter) else Prefix
     start_after = ((start_after or Prefix) if Prefix.endswith(Delimiter)
@@ -59,6 +60,7 @@ def s3_hashes(Bucket, Prefix='/', Delimiter='/', start_after=''):
                                       StartAfter=start_after):
         for content in page.get('Contents', ()):
             hashes.append(content['ETag'].strip('"').strip("'"))
+        await asyncio.sleep(0)
     return hashes
 
 
@@ -77,15 +79,24 @@ def url_from_s3_key(s3_bucket, s3_key, validate=True):
     return url
 
 
-async def generate_image_embed(ctx, url):
+async def generate_image_embed(ctx,
+                               url,
+                               call_bot_name=False):
     bot_nick = ctx.me.nick or ctx.me.name
     invocation = f"{ctx.prefix}{ctx.invoked_with}"
     content_without_invocation = ctx.message.content[len(invocation):]
     has_content = bool(content_without_invocation.strip())
-    query = f"{bot_nick},{content_without_invocation}"
+    query = f"{content_without_invocation}"
     cleaned_query = await commandutil.clean(ctx, query)
+    call_beginning = ("" if not has_content else
+                      f"{bot_nick}, " if call_bot_name else
+                      f"{ctx.invoked_with}, "
+                      )
+    embed_description = (
+        f"{call_beginning}{cleaned_query}" if has_content else ""
+        )
     image_embed_dict = {
-        "description": cleaned_query if has_content else "",
+        "description": embed_description,
         "author": {"name": ctx.author.name,
                    "icon_url": str(ctx.author.avatar_url)
                    } if has_content else {},
@@ -203,9 +214,9 @@ async def collection_has_image_bytes(collection: str,
                                      s3_bucket=False):
     image_hash = hashlib.md5(image_bytes).hexdigest()
     if s3_bucket:
-        existing_checksums = s3_hashes(Bucket=s3_bucket,
-                                       Prefix=f"pictures/{collection}/"
-                                       )
+        existing_checksums = await s3_hashes(Bucket=s3_bucket,
+                                             Prefix=f"pictures/{collection}/"
+                                             )
         return image_hash in existing_checksums
     else:
         collection_dir = PICTURES_DIR / collection
@@ -381,10 +392,13 @@ class PictureAdder(discord.ext.commands.Cog):
     async def random_image(self, ctx):
         """For true shitposting."""
         if self.bot.s3_bucket:
-            chosen_key = random.choice(s3_keys(Bucket=self.bot.s3_bucket,
-                                               Prefix="pictures/"))
+            keys = await s3_keys(Bucket=self.bot.s3_bucket,
+                                 Prefix="pictures/")
+            chosen_key = random.choice(keys)
             chosen_url = url_from_s3_key(self.bot.s3_bucket, chosen_key)
-            image_embed = await generate_image_embed(ctx, chosen_url)
+            image_embed = await generate_image_embed(ctx,
+                                                     chosen_url,
+                                                     call_bot_name=True)
             await ctx.send(embed=image_embed)
         else:
             files = [Path(dirpath) / Path(filename)
@@ -466,9 +480,9 @@ class ReactionImages(discord.ext.commands.Cog):
 
     async def send_image_func(ctx):
         if ctx.bot.s3_bucket:
-            keys = s3_keys(Bucket=ctx.bot.s3_bucket,
-                           Prefix=(f"pictures/{ctx.command.name}")
-                           )
+            keys = await s3_keys(Bucket=ctx.bot.s3_bucket,
+                                 Prefix=(f"pictures/{ctx.command.name}")
+                                 )
             # s3_objects = s3_response["Contents"]
             # chosen_object = random.choice(s3_objects)
             # chosen_key = chosen_object["Key"]
