@@ -52,7 +52,7 @@ def main():
                          'with your own token first.')
     token = tokens.testToken if 'test' in sys.argv else tokens.realToken
     # Use local storage if s3_bucket isn't set in environment
-    s3_bucket = os.environ.get('S3_BUCKET', None)
+    s3_bucket = os.environ.get('s3_bucket', None)
     makubot_bot = makubot.MakuBot(s3_bucket=s3_bucket)
     if "profile" in sys.argv:
         profile_thread = threading.Thread(
