@@ -1,16 +1,9 @@
 import discord
 from discord.ext import commands
 import logging
-import codecs
 import aiohttp
 from datetime import datetime
-from pathlib import Path
 import asyncio
-
-SCRIPT_DIR = Path(__file__).parent
-PARENT_DIR = SCRIPT_DIR.parent
-DATA_DIR = PARENT_DIR / 'data'
-DELETION_LOG_PATH = DATA_DIR / 'deletion_log.txt'
 
 logger = logging.getLogger()
 
@@ -170,8 +163,6 @@ class ServerLogging(discord.ext.commands.Cog):
         deletion_text = (f"{deletion_description}: "
                          f"{message.content}\n{embed_content_str}")
         self.last_deleted_message[message.channel.id] = deletion_text
-        with codecs.open(DELETION_LOG_PATH, 'a', 'utf-8') as deletion_log_file:
-            deletion_log_file.write(deletion_text+'\n')
         log_to_channels = await self.get_log_channels(message.guild,
                                                       message.channel)
         embed = discord.Embed(
