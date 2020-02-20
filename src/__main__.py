@@ -5,13 +5,7 @@ from pathlib import Path
 import asyncio
 import time
 import threading
-try:
-    from . import tokens
-except ImportError:
-    if not os.path.isfile(str(Path(__file__).parent / 'tokens.py')):
-        with open(str(Path(__file__).parent / 'tokens.py'), 'w') as f:
-            f.write('realToken = None\ntestToken = None\ngoogleAPI = None\n')
-    from . import tokens
+
 SCRIPT_DIR = Path(__file__).parent
 PARENT_DIR = SCRIPT_DIR.parent
 DATA_DIR = PARENT_DIR / 'data'
@@ -42,18 +36,16 @@ def main():
             with open(str(DATA_DIR / filename), 'w') as f:
                 f.write(to_write)
 
-    if bool('test' in sys.argv) == bool('real' in sys.argv):
-        raise ValueError('You must pass only one of "test" or "real" in args.')
-    if 'test' in sys.argv and tokens.testToken is None:
-        raise ValueError('You must replace testToken in tokens.py '
-                         'with your own test token first.')
-    elif 'real' in sys.argv and tokens.realToken is None:
-        raise ValueError('You must replace realToken in tokens.py '
-                         'with your own token first.')
-    token = tokens.testToken if 'test' in sys.argv else tokens.realToken
-    # Use local storage if s3_bucket isn't set in environment
-    s3_bucket = os.environ.get('s3_bucket', None)
-    makubot_bot = makubot.MakuBot(s3_bucket=s3_bucket)
+    token = os.environ['DISCORD_BOT_TOKEN']
+    # Use local storage if S3_BUCKET isn't set in environment
+    s3_bucket = os.environ.get('S3_BUCKET', None)
+    google_api_key = os.environ.get('GOOGLE_API_KEY', None)
+
+    makubot_bot = makubot.MakuBot(
+        s3_bucket=s3_bucket,
+        google_api_key=google_api_key
+        )
+
     if "profile" in sys.argv:
         profile_thread = threading.Thread(
             target=profile_bot, args=[makubot_bot])

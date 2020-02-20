@@ -10,6 +10,6 @@ I’m Makubot! I do a lot of generic things, but I also have a unique image coll
 
 ## Setup & Installation
 
-You must enter at least one of `testToken` or `realToken` in src/tokens.py.
-In order to use YouTube services, you must set `googleAPI` to a Google API token  in src/tokens.py.
+You must add your Discord bot token to the environment variable DISCORD_BOT_TOKEN.
+In order to use YouTube services, you must set a GOOGLE_API_KEY environment variable to a Google API key.
 To start, run `src/__main__.py`

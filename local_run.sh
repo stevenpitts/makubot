@@ -20,10 +20,14 @@ credentials=`aws secretsmanager get-secret-value \
 
 bot_access_key=`echo $credentials | jq -r ".AWS_ACCESS_KEY_ID"`
 bot_secret_key=`echo $credentials | jq -r ".AWS_SECRET_ACCESS_KEY"`
+google_api_key=`echo $credentials | jq -r ".GOOGLE_API_KEY"`
+discord_token=`echo $credentials | jq -r ".DISCORD_TOKEN"`
 
 docker run -it --rm --name $bot_name \
   -e AWS_ACCESS_KEY_ID=$bot_access_key \
   -e AWS_SECRET_ACCESS_KEY=$bot_secret_key \
-  -e s3_bucket=$s3_bucket \
+  -e DISCORD_BOT_TOKEN=$discord_token \
+  -e GOOGLE_API_KEY=$google_api_key \
+  -e S3_BUCKET=$s3_bucket \
   --network="host" \
   makubot
