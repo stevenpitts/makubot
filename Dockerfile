@@ -8,6 +8,6 @@ RUN apt-get -yqq update && apt-get -yqq install ffmpeg
 
 COPY . .
 
-ENV s3_bucket makubottestbucket
+ENV s3_bucket makumistake
 
 CMD [ "python3.8", "-m", "src", "test" ]
