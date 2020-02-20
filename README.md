@@ -12,6 +12,4 @@ I’m Makubot! I do a lot of generic things, but I also have a unique image coll
 
 You must enter at least one of `testToken` or `realToken` in src/tokens.py.
 In order to use YouTube services, you must set `googleAPI` to a Google API token  in src/tokens.py.
-To set up the pipenv environment, run `pipenv install --dev` and then `pipenv run start`.
-If you encounter any issues with these commands, please submit an issue!
-You can also run `src/__main__.py` instead, if you have set up your environment manually.
+To start, run `src/__main__.py`
