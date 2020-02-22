@@ -23,48 +23,48 @@ class RemindersDB:
         self.conn = sqlite3.connect(db)
         self.conn.row_factory = sqlite3.Row
         self.c = self.conn.cursor()
-        self.c.execute('''CREATE TABLE IF NOT EXISTS reminders
+        self.c.execute("""CREATE TABLE IF NOT EXISTS reminders
                            (id INTEGER PRIMARY KEY AUTOINCREMENT,
                            remind_set_time DATE,
                            remind_time DATE NOT NULL,
                            user_id CHARACTER(18),
                            channel_id CHARACTER(18),
-                           reminder_message TEXT);''')
-        self.c.execute('''CREATE INDEX IF NOT EXISTS date_index
-                           ON reminders (remind_time);''')
+                           reminder_message TEXT);""")
+        self.c.execute("""CREATE INDEX IF NOT EXISTS date_index
+                           ON reminders (remind_time);""")
         self.conn.commit()
 
     def add_reminder(self, remind_set_time, remind_time, user_id, channel_id,
                      reminder_message):
-        self.c.execute('''INSERT INTO reminders
+        self.c.execute("""INSERT INTO reminders
                        (remind_set_time,
                        remind_time,
                        user_id,
                        channel_id,
                        reminder_message)
-                       VALUES (?, ?, ?, ?, ?)''',
+                       VALUES (?, ?, ?, ?, ?)""",
                        (remind_set_time, remind_time, user_id, channel_id,
                         reminder_message))
         self.conn.commit()
 
     def drop_reminder(self, reminder_id):
-        self.c.execute('''DELETE FROM reminders WHERE id = ?''',
+        self.c.execute("""DELETE FROM reminders WHERE id = ?""",
                        (reminder_id,))
         self.conn.commit()
 
     def ready_reminders(self, current_time):
-        self.c.execute('''SELECT * FROM reminders
-                           WHERE remind_time <= ?''', (current_time, ))
+        self.c.execute("""SELECT * FROM reminders
+                           WHERE remind_time <= ?""", (current_time, ))
         return self.c.fetchall()
 
     def reminders_from_user(self, user_id):
         user_id = str(user_id)
-        self.c.execute('''SELECT * FROM reminders WHERE user_id = ?''',
+        self.c.execute("""SELECT * FROM reminders WHERE user_id = ?""",
                        (user_id, ))
         return self.c.fetchall()
 
-    def from_id(self, id):
-        self.c.execute('''SELECT * FROM reminders WHERE id = ?''', (id,))
+    def reminder_from_id(self, id):
+        self.c.execute("""SELECT * FROM reminders WHERE id = ?""", (id,))
         return self.c.fetchone()
 
 
@@ -141,7 +141,7 @@ class ReminderCommands(discord.ext.commands.Cog):
 
     @commands.command(aliases=["remindme"])
     async def remind_me(self, ctx, *, time_and_reminder: str):
-        '''Reminds you of a thing!
+        """Reminds you of a thing!
         Usage:
           remindme [<years>y][<days>d][<hours>h][<minutes>m][<seconds>s]
                    <reminder>
@@ -149,7 +149,7 @@ class ReminderCommands(discord.ext.commands.Cog):
         Many other forms are also supported, but they must use UTC and
         day-before-month format. Also they're a tad wonky.
         Example: remindme 1d2h9s do laundry
-        '''
+        """
         total_seconds, reminder_message = parse_remind_me(
             time_and_reminder)
         reminder_message = await commandutil.clean(ctx, reminder_message)
@@ -199,7 +199,7 @@ class ReminderCommands(discord.ext.commands.Cog):
                                               ctx.author == message.author)
             try:
                 choice = int(message.content)
-                chosen_reminder = self.reminders_db.from_id(choice)
+                chosen_reminder = self.reminders_db.reminder_from_id(choice)
                 if chosen_reminder is None:
                     raise ValueError("chosen_reminder wasn't valid")
             except (IndexError, ValueError):
