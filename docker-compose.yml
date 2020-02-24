@@ -1,0 +1,36 @@
+version: '3.7'
+services:
+    mbdb:
+        image: postgres
+        networks:
+            - net
+        hostname: mbdb
+        environment:
+            - POSTGRES_PASSWORD=${pgpassword}
+    snekbox:
+        image: pythondiscord/snekbox
+        privileged: true
+        init: true
+        ipc: none
+        networks:
+            - net
+
+    bot:
+        build:
+            context: .
+        networks:
+            - net
+        environment:
+            - AWS_ACCESS_KEY_ID=${bot_access_key}
+            - AWS_SECRET_ACCESS_KEY=${bot_secret_key}
+            - DISCORD_BOT_TOKEN=${discord_token}
+            - GOOGLE_API_KEY=${google_api_key}
+            - S3_BUCKET=${s3_bucket}
+            - PGPASSWORD=${pgpassword}
+            - PGHOST=mbdb
+            - PGPORT=${db_port}
+            - PGUSER=postgres
+            - PYTHONUNBUFFERED=1
+
+networks:
+    net:
