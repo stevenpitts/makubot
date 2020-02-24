@@ -122,13 +122,10 @@ class Movement(discord.ext.commands.Cog):
                             or move_request_user == message.author
                             or move_request_user.id == self.bot.makusu.id)
         if should_get_moved:
-            temp_save_dir = self.bot.shared['temp_dir']
-            for attachment in message.attachments:
-                await attachment.save(temp_save_dir
-                                      / attachment.filename)
             attachment_files = [
-                discord.File(temp_save_dir / attachment.filename)
-                for attachment in message.attachments]
+                await attachment.to_file()
+                for attachment in message.attachments
+                ]
             move_description = (f'{move_request_user.mention} has moved '
                                 f'this here from {message.channel.mention}. '
                                 f'OP was {message.author.mention}.\n'
