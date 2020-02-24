@@ -1,17 +1,19 @@
 set -e
-
-# snekbox doesn't get stopped or removed after script ends, so be careful
-
-docker container rm -f snekbox 2>/dev/null && echo "Stopped Snekbox" || true
-docker pull pythondiscord/snekbox-base \
-  && docker run -d --name snekbox --privileged --hostname pdsnk \
-    --init --ipc="none" -p8060:8060 pythondiscord/snekbox
+# function error() {
+#     JOB="$0"              # job name
+#     LASTLINE="$1"         # line of error occurrence
+#     LASTERR="$2"          # error code
+#     echo "ERROR in ${JOB} : line ${LASTLINE} with exit code ${LASTERR}"
+#     exit 1
+# }
+# trap 'error ${LINENO} ${?}' ERR
 
 bot_name="${bot_name:-makumistake}"
 s3_bucket="${s3_bucket:-$bot_name}"
 credentials_secret_name="${credentials_secret_name:-$bot_name}"
-
-docker build --tag makubot .
+db_name="${db_name:-${bot_name}_db}"
+db_port="${db_port:-5432}"
+container_network="${container_network:-${bot_name}_network}"
 
 credentials=`aws secretsmanager get-secret-value \
   --secret-id $credentials_secret_name \
@@ -22,12 +24,50 @@ bot_access_key=`echo $credentials | jq -r ".AWS_ACCESS_KEY_ID"`
 bot_secret_key=`echo $credentials | jq -r ".AWS_SECRET_ACCESS_KEY"`
 google_api_key=`echo $credentials | jq -r ".GOOGLE_API_KEY"`
 discord_token=`echo $credentials | jq -r ".DISCORD_TOKEN"`
+# pgpassword=`echo $credentials | jq -r ".PGPASSWORD"`
+pgpassword="what"
 
-docker run -it --rm --name $bot_name \
-  -e AWS_ACCESS_KEY_ID=$bot_access_key \
-  -e AWS_SECRET_ACCESS_KEY=$bot_secret_key \
-  -e DISCORD_BOT_TOKEN=$discord_token \
-  -e GOOGLE_API_KEY=$google_api_key \
-  -e S3_BUCKET=$s3_bucket \
-  --network="host" \
+
+docker build --tag makubot .
+
+
+# Neither snekbox nor postgres get stopped or removed after script ends,
+# so be careful
+docker container rm -f snekbox 2>/dev/null && echo "Stopped Snekbox" || true
+docker container rm -f $db_name 2>/dev/null && echo "Stopped $db_name" || true
+docker network rm $container_network 2>/dev/null \
+  && echo "Stopped $container_network" || true
+
+docker network create $container_network
+
+docker pull pythondiscord/snekbox
+docker run -d --name snekbox --privileged --init --ipc="none" \
+  --network $container_network \
+  pythondiscord/snekbox
+
+docker pull postgres
+docker run -d --name "$db_name" \
+  --network $container_network \
+  --env POSTGRES_PASSWORD="$pgpassword" \
+  postgres
+
+db_ip=$(docker container inspect makumistake_db \
+  | jq -r ".[0].NetworkSettings.Networks.$container_network.IPAddress")
+
+while ! nc -z $db_ip $db_port; do
+  echo waiting
+  sleep 0.1 # wait for 1/10 of the second before check again
+done
+
+
+docker run -it --rm --name $bot_name --network $container_network \
+  --env AWS_ACCESS_KEY_ID=$bot_access_key \
+  --env AWS_SECRET_ACCESS_KEY=$bot_secret_key \
+  --env DISCORD_BOT_TOKEN=$discord_token \
+  --env GOOGLE_API_KEY=$google_api_key \
+  --env S3_BUCKET=$s3_bucket \
+  --env PGPASSWORD=$pgpassword \
+  --env PGHOST=$db_ip \
+  --env PGPORT=$db_port \
+  --env PGUSER=postgres \
   makubot

@@ -8,7 +8,7 @@ import threading
 
 SCRIPT_DIR = Path(__file__).parent
 PARENT_DIR = SCRIPT_DIR.parent
-DATA_DIR = PARENT_DIR / 'data'
+DATA_DIR = PARENT_DIR / "data"
 
 
 def profile_bot(bot):
@@ -26,24 +26,32 @@ def profile_bot(bot):
 
 
 def main():
-    os.makedirs(str(DATA_DIR / 'pictures'), exist_ok=True)
+    os.makedirs(str(DATA_DIR / "pictures"), exist_ok=True)
 
-    default_text = {'makubot.log': '',
-                    'data.json': '{}',
-                    'deletion_log.txt': ''}
+    default_text = {"makubot.log": "",
+                    "data.json": "{}",
+                    "deletion_log.txt": ""}
     for filename, to_write in default_text.items():
         if not os.path.isfile(str(DATA_DIR / filename)):
-            with open(str(DATA_DIR / filename), 'w') as f:
+            with open(str(DATA_DIR / filename), "w") as f:
                 f.write(to_write)
 
-    token = os.environ['DISCORD_BOT_TOKEN']
-    # Use local storage if S3_BUCKET isn't set in environment
-    s3_bucket = os.environ.get('S3_BUCKET', None)
-    google_api_key = os.environ.get('GOOGLE_API_KEY', None)
+    token = os.environ["DISCORD_BOT_TOKEN"]
+    # Use local storage if S3_BUCKET isn"t set in environment
+    s3_bucket = os.environ.get("S3_BUCKET", None)
+    google_api_key = os.environ.get("GOOGLE_API_KEY", None)
+    db_host = os.environ["PGHOST"]
+    db_pass = os.environ["PGPASSWORD"]
+    db_port = os.environ["PGPORT"]
+    db_user = os.environ["PGUSER"]
 
     makubot_bot = makubot.MakuBot(
         s3_bucket=s3_bucket,
-        google_api_key=google_api_key
+        google_api_key=google_api_key,
+        db_host=db_host,
+        db_pass=db_pass,
+        db_port=db_port,
+        db_user=db_user
         )
 
     if "profile" in sys.argv:

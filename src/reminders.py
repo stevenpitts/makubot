@@ -2,10 +2,10 @@ import concurrent
 from pathlib import Path
 import discord
 from discord.ext import commands, tasks
-import time
-import datetime
+from datetime import datetime, timedelta
 import logging
-import sqlite3
+import psycopg2
+from psycopg2.extras import RealDictCursor
 import asyncio
 import re
 from . import commandutil
@@ -19,52 +19,70 @@ logger = logging.getLogger()
 
 
 class RemindersDB:
-    def __init__(self, db=PARENT_DIR / 'data' / 'reminders.db'):
-        self.conn = sqlite3.connect(db)
-        self.conn.row_factory = sqlite3.Row
-        self.c = self.conn.cursor()
-        self.c.execute("""CREATE TABLE IF NOT EXISTS reminders
-                           (id INTEGER PRIMARY KEY AUTOINCREMENT,
-                           remind_set_time DATE,
-                           remind_time DATE NOT NULL,
-                           user_id CHARACTER(18),
-                           channel_id CHARACTER(18),
-                           reminder_message TEXT);""")
+    def __init__(self, bot):
+        self.bot = bot
+        self.conn = psycopg2.connect(
+            host=self.bot.db_host,
+            password=self.bot.db_pass,
+            port=self.bot.db_port,
+            user=self.bot.db_user,
+            )
+        self.c = self.conn.cursor(cursor_factory=RealDictCursor)
+        self.c.execute("""
+            CREATE TABLE IF NOT EXISTS reminders (
+            id SERIAL PRIMARY KEY,
+            remind_set_time DATE,
+            remind_time DATE NOT NULL,
+            user_id CHARACTER(18),
+            channel_id CHARACTER(18),
+            reminder_message TEXT
+            );
+            """)
         self.c.execute("""CREATE INDEX IF NOT EXISTS date_index
                            ON reminders (remind_time);""")
         self.conn.commit()
 
     def add_reminder(self, remind_set_time, remind_time, user_id, channel_id,
                      reminder_message):
-        self.c.execute("""INSERT INTO reminders
-                       (remind_set_time,
-                       remind_time,
-                       user_id,
-                       channel_id,
-                       reminder_message)
-                       VALUES (?, ?, ?, ?, ?)""",
-                       (remind_set_time, remind_time, user_id, channel_id,
-                        reminder_message))
+        query = """
+            INSERT INTO reminders (
+            remind_set_time,
+            remind_time,
+            user_id,
+            channel_id,
+            reminder_message)
+            VALUES (%s, %s, %s, %s, %s)
+            """
+        self.c.execute(
+            query,
+            (remind_set_time,
+             remind_time,
+             user_id,
+             channel_id,
+             reminder_message)
+            )
         self.conn.commit()
 
     def drop_reminder(self, reminder_id):
-        self.c.execute("""DELETE FROM reminders WHERE id = ?""",
+        self.c.execute("""DELETE FROM reminders WHERE id = %s""",
                        (reminder_id,))
         self.conn.commit()
 
-    def ready_reminders(self, current_time):
+    def ready_reminders(self):
+        current_time = datetime.utcnow()
         self.c.execute("""SELECT * FROM reminders
-                           WHERE remind_time <= ?""", (current_time, ))
-        return self.c.fetchall()
+                           WHERE remind_time <= %s""", (current_time, ))
+        ready_reminders_list = self.c.fetchall()  # TODO better name
+        return ready_reminders_list
 
     def reminders_from_user(self, user_id):
         user_id = str(user_id)
-        self.c.execute("""SELECT * FROM reminders WHERE user_id = ?""",
+        self.c.execute("""SELECT * FROM reminders WHERE user_id = %s""",
                        (user_id, ))
         return self.c.fetchall()
 
     def reminder_from_id(self, id):
-        self.c.execute("""SELECT * FROM reminders WHERE id = ?""", (id,))
+        self.c.execute("""SELECT * FROM reminders WHERE id = %s""", (id,))
         return self.c.fetchone()
 
 
@@ -119,7 +137,7 @@ def parse_remind_me(time_and_reminder):
         return None, None
     if not reminder_tokens:
         return None, None
-    time_difference = time_specified - datetime.datetime.utcnow()
+    time_difference = time_specified - datetime.utcnow()
     total_seconds = time_difference.total_seconds()
     reminder_message_raw = max(reminder_tokens, key=len)
     words = strip_conjunctions(reminder_message_raw.split(" "))
@@ -132,7 +150,7 @@ def parse_remind_me(time_and_reminder):
 class ReminderCommands(discord.ext.commands.Cog):
     def __init__(self, bot):
         self.bot = bot
-        self.reminders_db = RemindersDB()
+        self.reminders_db = RemindersDB(self.bot)
         self.cycle_reminders.start()
 
     def cog_unload(self):
@@ -162,8 +180,8 @@ class ReminderCommands(discord.ext.commands.Cog):
             await ctx.send("That's a time in the past :?")
             return
         reminder_cleaned = await commandutil.clean(ctx, reminder_message)
-        remind_set_time = int(time.time())
-        remind_time = remind_set_time + total_seconds
+        remind_set_time = datetime.utcnow()
+        remind_time = remind_set_time + timedelta(seconds=total_seconds)
         user_id = str(ctx.message.author.id)
         channel_id = str(ctx.message.channel.id)
         try:
@@ -215,7 +233,13 @@ class ReminderCommands(discord.ext.commands.Cog):
     async def send_reminder(self, reminder):
         reminder_channel = self.bot.get_channel(int(reminder["channel_id"]))
         reminder_user = self.bot.get_user(int(reminder["user_id"]))
-        time_delta = int(time.time()) - reminder["remind_set_time"]
+        print("Hereoiewjf")
+        try:
+            time_delta = datetime.utcnow().seconds - reminder["remind_set_time"]
+        except Exception as e:
+            print("Got exception: ", e)
+            raise
+        print("Goiewhtoi")
         human_delay = get_human_delay(time_delta)
         if reminder_user and not reminder_channel:
             await reminder_user.send(
@@ -229,6 +253,7 @@ class ReminderCommands(discord.ext.commands.Cog):
         elif not reminder_channel and not reminder_user:
             await self.bot.makusu.send(f"Couldn't find stuff for {reminder}")
         else:
+            print("Sending reminder 8302")
             await reminder_channel.send(
                 f"{reminder_user.mention}, you have a message from "
                 f"{human_delay} ago: {reminder['reminder_message']}")
@@ -236,17 +261,21 @@ class ReminderCommands(discord.ext.commands.Cog):
     @tasks.loop(seconds=1)
     async def cycle_reminders(self):
         try:
-            ready_reminders = self.reminders_db.ready_reminders(
-                current_time=int(time.time()))
+            ready_reminders = self.reminders_db.ready_reminders()
             reminder_coros = [self.send_reminder(reminder)
                               for reminder in ready_reminders]
-            await asyncio.gather(*reminder_coros, return_exceptions=True)
+            await asyncio.gather(*reminder_coros)
             for reminder in ready_reminders:
+                print(f"Dropping reminder: {reminder['id']}")
                 self.reminders_db.drop_reminder(reminder['id'])
+                print("Jesus christ")
         except (concurrent.futures._base.CancelledError,
-                sqlite3.ProgrammingError):
+                # psycopg2.ProgrammingError
+                ):
+            print("Base cancelled here fuck")
             return
         except Exception as e:
+            print("Here fuck")
             print(commandutil.get_formatted_traceback(e))
 
     @cycle_reminders.before_loop

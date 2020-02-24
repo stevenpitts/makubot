@@ -21,7 +21,14 @@ logger = logging.getLogger()
 
 
 class MakuBot(commands.Bot):
-    def __init__(self, s3_bucket=False, google_api_key=None):
+    def __init__(self,
+                 s3_bucket=False,
+                 google_api_key=None,
+                 db_host=None,
+                 db_pass=None,
+                 db_port=None,
+                 db_user=None,
+                 ):
         commands.Bot.__init__(self,
                               command_prefix=commands.when_mentioned,
                               case_insensitive=True,
@@ -45,6 +52,10 @@ class MakuBot(commands.Bot):
                                              ]
         self.s3_bucket = s3_bucket
         self.google_api_key = google_api_key
+        self.db_host = db_host
+        self.db_pass = db_pass
+        self.db_port = db_port
+        self.db_user = db_user
         self.loop.set_debug(True)
         for extension in self.shared['default_extensions']:
             self.load_extension(f'src.{extension}')

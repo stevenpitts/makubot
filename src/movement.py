@@ -91,7 +91,7 @@ class Movement(discord.ext.commands.Cog):
              }
             pin_embed = discord.Embed.from_dict(pin_embed_dict)
             save_pin_futures.append(pins_channel.send(embed=pin_embed))
-        await asyncio.gather(*save_pin_futures, return_exceptions=True)
+        await asyncio.gather(*save_pin_futures)
         await ctx.send("Done!")
 
     @commands.command(aliases=["deleteallpins"])

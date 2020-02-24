@@ -41,8 +41,7 @@ class RoleGiver(discord.ext.commands.Cog):
         add_roles_tasks = [
             member.add_roles(role, reason="Added reaction")
             for member in members_to_add_role_to]
-        await asyncio.gather(*remove_role_tasks, *add_roles_tasks,
-                             return_exceptions=True)
+        await asyncio.gather(*remove_role_tasks, *add_roles_tasks)
 
     @tasks.loop(seconds=5)  # TODO change to 60 after confirmed working
     async def cycle_rolegivers(self):
@@ -50,7 +49,7 @@ class RoleGiver(discord.ext.commands.Cog):
             rolegiver_tasks = [
                 self.update_rolegiver_message(*rolegiver_ids)
                 for rolegiver_ids in self.bot.shared["data"]["rolegivers"]]
-            await asyncio.gather(*rolegiver_tasks, return_exceptions=True)
+            await asyncio.gather(*rolegiver_tasks)
         except (concurrent.futures._base.CancelledError,
                 asyncio.exceptions.CancelledError):
             return

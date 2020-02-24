@@ -68,8 +68,7 @@ class Fun(discord.ext.commands.Cog):
         emojis_to_add = itertools.islice(emojis_random_order, max_reacts)
         emoji_futures = [ctx.message.add_reaction(emoji_to_add)
                          for emoji_to_add in emojis_to_add]
-        all_emoji_futures = asyncio.gather(*emoji_futures,
-                                           return_exceptions=True)
+        all_emoji_futures = asyncio.gather(*emoji_futures)
         try:
             await all_emoji_futures
         except discord.errors.Forbidden:
@@ -101,8 +100,7 @@ class Fun(discord.ext.commands.Cog):
                        ]
         all_emoji_futures = [message.add_reaction(this_emoji)
                              for this_emoji in this_emojis]
-        all_emoji_futures = asyncio.gather(*all_emoji_futures,
-                                           return_exceptions=True)
+        all_emoji_futures = asyncio.gather(*all_emoji_futures)
         try:
             await all_emoji_futures
         except discord.errors.Forbidden:
