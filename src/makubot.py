@@ -6,6 +6,8 @@ All reloading should take place in makucommands and commandutil.
 import logging
 import discord
 import tempfile
+import sys
+from datetime import datetime
 from discord.ext import commands
 from pathlib import Path
 
@@ -17,7 +19,10 @@ LOGGING_FORMAT = ('%(asctime)-15s %(levelname)s in %(funcName)s '
                   'at %(pathname)s:%(lineno)d: %(message)s')
 logging.basicConfig(filename=DATA_DIR/'makubot.log', level=logging.INFO,
                     format=LOGGING_FORMAT)
+stderr_handler = logging.StreamHandler(sys.stderr)
+stderr_handler.setLevel(logging.WARNING)
 logger = logging.getLogger()
+logger.addHandler(stderr_handler)
 
 
 class MakuBot(commands.Bot):
@@ -33,6 +38,7 @@ class MakuBot(commands.Bot):
                               command_prefix=commands.when_mentioned,
                               case_insensitive=True,
                               owner_id=203285581004931072)
+        print("Bot entering setup")
         self.makusu = None
         self.shared = {}
         self.temp_dir_pointer = tempfile.TemporaryDirectory()
@@ -65,7 +71,9 @@ class MakuBot(commands.Bot):
         Called when MakuBot has logged in and is ready to accept commands
         '''
         self.makusu = await self.fetch_user(self.owner_id)
-        print('Logged in as {} with ID {}'
-              .format(self.user.name, self.user.id))
+        print(
+            f"\n\n\nLogged in at {datetime.now()} as {self.user.name} "
+            f"with ID {self.user.id}\n\n\n"
+            )
         await self.change_presence(activity=discord.Game(
             name=r'Nao is being tsun to me :<'))

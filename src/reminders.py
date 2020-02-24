@@ -8,6 +8,7 @@ import psycopg2
 from psycopg2.extras import RealDictCursor
 import asyncio
 import re
+import time
 from . import commandutil
 from dateutil.parser import parse as date_parse
 
@@ -17,16 +18,28 @@ PARENT_DIR = SCRIPT_DIR.parent
 
 logger = logging.getLogger()
 
+DATABASE_CONNECT_MAX_RETRIES = 10
+
 
 class RemindersDB:
     def __init__(self, bot):
         self.bot = bot
-        self.conn = psycopg2.connect(
-            host=self.bot.db_host,
-            password=self.bot.db_pass,
-            port=self.bot.db_port,
-            user=self.bot.db_user,
-            )
+        for database_connect_attempt in range(DATABASE_CONNECT_MAX_RETRIES):
+            try:
+                self.conn = psycopg2.connect(
+                    host=self.bot.db_host,
+                    password=self.bot.db_pass,
+                    port=self.bot.db_port,
+                    user=self.bot.db_user,
+                    )
+            except psycopg2.OperationalError:
+                print("Couldn't connect to mbdb, retrying in a few seconds")
+                time.sleep(5)
+                continue
+            else:
+                break
+        else:
+            raise psycopg2.OperationalError("Couldn't connect after retries")
         self.c = self.conn.cursor(cursor_factory=RealDictCursor)
         self.c.execute("""
             CREATE TABLE IF NOT EXISTS reminders (
@@ -93,6 +106,8 @@ def rows_as_str(rows):
 def get_human_delay(seconds, ignore_partial_seconds=True):
     if isinstance(seconds, timedelta):
         seconds = seconds.total_seconds()
+    if ignore_partial_seconds:
+        seconds = int(seconds)
     time_strs = ("seconds", "minutes", "hours", "days", "years")
     time_mults = (60, 60, 24, 365)
     parts = [seconds]
