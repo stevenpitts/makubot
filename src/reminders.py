@@ -31,8 +31,8 @@ class RemindersDB:
         self.c.execute("""
             CREATE TABLE IF NOT EXISTS reminders (
             id SERIAL PRIMARY KEY,
-            remind_set_time DATE,
-            remind_time DATE NOT NULL,
+            remind_set_time TIMESTAMP,
+            remind_time TIMESTAMP NOT NULL,
             user_id CHARACTER(18),
             channel_id CHARACTER(18),
             reminder_message TEXT
@@ -90,7 +90,9 @@ def rows_as_str(rows):
     return '\n'.join([str(dict(row)) for row in rows])
 
 
-def get_human_delay(seconds):
+def get_human_delay(seconds, ignore_partial_seconds=True):
+    if isinstance(seconds, timedelta):
+        seconds = seconds.total_seconds()
     time_strs = ("seconds", "minutes", "hours", "days", "years")
     time_mults = (60, 60, 24, 365)
     parts = [seconds]
@@ -186,7 +188,10 @@ class ReminderCommands(discord.ext.commands.Cog):
         channel_id = str(ctx.message.channel.id)
         try:
             self.reminders_db.add_reminder(
-                remind_set_time, remind_time, user_id, channel_id,
+                remind_set_time,
+                remind_time,
+                user_id,
+                channel_id,
                 reminder_cleaned)
         except OverflowError:
             await ctx.send("I can't handle a number that big, sorry!")
@@ -233,13 +238,7 @@ class ReminderCommands(discord.ext.commands.Cog):
     async def send_reminder(self, reminder):
         reminder_channel = self.bot.get_channel(int(reminder["channel_id"]))
         reminder_user = self.bot.get_user(int(reminder["user_id"]))
-        print("Hereoiewjf")
-        try:
-            time_delta = datetime.utcnow().seconds - reminder["remind_set_time"]
-        except Exception as e:
-            print("Got exception: ", e)
-            raise
-        print("Goiewhtoi")
+        time_delta = datetime.utcnow() - reminder["remind_set_time"]
         human_delay = get_human_delay(time_delta)
         if reminder_user and not reminder_channel:
             await reminder_user.send(
@@ -253,7 +252,6 @@ class ReminderCommands(discord.ext.commands.Cog):
         elif not reminder_channel and not reminder_user:
             await self.bot.makusu.send(f"Couldn't find stuff for {reminder}")
         else:
-            print("Sending reminder 8302")
             await reminder_channel.send(
                 f"{reminder_user.mention}, you have a message from "
                 f"{human_delay} ago: {reminder['reminder_message']}")
@@ -266,16 +264,10 @@ class ReminderCommands(discord.ext.commands.Cog):
                               for reminder in ready_reminders]
             await asyncio.gather(*reminder_coros)
             for reminder in ready_reminders:
-                print(f"Dropping reminder: {reminder['id']}")
                 self.reminders_db.drop_reminder(reminder['id'])
-                print("Jesus christ")
-        except (concurrent.futures._base.CancelledError,
-                # psycopg2.ProgrammingError
-                ):
-            print("Base cancelled here fuck")
+        except concurrent.futures._base.CancelledError:
             return
         except Exception as e:
-            print("Here fuck")
             print(commandutil.get_formatted_traceback(e))
 
     @cycle_reminders.before_loop

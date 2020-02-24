@@ -28,28 +28,32 @@ discord_token=`echo $credentials | jq -r ".DISCORD_TOKEN"`
 pgpassword="what"
 
 
-docker build --tag makubot .
+docker build --tag makubot . &
 
 
 # Neither snekbox nor postgres get stopped or removed after script ends,
 # so be careful
-docker container rm -f snekbox 2>/dev/null && echo "Stopped Snekbox" || true
-docker container rm -f $db_name 2>/dev/null && echo "Stopped $db_name" || true
+docker container rm -f snekbox 2>/dev/null && echo "Stopped Snekbox" || true &
+docker container rm -f $db_name 2>/dev/null && echo "Stopped $db_name" || true &
+wait
 docker network rm $container_network 2>/dev/null \
   && echo "Stopped $container_network" || true
 
-docker network create $container_network
+docker network create $container_network &
+docker pull pythondiscord/snekbox &
+docker pull postgres &
+wait
 
-docker pull pythondiscord/snekbox
-docker run -d --name snekbox --privileged --init --ipc="none" \
-  --network $container_network \
-  pythondiscord/snekbox
-
-docker pull postgres
 docker run -d --name "$db_name" \
   --network $container_network \
   --env POSTGRES_PASSWORD="$pgpassword" \
-  postgres
+  postgres &
+
+docker run -d --name snekbox --privileged --init --ipc="none" \
+  --network $container_network \
+  pythondiscord/snekbox &
+
+wait
 
 db_ip=$(docker container inspect makumistake_db \
   | jq -r ".[0].NetworkSettings.Networks.$container_network.IPAddress")
