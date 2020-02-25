@@ -10,6 +10,9 @@ import sys
 from datetime import datetime
 from discord.ext import commands
 from pathlib import Path
+import time
+import psycopg2
+from psycopg2.extras import RealDictCursor
 
 
 SCRIPT_DIR = Path(__file__).parent
@@ -23,6 +26,8 @@ stderr_handler = logging.StreamHandler(sys.stderr)
 stderr_handler.setLevel(logging.WARNING)
 logger = logging.getLogger()
 logger.addHandler(stderr_handler)
+
+DATABASE_CONNECT_MAX_RETRIES = 10
 
 
 class MakuBot(commands.Bot):
@@ -63,8 +68,31 @@ class MakuBot(commands.Bot):
         self.db_port = db_port
         self.db_user = db_user
         self.loop.set_debug(True)
+
+        for database_connect_attempt in range(DATABASE_CONNECT_MAX_RETRIES):
+            try:
+                self.db_connection = psycopg2.connect(
+                    host=self.db_host,
+                    password=self.db_pass,
+                    port=self.db_port,
+                    user=self.db_user,
+                    )
+            except psycopg2.OperationalError:
+                print("Couldn't connect to mbdb, retrying in a few seconds")
+                time.sleep(5)
+                continue
+            else:
+                break
+        else:
+            raise psycopg2.OperationalError("Couldn't connect after retries")
+        self.db_cursor = self.db_connection.cursor(
+            cursor_factory=RealDictCursor
+            )
+
         for extension in self.shared['default_extensions']:
             self.load_extension(f'src.{extension}')
+
+
 
     async def on_ready(self):
         '''

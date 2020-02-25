@@ -4,11 +4,8 @@ import discord
 from discord.ext import commands, tasks
 from datetime import datetime, timedelta
 import logging
-import psycopg2
-from psycopg2.extras import RealDictCursor
 import asyncio
 import re
-import time
 from . import commandutil
 from dateutil.parser import parse as date_parse
 
@@ -24,24 +21,7 @@ DATABASE_CONNECT_MAX_RETRIES = 10
 class RemindersDB:
     def __init__(self, bot):
         self.bot = bot
-        for database_connect_attempt in range(DATABASE_CONNECT_MAX_RETRIES):
-            try:
-                self.conn = psycopg2.connect(
-                    host=self.bot.db_host,
-                    password=self.bot.db_pass,
-                    port=self.bot.db_port,
-                    user=self.bot.db_user,
-                    )
-            except psycopg2.OperationalError:
-                print("Couldn't connect to mbdb, retrying in a few seconds")
-                time.sleep(5)
-                continue
-            else:
-                break
-        else:
-            raise psycopg2.OperationalError("Couldn't connect after retries")
-        self.c = self.conn.cursor(cursor_factory=RealDictCursor)
-        self.c.execute("""
+        self.bot.db_cursor.execute("""
             CREATE TABLE IF NOT EXISTS reminders (
             id SERIAL PRIMARY KEY,
             remind_set_time TIMESTAMP,
@@ -51,9 +31,11 @@ class RemindersDB:
             reminder_message TEXT
             );
             """)
-        self.c.execute("""CREATE INDEX IF NOT EXISTS date_index
-                           ON reminders (remind_time);""")
-        self.conn.commit()
+        self.bot.db_cursor.execute("""
+            CREATE INDEX IF NOT EXISTS date_index
+            ON reminders (remind_time);
+            """)
+        self.bot.db_connection.commit()
 
     def add_reminder(self, remind_set_time, remind_time, user_id, channel_id,
                      reminder_message):
@@ -66,7 +48,7 @@ class RemindersDB:
             reminder_message)
             VALUES (%s, %s, %s, %s, %s)
             """
-        self.c.execute(
+        self.bot.db_cursor.execute(
             query,
             (remind_set_time,
              remind_time,
@@ -74,29 +56,39 @@ class RemindersDB:
              channel_id,
              reminder_message)
             )
-        self.conn.commit()
+        self.bot.db_connection.commit()
 
     def drop_reminder(self, reminder_id):
-        self.c.execute("""DELETE FROM reminders WHERE id = %s""",
-                       (reminder_id,))
-        self.conn.commit()
+        self.bot.db_cursor.execute(
+            """
+            DELETE FROM reminders WHERE id = %s
+            """,
+            (reminder_id,)
+            )
+        self.bot.db_connection.commit()
 
     def ready_reminders(self):
         current_time = datetime.utcnow()
-        self.c.execute("""SELECT * FROM reminders
+        self.bot.db_cursor.execute("""SELECT * FROM reminders
                            WHERE remind_time <= %s""", (current_time, ))
-        ready_reminders_list = self.c.fetchall()  # TODO better name
-        return ready_reminders_list
+        return self.bot.db_cursor.fetchall()
 
     def reminders_from_user(self, user_id):
         user_id = str(user_id)
-        self.c.execute("""SELECT * FROM reminders WHERE user_id = %s""",
-                       (user_id, ))
-        return self.c.fetchall()
+        self.bot.db_cursor.execute(
+            """
+            SELECT * FROM reminders WHERE user_id = %s
+            """,
+            (user_id, ))
+        return self.bot.db_cursor.fetchall()
 
     def reminder_from_id(self, id):
-        self.c.execute("""SELECT * FROM reminders WHERE id = %s""", (id,))
-        return self.c.fetchone()
+        self.bot.db_cursor.execute(
+            """
+            SELECT * FROM reminders WHERE id = %s
+            """,
+            (id,))
+        return self.bot.db_cursor.fetchone()
 
 
 def rows_as_str(rows):
