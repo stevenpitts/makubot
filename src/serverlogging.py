@@ -13,18 +13,51 @@ class ServerLogging(discord.ext.commands.Cog):
         self.bot = bot
         self.last_deleted_message = {}
         '''Maps channel ID to (last deleted message content, sender)'''
+        self.bot.db_cursor.execute(
+            """
+            CREATE TABLE IF NOT EXISTS log_channels (
+            guild_id CHARACTER(18) PRIMARY KEY,
+            log_channel_id CHARACTER(18));
+            """)
+        self.bot.db_cursor.execute(
+            """
+            CREATE TABLE IF NOT EXISTS extra_log_channel (
+            guild_id CHARACTER(18) PRIMARY KEY,
+            log_channel_id CHARACTER(18));
+            """)
+        self.bot.db_connection.commit()
 
     @commands.command(hidden=True, aliases=['removelogchannel'])
     @commands.is_owner()
     async def remove_log_channel(self, ctx):
-        self.bot.shared['data']['log_channels'].pop(str(ctx.guild.id), None)
+        # self.bot.shared["data"]['log_channels'].pop(str(ctx.guild.id), None)
+        self.bot.db_cursor.execute(
+            """
+            DELETE FROM log_channels WHERE guild_id = %s
+            """,
+            (ctx.guild.id,)
+            )
+        self.bot.db_connection.commit()
+        # TODO DATA DONE
         await ctx.send("Coolio")
 
     @commands.command(hidden=True, aliases=['addlogchannel'])
     @commands.is_owner()
     async def add_log_channel(self, ctx, log_channel: discord.TextChannel):
         guild_id, log_channel_id = str(ctx.guild.id), str(log_channel.id)
-        self.bot.shared['data']['log_channels'][guild_id] = log_channel_id
+        # self.bot.shared["data"]['log_channels'][guild_id] = log_channel_id
+        # TODO see what happens when you add a second log channel
+        # (wouldn't be unique primary key)
+        self.bot.db_cursor.execute(
+            """
+            INSERT INTO log_channels (
+            guild_id,
+            log_channel_id)
+            VALUES (%s, %s)
+            """,
+            (guild_id, log_channel_id)
+            )
+        self.bot.db_connection.commit()
         await ctx.send(r"You gotcha \o/")
 
     @commands.command(aliases=['what was that',
@@ -37,21 +70,82 @@ class ServerLogging(discord.ext.commands.Cog):
         except KeyError:
             await ctx.send("I can't find anything, sorry :(")
 
+    @commands.command(hidden=True)
+    @commands.is_owner()
+    async def set_extra_log_channel(self, ctx,
+                                    log_channel: discord.TextChannel):
+        self.bot.db_cursor.execute(
+            """
+            DELETE FROM extra_log_channel *;
+            """
+            )
+        self.bot.db_cursor.execute(
+            """
+            INSERT INTO extra_log_channel (
+            guild_id,
+            log_channel_id)
+            VALUES (%s, %s)
+            """,
+            (str(log_channel.guild.id), str(log_channel.id))
+            )
+        self.bot.db_connection.commit()
+        await ctx.send("Done!")
+
+    def get_extra_log_channel(self):
+        self.bot.db_cursor.execute(
+            """
+            SELECT * FROM extra_log_channel;
+            """
+            )
+        results = self.bot.db_cursor.fetchall()
+        if not results:
+            return None
+        result = results[0]
+        channel_id = result["log_channel_id"]
+        extra_log_channel = self.bot.get_channel(int(channel_id))
+        return extra_log_channel
+
     async def get_log_channels(self, guild, channel):
-        log_channels = self.bot.shared['data']['log_channels']
+        # log_channels = self.bot.shared["data"]['log_channels']
+        if guild is None:
+            return [self.get_extra_log_channel()]
+        self.bot.db_cursor.execute(
+            """
+            SELECT * FROM log_channels
+            WHERE guild_id = %s
+            AND log_channel_id != %s
+            LIMIT 1""",
+            (str(guild.id), str(channel.id))
+            )
+        log_channel_results = self.bot.db_cursor.fetchall()
+        log_to_channel_dict = log_channel_results[0]
         log_to_channels = []
-        extra_log_channel = self.bot.get_channel(
-            int(self.bot.shared['data']['extra_log_channel']))
-        try:
-            log_channel_id = log_channels[str(guild.id)]
-            should_be_logged = log_channel_id != str(channel.id)
-        except (AttributeError, KeyError):
-            should_be_logged = False
-        if should_be_logged:
-            log_to_channels.append(self.bot.get_channel(int(log_channel_id)))
-        if channel != extra_log_channel:
+        log_to_channel_id = log_to_channel_dict["log_channel_id"]
+        if log_to_channel_id != str(channel.id):
+            log_to_channel_obj = self.bot.get_channel(
+                int(log_to_channel_id))
+            log_to_channels.append(log_to_channel_obj)
+        extra_log_channel = self.get_extra_log_channel()
+        if extra_log_channel and log_to_channel_id != extra_log_channel.id:
             log_to_channels.append(extra_log_channel)
         return tuple(log_to_channels)
+
+        # log_to_channels = [log_channel_result["log_channel_id"]
+        #                    for log_channel_result in log_channel_results
+        #                    ]
+        # log_to_channels = []
+        # extra_log_channel = self.bot.get_channel(
+        #     int(self.bot.shared["data"]['extra_log_channel']))
+        # try:
+        #     log_channel_id = log_channels[str(guild.id)]
+        #     should_be_logged = log_channel_id != str(channel.id)
+        # except (AttributeError, KeyError):
+        #     should_be_logged = False
+        # if should_be_logged:
+        #     log_to_channels.append(self.bot.get_channel(int(log_channel_id)))
+        # if channel != extra_log_channel:
+        #     log_to_channels.append(extra_log_channel)
+        # return tuple(log_to_channels)
 
     @commands.Cog.listener()
     async def on_message_edit(self, before, after):

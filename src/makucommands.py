@@ -4,7 +4,6 @@ Module containing the majority of the basic commands makubot can execute.
 import sys
 import importlib
 from pathlib import Path
-import json
 import logging
 import discord
 from discord.ext import commands
@@ -33,8 +32,12 @@ class MakuCommands(discord.ext.commands.Cog):
                     for punc in '.!' for maybespace in [' ', '']]
         self.bot.command_prefix = commands.when_mentioned_or(*prefixes)
 
-        with open(DATAFILE_PATH, 'r') as open_file:
-            self.bot.shared['data'] = json.load(open_file)
+        self.bot.db_cursor.execute("""
+            CREATE TABLE IF NOT EXISTS free_guilds (
+            guild_id CHARACTER(18) PRIMARY KEY
+            );
+            """)
+        self.bot.db_connection.commit()
 
     @commands.command(hidden=True)
     @commands.is_owner()
@@ -64,7 +67,7 @@ class MakuCommands(discord.ext.commands.Cog):
     @commands.guild_only()
     async def areyoufree(self, ctx):
         '''If I have free reign I'll tell you'''
-        is_free = ctx.guild.id in self.bot.shared['data']['free_guilds']
+        is_free = str(ctx.guild.id) in self.get_free_guild_ids()
         await ctx.send('Yes, I am free.' if is_free else
                        'This is not a free reign guild.')
 
@@ -74,6 +77,15 @@ class MakuCommands(discord.ext.commands.Cog):
         '''Murders me :( '''
         await self.bot.close()
 
+    def get_free_guild_ids(self):
+        self.bot.db_cursor.execute(
+            """
+            SELECT * FROM free_guilds
+            """,
+            )
+        results = self.bot.db_cursor.fetchall()
+        return [result["guild_id"] for result in results]
+
     @commands.command(aliases=['go wild'])
     @commands.is_owner()
     @commands.guild_only()
@@ -81,13 +93,15 @@ class MakuCommands(discord.ext.commands.Cog):
         '''Add the current guild as a gowild guild; I do a bit more on these.
         Only Maku can add guilds though :('''
         if ctx.message.guild:
-            self.bot.shared['data']['free_guilds'].append(ctx.message.guild.id)
+            self.bot.db_cursor.execute(
+                """
+                INSERT INTO free_guilds (
+                guild_id)
+                VALUES (%s)
+                """,
+                (str(ctx.message.guild.id),))
             await ctx.send('Ayaya~')
-
-    def cog_unload(self):
-        if self.bot.shared['data']:
-            with open(DATAFILE_PATH, 'w') as open_file:
-                json.dump(self.bot.shared['data'], open_file)
+            # TODO DATA DONE
 
     @commands.command()
     @commands.bot_has_permissions(manage_messages=True)

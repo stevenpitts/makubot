@@ -82,7 +82,10 @@ def url_from_s3_key(s3_bucket, s3_key, validate=True):
 async def generate_image_embed(ctx,
                                url,
                                call_bot_name=False):
-    bot_nick = ctx.me.nick or ctx.me.name
+    if getattr(ctx.me, "nick", None):
+        bot_nick = ctx.me.nick
+    else:
+        bot_nick = ctx.me.name
     invocation = f"{ctx.prefix}{ctx.invoked_with}"
     content_without_invocation = ctx.message.content[len(invocation):]
     has_content = bool(content_without_invocation.strip())
@@ -360,6 +363,33 @@ class PictureAdder(discord.ext.commands.Cog):
             if status_message:
                 await status_message.edit(response)
 
+    def get_aliases_of_cmd(self, real_cmd):
+        self.bot.db_cursor.execute(
+            """
+            SELECT * FROM alias_pictures
+            WHERE real == %s;
+            """,
+            (real_cmd)
+            )
+        results = self.bot.db_cursor.fetchall()
+        return [result["alias"] for result in results]
+
+    def get_cmd_from_alias(self, alias_cmd):
+        if alias_cmd in self.bot.shared["pictures_commands"]:
+            return alias_cmd
+        self.bot.db_cursor.execute(
+            """
+            SELECT * FROM alias_pictures
+            WHERE alias == %s;
+            """,
+            (alias_cmd)
+            )
+        results = self.bot.db_cursor.fetchall()
+        if not results:
+            return None
+        assert len(results) == 1
+        return results[0]["real_cmd"]
+
     @commands.command(hidden=True, aliases=["aliasimage", "aliaspicture"])
     @commands.is_owner()
     async def add_picture_alias(self, ctx, ref_invocation, true_invocation):
@@ -368,25 +398,33 @@ class PictureAdder(discord.ext.commands.Cog):
             return
         elif self.bot.get_command(ref_invocation):
             await ctx.send(f"{ref_invocation} is already a command :<")
+            return
         elif not self.bot.get_command(true_invocation):
             await ctx.send(f"{true_invocation} isn't a command, though :<")
-        else:
-            aliases = self.bot.shared['data']['alias_pictures']
-            if true_invocation in aliases:
-                # true_invocation was in turn referencing another invocation
-                true_invocation = aliases[true_invocation]
-            true_command = self.bot.get_command(true_invocation)
-            maps_to_image = (hasattr(true_command, "instance")
-                             and isinstance(true_command.instance,
-                                            ReactionImages))
-            if maps_to_image:
-                aliases[ref_invocation] = true_invocation
-                true_command.aliases += [ref_invocation]
-                self.bot.shared['pictures_commands'] += [ref_invocation]
-                self.bot.all_commands[ref_invocation] = true_command
-                await ctx.send("Added!")
-            else:
-                await ctx.send(f"{true_invocation} is not an image command :?")
+            return
+        true_invocation = self.get_cmd_from_alias(true_invocation)
+        true_command = self.bot.get_command(true_invocation)
+        maps_to_image = (hasattr(true_command, "instance")
+                         and isinstance(true_command.instance,
+                                        ReactionImages))
+        if not maps_to_image:
+            await ctx.send(f"{true_invocation} is not an image command :?")
+            return
+
+        self.bot.db_cursor.execute(
+            """
+            INSERT INTO alias_pictures (
+            alias,
+            real)
+            VALUES (%s, %s);
+            """,
+            (ref_invocation, true_invocation)
+            )
+        self.bot.db_connection.commit()
+        true_command.aliases += [ref_invocation]
+        self.bot.shared['pictures_commands'] += [ref_invocation]
+        self.bot.all_commands[ref_invocation] = true_command
+        await ctx.send("Added!")
 
     @commands.command(aliases=["randomimage", "yo", "hey", "makubot"])
     async def random_image(self, ctx):
@@ -419,7 +457,7 @@ class PictureAdder(discord.ext.commands.Cog):
         if not image_collection.isalnum():
             await ctx.send("Please only include letters and numbers.")
             return
-        image_collection = self.bot.shared['data']['alias_pictures'].get(
+        image_collection = self.bot.shared["data"]['alias_pictures'].get(
             image_collection, image_collection)
         existing_command = self.bot.get_command(image_collection)
         command_taken = (existing_command is not None
@@ -476,6 +514,43 @@ class PictureAdder(discord.ext.commands.Cog):
 
 
 class ReactionImages(discord.ext.commands.Cog):
+    def __init__(self, bot):
+        self.bot = bot
+        self.bot.shared['pictures_commands'] = []
+
+        self.bot.db_cursor.execute(
+            """
+            CREATE TABLE IF NOT EXISTS alias_pictures (
+            alias TEXT PRIMARY KEY,
+            real TEXT);
+            """)
+        self.bot.db_connection.commit()
+
+        self.bot.db_cursor.execute(
+            """
+            SELECT * FROM alias_pictures
+            """
+            )
+        alias_pictures_results = self.bot.db_cursor.fetchall()
+
+        self.image_aliases = {}
+        for alias_pictures_result in alias_pictures_results:
+            alias_cmd = alias_pictures_result["alias"]
+            real_cmd = alias_pictures_result["real"]
+            self.image_aliases[real_cmd] = (
+                self.image_aliases.get(real_cmd, []) + [alias_cmd])
+        if bot.s3_bucket:
+            toplevel_query = S3.list_objects_v2(Bucket=bot.s3_bucket,
+                                                Prefix="pictures/",
+                                                Delimiter="/")
+            toplevel_dirs = [prefix['Prefix'].split("/")[-2]
+                             for prefix
+                             in toplevel_query.get("CommonPrefixes", [])]
+            for folder_name in toplevel_dirs:
+                self.add_pictures_dir(folder_name)
+        else:
+            for folder_name in os.listdir(PICTURES_DIR):
+                self.add_pictures_dir(folder_name)
 
     async def send_image_func(ctx):
         if ctx.bot.s3_bucket:
@@ -494,25 +569,6 @@ class ReactionImages(discord.ext.commands.Cog):
             file_to_send = true_path / random.choice(os.listdir(true_path))
             async with ctx.typing():
                 await ctx.channel.send(file=discord.File(file_to_send))
-
-    def __init__(self, bot):
-        self.bot = bot
-        self.bot.shared['pictures_commands'] = []
-        self.image_aliases = {}
-        for key, val in self.bot.shared['data']['alias_pictures'].items():
-            self.image_aliases[val] = self.image_aliases.get(val, []) + [key]
-        if bot.s3_bucket:
-            toplevel_query = S3.list_objects_v2(Bucket=bot.s3_bucket,
-                                                Prefix="pictures/",
-                                                Delimiter="/")
-            toplevel_dirs = [prefix['Prefix'].split("/")[-2]
-                             for prefix
-                             in toplevel_query.get("CommonPrefixes", [])]
-            for folder_name in toplevel_dirs:
-                self.add_pictures_dir(folder_name)
-        else:
-            for folder_name in os.listdir(PICTURES_DIR):
-                self.add_pictures_dir(folder_name)
 
     def add_pictures_dir(self, folder_name: str):
         if folder_name in self.bot.shared['pictures_commands']:

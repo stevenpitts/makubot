@@ -92,8 +92,6 @@ class MakuBot(commands.Bot):
         for extension in self.shared['default_extensions']:
             self.load_extension(f'src.{extension}')
 
-
-
     async def on_ready(self):
         '''
         Called when MakuBot has logged in and is ready to accept commands

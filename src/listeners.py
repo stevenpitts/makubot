@@ -24,15 +24,19 @@ class Listeners(discord.ext.commands.Cog):
     async def on_member_join(self, member: discord.Member):
         '''Called when a member joins to tell them that Maku loves them
         (because Maku does) <3'''
-        if member.guild.id in self.bot.shared['data']['free_guilds']:
-            try:
-                await member.guild.system_channel.send(f'Hi {member.mention}! '
-                                                       'Maku loves you! '
-                                                       '<333333')
-            except AttributeError:
-                print(f"{member.mention} joined, but guild "
-                      f"{member.guild.name} has no system_channel. ID is "
-                      f"{member.guild._system_channel_id}.")
+        guild_is_free = (
+            str(member.guild.id)
+            in self.bot.get_cog("MakuCommands").get_free_guild_ids()
+            )
+        if not guild_is_free:
+            return
+        try:
+            await member.guild.system_channel.send(
+                f'Hi {member.mention}! Maku loves you! <333333')
+        except AttributeError:
+            print(f"{member.mention} joined, but guild "
+                  f"{member.guild.name} has no system_channel. ID is "
+                  f"{member.guild._system_channel_id}.")
 
     @commands.Cog.listener()
     async def on_command_error(self, ctx,
@@ -65,7 +69,10 @@ class Listeners(discord.ext.commands.Cog):
     async def on_message(self, message: discord.Message):
         if message.author.bot or not message.guild:
             return
-        is_free = message.guild.id in self.bot.shared['data']['free_guilds']
+        guild_is_free = (
+            str(message.guild.id)
+            in self.bot.get_cog("MakuCommands").get_free_guild_ids()
+            )
         if ("+hug" in message.content.lower()
                 and str(self.bot.user.id) in message.content):
             hug_responses = (
@@ -76,10 +83,10 @@ class Listeners(discord.ext.commands.Cog):
                 "*Hug u bak*",
                 "*Hugs you!!*")
             await message.channel.send(random.choice(hug_responses))
-        if is_free or self.bot.user in message.mentions:
+        if guild_is_free or self.bot.user in message.mentions:
             new_activity = discord.Game(name=message.author.name)
             await self.bot.change_presence(activity=new_activity)
-        if not is_free:
+        if not guild_is_free:
             return
         if message.mention_everyone:
             await message.channel.send(message.author.mention+' grr')
