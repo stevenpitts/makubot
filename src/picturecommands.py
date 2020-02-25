@@ -24,8 +24,8 @@ from . import commandutil
 
 SCRIPT_DIR = Path(__file__).parent
 PARENT_DIR = SCRIPT_DIR.parent
-DATA_DIR = PARENT_DIR / 'data'
-PICTURES_DIR = DATA_DIR / 'pictures'
+DATA_DIR = PARENT_DIR / "data"
+PICTURES_DIR = DATA_DIR / "pictures"
 
 logger = logging.getLogger()
 
@@ -34,8 +34,8 @@ class NotVideo(Exception):
     pass
 
 
-async def s3_keys(Bucket, Prefix='/', Delimiter='/', start_after=''):
-    s3_paginator = boto3.client('s3').get_paginator('list_objects_v2')
+async def s3_keys(Bucket, Prefix="/", Delimiter="/", start_after=""):
+    s3_paginator = boto3.client("s3").get_paginator("list_objects_v2")
     Prefix = Prefix[1:] if Prefix.startswith(Delimiter) else Prefix
     start_after = ((start_after or Prefix) if Prefix.endswith(Delimiter)
                    else start_after)
@@ -43,14 +43,14 @@ async def s3_keys(Bucket, Prefix='/', Delimiter='/', start_after=''):
     for page in s3_paginator.paginate(Bucket=Bucket,
                                       Prefix=Prefix,
                                       StartAfter=start_after):
-        for content in page.get('Contents', ()):
-            keys.append(content['Key'])
+        for content in page.get("Contents", ()):
+            keys.append(content["Key"])
         await asyncio.sleep(0)
     return keys
 
 
-async def s3_hashes(Bucket, Prefix='/', Delimiter='/', start_after=''):
-    s3_paginator = boto3.client('s3').get_paginator('list_objects_v2')
+async def s3_hashes(Bucket, Prefix="/", Delimiter="/", start_after=""):
+    s3_paginator = boto3.client("s3").get_paginator("list_objects_v2")
     Prefix = Prefix[1:] if Prefix.startswith(Delimiter) else Prefix
     start_after = ((start_after or Prefix) if Prefix.endswith(Delimiter)
                    else start_after)
@@ -58,15 +58,15 @@ async def s3_hashes(Bucket, Prefix='/', Delimiter='/', start_after=''):
     for page in s3_paginator.paginate(Bucket=Bucket,
                                       Prefix=Prefix,
                                       StartAfter=start_after):
-        for content in page.get('Contents', ()):
-            hashes.append(content['ETag'].strip('"').strip("'"))
+        for content in page.get("Contents", ()):
+            hashes.append(content["ETag"].strip(""").strip("""))
         await asyncio.sleep(0)
     return hashes
 
 
 def url_from_s3_key(s3_bucket, s3_key, validate=True):
     bucket_location = S3.get_bucket_location(Bucket=s3_bucket)
-    bucket_location = bucket_location['LocationConstraint']
+    bucket_location = bucket_location["LocationConstraint"]
     url = (f"https://{s3_bucket}.s3.{bucket_location}"
            f".amazonaws.com/{s3_key}")
     if validate:
@@ -113,12 +113,12 @@ async def generate_image_embed(ctx,
 async def get_media_bytes_and_name(url, status_message=None, do_raw=False,
                                    loading_emoji=""):
     with tempfile.TemporaryDirectory() as temp_dir:
-        quality_format = 'best' if do_raw else 'best[filesize<8M]/worst'
+        quality_format = "best" if do_raw else "best[filesize<8M]/worst"
         ydl_options = {
-            # 'logger': logger,
-            'quiet': True,
-            'no_warnings': True,
-            'format': quality_format,
+            # "logger": logger,
+            "quiet": True,
+            "no_warnings": True,
+            "format": quality_format,
             "outtmpl": f"{temp_dir}/%(title)s-%(id)s.%(ext)s"
             }
         with youtube_dl.YoutubeDL(ydl_options) as ydl:
@@ -161,12 +161,12 @@ async def get_media_bytes_and_name(url, status_message=None, do_raw=False,
 
 
 async def get_video_length(video_input):
-    cmds = ['ffprobe',
-            '-v', 'error',
-            '-show_entries',
-            'format=duration',
-            '-of',
-            'default=noprint_wrappers=1:nokey=1',
+    cmds = ["ffprobe",
+            "-v", "error",
+            "-show_entries",
+            "format=duration",
+            "-of",
+            "default=noprint_wrappers=1:nokey=1",
             video_input
             ]
     p = subprocess.Popen(cmds, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
@@ -192,12 +192,12 @@ async def suggest_audio_video_bitrate(video_input):
 async def convert_video(video_input, video_output, log=False):
     audio_bitrate, video_bitrate = await suggest_audio_video_bitrate(
         video_input)
-    cmds = ['ffmpeg',
-            '-y',
-            '-i', video_input,
-            # '-vf', "scale=300:200",
-            '-b:v', str(video_bitrate),
-            '-b:a', str(audio_bitrate),
+    cmds = ["ffmpeg",
+            "-y",
+            "-i", video_input,
+            # "-vf", "scale=300:200",
+            "-b:v", str(video_bitrate),
+            "-b:a", str(audio_bitrate),
             video_output
             ]
     p = subprocess.Popen(cmds, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
@@ -236,7 +236,7 @@ async def collection_has_image_bytes(collection: str,
 class PictureAdder(discord.ext.commands.Cog):
     def __init__(self, bot):
         self.bot = bot
-        self.temp_save_dir = self.bot.shared['temp_dir']
+        self.temp_save_dir = self.bot.shared["temp_dir"]
 
     async def image_suggestion(self, image_collection, filename, requestor,
                                image_bytes=None, status_message=None):
@@ -266,7 +266,7 @@ class PictureAdder(discord.ext.commands.Cog):
                 is_new = list_query["KeyCount"] == 0
             else:
                 is_new = image_dir.exists()
-            new_addition = '' if is_new else '***NEW*** '
+            new_addition = "" if is_new else "***NEW*** "
             proposal = (f"Add image {filename} to {new_addition}"
                         f"{image_collection}? Requested by {requestor.name}")
             try:
@@ -329,7 +329,7 @@ class PictureAdder(discord.ext.commands.Cog):
                         str(self.temp_save_dir / filename),
                         self.bot.s3_bucket,
                         f"pictures/{image_collection}/{new_filename}",
-                        ExtraArgs={'ACL': 'public-read'})
+                        ExtraArgs={"ACL": "public-read"})
                 else:
                     image_dir.mkdir(parents=True, exist_ok=True)
                     new_filename = commandutil.get_nonconflicting_filename(
@@ -422,7 +422,7 @@ class PictureAdder(discord.ext.commands.Cog):
             )
         self.bot.db_connection.commit()
         true_command.aliases += [ref_invocation]
-        self.bot.shared['pictures_commands'] += [ref_invocation]
+        self.bot.shared["pictures_commands"] += [ref_invocation]
         self.bot.all_commands[ref_invocation] = true_command
         await ctx.send("Added!")
 
@@ -451,9 +451,9 @@ class PictureAdder(discord.ext.commands.Cog):
         mb.addimage nao http://static.zerochan.net/Tomori.Nao.full.1901643.jpg
         Then, it'll be sent to maku for approval!"""
         do_raw = ctx.invoked_with == "addimageraw"
-        if ' ' in image_collection:
+        if " " in image_collection:
             await ctx.send("Spaces replaced with underscores")
-        image_collection = image_collection.strip().lower().replace(' ', '_')
+        image_collection = image_collection.strip().lower().replace(" ", "_")
         if not image_collection.isalnum():
             await ctx.send("Please only include letters and numbers.")
             return
@@ -515,7 +515,7 @@ class PictureAdder(discord.ext.commands.Cog):
 class ReactionImages(discord.ext.commands.Cog):
     def __init__(self, bot):
         self.bot = bot
-        self.bot.shared['pictures_commands'] = []
+        self.bot.shared["pictures_commands"] = []
 
         self.bot.db_cursor.execute(
             """
@@ -542,7 +542,7 @@ class ReactionImages(discord.ext.commands.Cog):
             toplevel_query = S3.list_objects_v2(Bucket=bot.s3_bucket,
                                                 Prefix="pictures/",
                                                 Delimiter="/")
-            toplevel_dirs = [prefix['Prefix'].split("/")[-2]
+            toplevel_dirs = [prefix["Prefix"].split("/")[-2]
                              for prefix
                              in toplevel_query.get("CommonPrefixes", [])]
             for folder_name in toplevel_dirs:
@@ -570,9 +570,9 @@ class ReactionImages(discord.ext.commands.Cog):
                 await ctx.channel.send(file=discord.File(file_to_send))
 
     def add_pictures_dir(self, folder_name: str):
-        if folder_name in self.bot.shared['pictures_commands']:
+        if folder_name in self.bot.shared["pictures_commands"]:
             return
-        self.bot.shared['pictures_commands'].append(folder_name)
+        self.bot.shared["pictures_commands"].append(folder_name)
         collection_aliases = self.image_aliases.get(folder_name, [])
         folder_command = commands.Command(
             ReactionImages.send_image_func,
@@ -584,21 +584,21 @@ class ReactionImages(discord.ext.commands.Cog):
         folder_command.module = self.__module__
         self.bot.add_command(folder_command)
         for collection_alias in collection_aliases:
-            self.bot.shared['pictures_commands'].append(collection_alias)
+            self.bot.shared["pictures_commands"].append(collection_alias)
 
     @commands.command(aliases=["listreactions"])
     async def list_reactions(self, ctx):
         """List all my reactions"""
-        pictures_desc = ', '.join(self.bot.shared['pictures_commands'])
+        pictures_desc = ", ".join(self.bot.shared["pictures_commands"])
         block_size = 1500
-        text_blocks = [f'{pictures_desc[i:i+block_size]}'
+        text_blocks = [f"{pictures_desc[i:i+block_size]}"
                        for i in range(0, len(pictures_desc), block_size)]
         for text_block in text_blocks:
             await ctx.send(f"```{escape_markdown(text_block)}```")
 
 
 def setup(bot):
-    logger.info('picturecommands starting setup')
+    logger.info("picturecommands starting setup")
     bot.add_cog(ReactionImages(bot))
     bot.add_cog(PictureAdder(bot))
-    logger.info('picturecommands ending setup')
+    logger.info("picturecommands ending setup")

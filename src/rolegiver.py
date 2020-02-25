@@ -103,6 +103,6 @@ class RoleGiver(discord.ext.commands.Cog):
 
 
 def setup(bot):
-    logger.info('rolegiver starting setup')
+    logger.info("rolegiver starting setup")
     bot.add_cog(RoleGiver(bot))
-    logger.info('rolegiver ending setup')
+    logger.info("rolegiver ending setup")

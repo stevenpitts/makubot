@@ -37,7 +37,7 @@ def main():
                 f.write(to_write)
 
     token = os.environ["DISCORD_BOT_TOKEN"]
-    # Use local storage if S3_BUCKET isn"t set in environment
+    # Use local storage if S3_BUCKET isn't set in environment
     s3_bucket = os.environ.get("S3_BUCKET", None)
     google_api_key = os.environ.get("GOOGLE_API_KEY", None)
     db_host = os.environ["PGHOST"]

@@ -92,7 +92,7 @@ class RemindersDB:
 
 
 def rows_as_str(rows):
-    return '\n'.join([str(dict(row)) for row in rows])
+    return "\n".join([str(dict(row)) for row in rows])
 
 
 def get_human_delay(seconds, ignore_partial_seconds=True):
@@ -112,8 +112,8 @@ def get_human_delay(seconds, ignore_partial_seconds=True):
 
 
 def strip_conjunctions(words):
-    conjunctions = [' ', '.', ',', ';', '-', '/', "'", 'at', 'on', 'and',
-                    'to', 'that', 'of']
+    conjunctions = [" ", ".", ",", ";", "-", "/", "\"", "at", "on", "and",
+                    "to", "that", "of"]
     while words and words[0].lower() in conjunctions:
         words = words[1:]
     while words and words[-1].lower() in conjunctions:
@@ -123,13 +123,13 @@ def strip_conjunctions(words):
 
 def parse_remind_me(time_and_reminder):
     words = time_and_reminder.split(" ")
-    timereg_parts = [r'((?P<{}>\d*){})?'.format(cha, cha) for cha in 'ydhms']
-    timereg = re.compile(r'^'+''.join(timereg_parts)+r'$')
+    timereg_parts = [r"((?P<{}>\d*){})?".format(cha, cha) for cha in "ydhms"]
+    timereg = re.compile(r"^"+"".join(timereg_parts)+r"$")
     short_match = re.search(timereg, words[0])
     if short_match:
         years, days, hours, minutes, seconds = [int(val) if val else 0
                                                 for val
-                                                in short_match.group(*'ydhms')]
+                                                in short_match.group(*"ydhms")]
         total_seconds = (years*31557600 + days*86400 + hours*3600 + minutes*60
                          + seconds)
         words = strip_conjunctions(words[1:])
@@ -225,7 +225,7 @@ class ReminderCommands(discord.ext.commands.Cog):
             reminder_list_display = rows_as_str(active_reminders)
             await ctx.send(f"Which reminder would you like to delete? "
                            f"Enter the ID: \n{reminder_list_display}")
-            message = await self.bot.wait_for('message', check=lambda message:
+            message = await self.bot.wait_for("message", check=lambda message:
                                               ctx.author == message.author)
             try:
                 choice = int(message.content)
@@ -235,7 +235,7 @@ class ReminderCommands(discord.ext.commands.Cog):
             except (IndexError, ValueError):
                 await ctx.send("Invalid choice")
                 return
-        if chosen_reminder['user_id'] != str(ctx.author.id):
+        if chosen_reminder["user_id"] != str(ctx.author.id):
             await ctx.send("It looks like that isn't your reminder!")
             return
         self.reminders_db.drop_reminder(choice)
@@ -271,7 +271,7 @@ class ReminderCommands(discord.ext.commands.Cog):
                               for reminder in ready_reminders]
             await asyncio.gather(*reminder_coros)
             for reminder in ready_reminders:
-                self.reminders_db.drop_reminder(reminder['id'])
+                self.reminders_db.drop_reminder(reminder["id"])
         except concurrent.futures._base.CancelledError:
             return
         except Exception as e:
@@ -283,6 +283,6 @@ class ReminderCommands(discord.ext.commands.Cog):
 
 
 def setup(bot):
-    logger.info('remindercommands starting setup')
+    logger.info("remindercommands starting setup")
     bot.add_cog(ReminderCommands(bot))
-    logger.info('remindercommands ending setup')
+    logger.info("remindercommands ending setup")

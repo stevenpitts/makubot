@@ -6,7 +6,7 @@ import wikipedia
 
 SCRIPT_DIR = Path(__file__).parent
 PARENT_DIR = SCRIPT_DIR.parent
-DATA_DIR = PARENT_DIR / 'data'
+DATA_DIR = PARENT_DIR / "data"
 
 logger = logging.getLogger()
 
@@ -17,10 +17,10 @@ class Wikisearch(discord.ext.commands.Cog):
 
     @commands.command()
     async def whatis(self, ctx, *, query):
-        '''Searches Wikipedia to see what something is! Give it a try!'''
+        """Searches Wikipedia to see what something is! Give it a try!"""
         try:
             result = wikipedia.page(wikipedia.search(query)[0])
-            summary = ''.join(result.summary)[:1024]
+            summary = "".join(result.summary)[:1024]
         except wikipedia.exceptions.DisambiguationError:
             await ctx.send("Sorry, please be more specific than that ;~;")
         except IndexError:
@@ -32,6 +32,6 @@ class Wikisearch(discord.ext.commands.Cog):
 
 
 def setup(bot):
-    logger.info('wikisearch starting setup')
+    logger.info("wikisearch starting setup")
     bot.add_cog(Wikisearch(bot))
-    logger.info('wikisearch ending setup')
+    logger.info("wikisearch ending setup")

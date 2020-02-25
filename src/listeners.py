@@ -13,7 +13,7 @@ from . import commandutil
 
 SCRIPT_DIR = Path(__file__).parent
 PARENT_DIR = SCRIPT_DIR.parent
-DATA_DIR = PARENT_DIR / 'data'
+DATA_DIR = PARENT_DIR / "data"
 
 
 class Listeners(discord.ext.commands.Cog):
@@ -22,8 +22,8 @@ class Listeners(discord.ext.commands.Cog):
 
     @commands.Cog.listener()
     async def on_member_join(self, member: discord.Member):
-        '''Called when a member joins to tell them that Maku loves them
-        (because Maku does) <3'''
+        """Called when a member joins to tell them that Maku loves them
+        (because Maku does) <3"""
         guild_is_free = (
             str(member.guild.id)
             in self.bot.get_cog("MakuCommands").get_free_guild_ids()
@@ -32,7 +32,7 @@ class Listeners(discord.ext.commands.Cog):
             return
         try:
             await member.guild.system_channel.send(
-                f'Hi {member.mention}! Maku loves you! <333333')
+                f"Hi {member.mention}! Maku loves you! <333333")
         except AttributeError:
             print(f"{member.mention} joined, but guild "
                   f"{member.guild.name} has no system_channel. ID is "
@@ -43,14 +43,14 @@ class Listeners(discord.ext.commands.Cog):
                                caught_exception: CommandError):
         if isinstance(caught_exception, CommandNotFound):
             if str(self.bot.user.id) in ctx.message.content.split()[0]:
-                to_eval = ' '.join(ctx.message.content.split()[1:]).strip()
+                to_eval = " ".join(ctx.message.content.split()[1:]).strip()
                 await self.bot.get_cog("Evaluations").eval_and_respond(
                     ctx, to_eval, force_reply=False)
         elif isinstance(caught_exception, NotOwner):
-            await ctx.send('Sorry, only Maku can use that command :(')
+            await ctx.send("Sorry, only Maku can use that command :(")
         elif isinstance(caught_exception, CommandOnCooldown):
-            await ctx.send('Slow down! You\'re going too fast for me ;a;\
-                            I\'m sorry :(')
+            await ctx.send("Slow down! You\"re going too fast for me ;a;\
+                            I\"m sorry :(")
         elif isinstance(caught_exception, (MissingPermissions,
                                            BotMissingPermissions,
                                            BadUnionArgument,
@@ -89,8 +89,8 @@ class Listeners(discord.ext.commands.Cog):
         if not guild_is_free:
             return
         if message.mention_everyone:
-            await message.channel.send(message.author.mention+' grr')
-        if 'vore' in message.content.split() and random.random() > 0.8:
+            await message.channel.send(message.author.mention+" grr")
+        if "vore" in message.content.split() and random.random() > 0.8:
             await message.pin()
 
 

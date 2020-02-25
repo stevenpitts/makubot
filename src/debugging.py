@@ -11,7 +11,7 @@ import time
 
 SCRIPT_DIR = Path(__file__).parent
 PARENT_DIR = SCRIPT_DIR.parent
-DATA_DIR = PARENT_DIR / 'data'
+DATA_DIR = PARENT_DIR / "data"
 
 logger = logging.getLogger()
 
@@ -32,13 +32,13 @@ class Debugging(discord.ext.commands.Cog):
     @commands.is_owner()
     async def supereval(self, ctx, *, to_eval: str):
         sys.stdout = StringIO()
-        eval_result = ''
-        eval_err = ''
+        eval_result = ""
+        eval_err = ""
         try:
-            eval_result = eval(to_eval) or ''
+            eval_result = eval(to_eval) or ""
         except Exception as e:
             eval_err = commandutil.get_formatted_traceback(e)
-        eval_output = sys.stdout.getvalue() or ''
+        eval_output = sys.stdout.getvalue() or ""
         sys.stdout = sys.__stdout__
         if eval_result or eval_output or eval_err:
             eval_result = (f"{escape_markdown(str(eval_result))}\n"
@@ -47,20 +47,20 @@ class Debugging(discord.ext.commands.Cog):
                            if eval_output else "")
             eval_err = (f"```{escape_markdown(str(eval_err))}```"
                         if eval_err else "")
-            await ctx.send(f'{eval_output}{eval_result}{eval_err}'.strip())
+            await ctx.send(f"{eval_output}{eval_result}{eval_err}".strip())
         else:
             await ctx.send("Hmm, I didn't get any output for that ;~;")
 
     @commands.command(hidden=True)
     @commands.is_owner()
     async def clearshell(self, ctx):
-        '''Adds a few newlines to Maku's shell (for clean debugging)'''
-        print('\n'*10)
+        """Adds a few newlines to Maku's shell (for clean debugging)"""
+        print("\n"*10)
 
-    @commands.command(hidden=True, aliases=['deletehist'])
+    @commands.command(hidden=True, aliases=["deletehist"])
     @commands.is_owner()
     async def removehist(self, ctx, num_to_delete: int):
-        '''Removes a specified number of previous messages by me'''
+        """Removes a specified number of previous messages by me"""
         bot_history = (message async for message in ctx.channel.history()
                        if message.author == self.bot.user)
         to_delete = []
@@ -82,7 +82,7 @@ class Debugging(discord.ext.commands.Cog):
     @commands.command()
     @commands.cooldown(1, 1, type=commands.BucketType.user)
     async def ping(self, ctx):
-        '''
+        """
         Pong was the first commercially successful video game,
         which helped to establish the video game industry along with
         the first home console, the Magnavox Odyssey. Soon after its
@@ -98,16 +98,16 @@ class Debugging(discord.ext.commands.Cog):
         following its release. Pong is part of the permanent collection
         of the Smithsonian Institution in Washington, D.C.
         due to its cultural impact.
-        '''
-        response = await ctx.send(f'pong!')
+        """
+        response = await ctx.send(f"pong!")
         time_delta = response.created_at - ctx.message.created_at
         latency_ms = int((time_delta).total_seconds() * 1000)
         await response.edit(content=f"pong! My latency is {latency_ms} ms.")
 
-    @commands.command(hidden=True, aliases=['status'])
+    @commands.command(hidden=True, aliases=["status"])
     @commands.is_owner()
     async def getstatus(self, ctx):
-        current_servers_string = 'Current servers: {}'.format(
+        current_servers_string = "Current servers: {}".format(
             {guild.name: guild.id for guild in self.bot.guilds})
         await self.bot.makusu.send(f"```{current_servers_string}```")
 
@@ -116,6 +116,6 @@ class Debugging(discord.ext.commands.Cog):
 
 
 def setup(bot):
-    logger.info('debugging starting setup')
+    logger.info("debugging starting setup")
     bot.add_cog(Debugging(bot))
-    logger.info('debugging ending setup')
+    logger.info("debugging ending setup")

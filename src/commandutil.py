@@ -23,12 +23,12 @@ def s3_object_exists(s3_bucket, key):
 
 
 def get_formatted_traceback(e):
-    return ''.join(traceback.format_exception(type(e), e, e.__traceback__))
+    return "".join(traceback.format_exception(type(e), e, e.__traceback__))
 
 
 def slugify(candidate_filename: str):
     slugified = candidate_filename.replace(" ", "_")
-    slugified = re.sub(r'(?u)[^-\w.]', '', slugified)
+    slugified = re.sub(r"(?u)[^-\w.]", "", slugified)
     slugified = slugified.strip(" .")
     if "." not in slugified:
         slugified += ".unknown"
@@ -70,7 +70,7 @@ def get_nonconflicting_filename(candidate_filename: str,
 
 def readable_timedelta(old, new=None):
     new = new or datetime.now()
-    return str(new - old).split('.')[0]
+    return str(new - old).split(".")[0]
 
 
 async def clean(ctx, s):
