@@ -118,6 +118,11 @@ class ServerLogging(discord.ext.commands.Cog):
             (str(guild.id), str(channel.id))
             )
         log_channel_results = self.bot.db_cursor.fetchall()
+        extra_log_channel = self.get_extra_log_channel()
+        if not log_channel_results:
+            if extra_log_channel:
+                return (extra_log_channel,)
+            return ()
         log_to_channel_dict = log_channel_results[0]
         log_to_channels = []
         log_to_channel_id = log_to_channel_dict["log_channel_id"]
@@ -125,7 +130,6 @@ class ServerLogging(discord.ext.commands.Cog):
             log_to_channel_obj = self.bot.get_channel(
                 int(log_to_channel_id))
             log_to_channels.append(log_to_channel_obj)
-        extra_log_channel = self.get_extra_log_channel()
         if extra_log_channel and log_to_channel_id != extra_log_channel.id:
             log_to_channels.append(extra_log_channel)
         return tuple(log_to_channels)
