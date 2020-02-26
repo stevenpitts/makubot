@@ -12,7 +12,6 @@ from discord.ext import commands
 from pathlib import Path
 import time
 import psycopg2
-from psycopg2.extras import RealDictCursor
 
 
 SCRIPT_DIR = Path(__file__).parent
@@ -85,9 +84,6 @@ class MakuBot(commands.Bot):
                 break
         else:
             raise psycopg2.OperationalError("Couldn't connect after retries")
-        self.db_cursor = self.db_connection.cursor(
-            cursor_factory=RealDictCursor
-            )
 
         for extension in self.shared["default_extensions"]:
             self.load_extension(f"src.{extension}")

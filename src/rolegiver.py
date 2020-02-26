@@ -3,6 +3,7 @@ from discord.ext import commands, tasks
 import logging
 import concurrent
 import asyncio
+from psycopg2.extras import RealDictCursor
 from . import commandutil
 
 logger = logging.getLogger()
@@ -11,7 +12,8 @@ logger = logging.getLogger()
 class RoleGiver(discord.ext.commands.Cog):
     def __init__(self, bot):
         self.bot = bot
-        self.bot.db_cursor.execute("""
+        cursor = self.bot.db_connection.cursor()
+        cursor.execute("""
             CREATE TABLE IF NOT EXISTS rolegivers (
             message_id CHARACTER(18) PRIMARY KEY,
             channel_id CHARACTER(18),
@@ -49,18 +51,20 @@ class RoleGiver(discord.ext.commands.Cog):
         await asyncio.gather(*remove_role_tasks, *add_roles_tasks)
 
     def get_rolegiver_ids(self):
-        self.bot.db_cursor.execute(
+        cursor = self.bot.db_connection.cursor(cursor_factory=RealDictCursor)
+        cursor.execute(
             """
             SELECT * FROM rolegivers;
             """
             )
-        results = self.bot.db_cursor.fetchall()
+        results = cursor.fetchall()
         id_order = ["channel_id", "message_id", "role_id", "emoji_id"]
         return [[int(result[id_name]) for id_name in id_order]
                 for result in results]
 
     def add_rolegiver_ids(self, channel_id, message_id, role_id, emoji_id):
-        self.bot.db_cursor.execute(
+        cursor = self.bot.db_connection.cursor()
+        cursor.execute(
             """
             INSERT INTO rolegivers (
             message_id,

@@ -8,6 +8,7 @@ import logging
 import discord
 from discord.ext import commands
 from . import commandutil
+from psycopg2.extras import RealDictCursor
 from discord.utils import escape_markdown
 
 
@@ -31,8 +32,9 @@ class MakuCommands(discord.ext.commands.Cog):
         prefixes = [m+b+punc+maybespace for m in "mM" for b in "bB"
                     for punc in ".!" for maybespace in [" ", ""]]
         self.bot.command_prefix = commands.when_mentioned_or(*prefixes)
-
-        self.bot.db_cursor.execute("""
+        cursor = self.bot.db_connection.cursor(cursor_factory=RealDictCursor)
+        cursor.execute(
+            """
             CREATE TABLE IF NOT EXISTS free_guilds (
             guild_id CHARACTER(18) PRIMARY KEY
             );
@@ -78,12 +80,13 @@ class MakuCommands(discord.ext.commands.Cog):
         await self.bot.close()
 
     def get_free_guild_ids(self):
-        self.bot.db_cursor.execute(
+        cursor = self.bot.db_connection.cursor(cursor_factory=RealDictCursor)
+        cursor.execute(
             """
             SELECT * FROM free_guilds
             """,
             )
-        results = self.bot.db_cursor.fetchall()
+        results = cursor.fetchall()
         return [result["guild_id"] for result in results]
 
     @commands.command(aliases=["go wild"])
@@ -92,16 +95,17 @@ class MakuCommands(discord.ext.commands.Cog):
     async def gowild(self, ctx):
         """Add the current guild as a gowild guild; I do a bit more on these.
         Only Maku can add guilds though :("""
-        if ctx.message.guild:
-            self.bot.db_cursor.execute(
-                """
-                INSERT INTO free_guilds (
-                guild_id)
-                VALUES (%s)
-                """,
-                (str(ctx.message.guild.id),))
-            await ctx.send("Ayaya~")
-            # TODO DATA DONE
+        cursor = self.bot.db_connection.cursor(cursor_factory=RealDictCursor)
+        if not ctx.message.guild:
+            return
+        cursor.execute(
+            """
+            INSERT INTO free_guilds (
+            guild_id)
+            VALUES (%s)
+            """,
+            (str(ctx.message.guild.id),))
+        await ctx.send("Ayaya~")
 
     @commands.command()
     @commands.bot_has_permissions(manage_messages=True)

@@ -13,6 +13,7 @@ import subprocess
 import youtube_dl
 import tempfile
 import urllib
+from psycopg2.extras import RealDictCursor
 import hashlib
 from datetime import datetime
 try:
@@ -364,27 +365,29 @@ class PictureAdder(discord.ext.commands.Cog):
                 await status_message.edit(response)
 
     def get_aliases_of_cmd(self, real_cmd):
-        self.bot.db_cursor.execute(
+        cursor = self.bot.db_connection.cursor(cursor_factory=RealDictCursor)
+        cursor.execute(
             """
             SELECT * FROM alias_pictures
             WHERE real == %s;
             """,
             (real_cmd)
             )
-        results = self.bot.db_cursor.fetchall()
+        results = cursor.fetchall()
         return [result["alias"] for result in results]
 
     def get_cmd_from_alias(self, alias_cmd):
         if alias_cmd in self.bot.shared["pictures_commands"]:
             return alias_cmd
-        self.bot.db_cursor.execute(
+        cursor = self.bot.db_connection.cursor(cursor_factory=RealDictCursor)
+        cursor.execute(
             """
             SELECT * FROM alias_pictures
             WHERE alias == %s;
             """,
             (alias_cmd)
             )
-        results = self.bot.db_cursor.fetchall()
+        results = cursor.fetchall()
         if not results:
             return None
         assert len(results) == 1
@@ -411,7 +414,8 @@ class PictureAdder(discord.ext.commands.Cog):
             await ctx.send(f"{true_invocation} is not an image command :?")
             return
 
-        self.bot.db_cursor.execute(
+        cursor = self.bot.db_connection.cursor()
+        cursor.execute(
             """
             INSERT INTO alias_pictures (
             alias,
@@ -517,7 +521,8 @@ class ReactionImages(discord.ext.commands.Cog):
         self.bot = bot
         self.bot.shared["pictures_commands"] = []
 
-        self.bot.db_cursor.execute(
+        cursor = self.bot.db_connection.cursor()
+        cursor.execute(
             """
             CREATE TABLE IF NOT EXISTS alias_pictures (
             alias TEXT PRIMARY KEY,
@@ -525,12 +530,13 @@ class ReactionImages(discord.ext.commands.Cog):
             """)
         self.bot.db_connection.commit()
 
-        self.bot.db_cursor.execute(
+        cursor = self.bot.db_connection.cursor(cursor_factory=RealDictCursor)
+        cursor.execute(
             """
             SELECT * FROM alias_pictures
             """
             )
-        alias_pictures_results = self.bot.db_cursor.fetchall()
+        alias_pictures_results = cursor.fetchall()
 
         self.image_aliases = {}
         for alias_pictures_result in alias_pictures_results:

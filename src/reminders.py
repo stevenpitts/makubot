@@ -6,6 +6,7 @@ from datetime import datetime, timedelta
 import logging
 import asyncio
 import re
+from psycopg2.extras import RealDictCursor
 from . import commandutil
 from dateutil.parser import parse as date_parse
 
@@ -21,7 +22,8 @@ DATABASE_CONNECT_MAX_RETRIES = 10
 class RemindersDB:
     def __init__(self, bot):
         self.bot = bot
-        self.bot.db_cursor.execute("""
+        cursor = self.bot.db_connection.cursor()
+        cursor.execute("""
             CREATE TABLE IF NOT EXISTS reminders (
             id SERIAL PRIMARY KEY,
             remind_set_time TIMESTAMP,
@@ -31,7 +33,7 @@ class RemindersDB:
             reminder_message TEXT
             );
             """)
-        self.bot.db_cursor.execute("""
+        cursor.execute("""
             CREATE INDEX IF NOT EXISTS date_index
             ON reminders (remind_time);
             """)
@@ -39,6 +41,7 @@ class RemindersDB:
 
     def add_reminder(self, remind_set_time, remind_time, user_id, channel_id,
                      reminder_message):
+        cursor = self.bot.db_connection.cursor()
         query = """
             INSERT INTO reminders (
             remind_set_time,
@@ -48,7 +51,7 @@ class RemindersDB:
             reminder_message)
             VALUES (%s, %s, %s, %s, %s)
             """
-        self.bot.db_cursor.execute(
+        cursor.execute(
             query,
             (remind_set_time,
              remind_time,
@@ -59,7 +62,8 @@ class RemindersDB:
         self.bot.db_connection.commit()
 
     def drop_reminder(self, reminder_id):
-        self.bot.db_cursor.execute(
+        cursor = self.bot.db_connection.cursor()
+        cursor.execute(
             """
             DELETE FROM reminders WHERE id = %s
             """,
@@ -68,27 +72,30 @@ class RemindersDB:
         self.bot.db_connection.commit()
 
     def ready_reminders(self):
+        cursor = self.bot.db_connection.cursor(cursor_factory=RealDictCursor)
         current_time = datetime.utcnow()
-        self.bot.db_cursor.execute("""SELECT * FROM reminders
+        cursor.execute("""SELECT * FROM reminders
                            WHERE remind_time <= %s""", (current_time, ))
-        return self.bot.db_cursor.fetchall()
+        return cursor.fetchall()
 
     def reminders_from_user(self, user_id):
+        cursor = self.bot.db_connection.cursor(cursor_factory=RealDictCursor)
         user_id = str(user_id)
-        self.bot.db_cursor.execute(
+        cursor.execute(
             """
             SELECT * FROM reminders WHERE user_id = %s
             """,
             (user_id, ))
-        return self.bot.db_cursor.fetchall()
+        return cursor.fetchall()
 
     def reminder_from_id(self, id):
-        self.bot.db_cursor.execute(
+        cursor = self.bot.db_connection.cursor(cursor_factory=RealDictCursor)
+        cursor.execute(
             """
             SELECT * FROM reminders WHERE id = %s
             """,
             (id,))
-        return self.bot.db_cursor.fetchone()
+        return cursor.fetchone()
 
 
 def rows_as_str(rows):
