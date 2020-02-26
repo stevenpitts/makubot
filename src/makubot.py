@@ -12,6 +12,11 @@ from discord.ext import commands
 from pathlib import Path
 import time
 import psycopg2
+try:
+    import boto3
+    S3 = boto3.client("s3")
+except ImportError:
+    pass  # Let the exception get raised later, they might be running locally
 
 
 SCRIPT_DIR = Path(__file__).parent
@@ -61,6 +66,10 @@ class MakuBot(commands.Bot):
                                              "rolegiver"
                                              ]
         self.s3_bucket = s3_bucket
+        if s3_bucket:
+            self.s3_bucket_location = S3.get_bucket_location(
+                Bucket=s3_bucket
+                )["LocationConstraint"]
         self.google_api_key = google_api_key
         self.db_host = db_host
         self.db_pass = db_pass

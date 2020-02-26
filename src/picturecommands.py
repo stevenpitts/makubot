@@ -65,10 +65,8 @@ async def s3_hashes(Bucket, Prefix="/", Delimiter="/", start_after=""):
     return hashes
 
 
-def url_from_s3_key(s3_bucket, s3_key, validate=True):
-    bucket_location = S3.get_bucket_location(Bucket=s3_bucket)
-    bucket_location = bucket_location["LocationConstraint"]
-    url = (f"https://{s3_bucket}.s3.{bucket_location}"
+def url_from_s3_key(s3_bucket, s3_bucket_location, s3_key, validate=False):
+    url = (f"https://{s3_bucket}.s3.{s3_bucket_location}"
            f".amazonaws.com/{s3_key}")
     if validate:
         # Raise HTTPError if url 404s or whatever
@@ -261,9 +259,12 @@ class PictureAdder(discord.ext.commands.Cog):
                     await status_message.edit(content=response)
                 return
             if self.bot.s3_bucket:
-                list_query = S3.list_objects_v2(
+                list_query = await asyncio.get_running_loop().run_in_executor(
+                    None,
+                    S3.list_objects_v2,
                     Bucket=self.bot.s3_bucket,
-                    Prefix=(f"pictures/{image_collection}"))
+                    Prefix=(f"pictures/{image_collection}")
+                    )
                 is_new = list_query["KeyCount"] == 0
             else:
                 is_new = image_dir.exists()
@@ -326,11 +327,14 @@ class PictureAdder(discord.ext.commands.Cog):
                 if self.bot.s3_bucket:
                     new_filename = commandutil.get_nonconflicting_filename(
                         filename, image_dir, s3_bucket=self.bot.s3_bucket)
-                    S3.upload_file(
+                    await asyncio.get_running_loop().run_in_executor(
+                        None,
+                        S3.upload_file,
                         str(self.temp_save_dir / filename),
                         self.bot.s3_bucket,
                         f"pictures/{image_collection}/{new_filename}",
-                        ExtraArgs={"ACL": "public-read"})
+                        ExtraArgs={"ACL": "public-read"}
+                        )
                 else:
                     image_dir.mkdir(parents=True, exist_ok=True)
                     new_filename = commandutil.get_nonconflicting_filename(
@@ -437,7 +441,8 @@ class PictureAdder(discord.ext.commands.Cog):
             keys = await s3_keys(Bucket=self.bot.s3_bucket,
                                  Prefix="pictures/")
             chosen_key = random.choice(keys)
-            chosen_url = url_from_s3_key(self.bot.s3_bucket, chosen_key)
+            chosen_url = url_from_s3_key(
+                self.bot.s3_bucket, self.bot.s3_bucket_location, chosen_key)
             image_embed = await generate_image_embed(ctx,
                                                      chosen_url,
                                                      call_bot_name=True)
@@ -545,9 +550,11 @@ class ReactionImages(discord.ext.commands.Cog):
             self.image_aliases[real_cmd] = (
                 self.image_aliases.get(real_cmd, []) + [alias_cmd])
         if bot.s3_bucket:
-            toplevel_query = S3.list_objects_v2(Bucket=bot.s3_bucket,
-                                                Prefix="pictures/",
-                                                Delimiter="/")
+            toplevel_query = S3.list_objects_v2(
+                Bucket=bot.s3_bucket,
+                Prefix="pictures/",
+                Delimiter="/"
+                )
             toplevel_dirs = [prefix["Prefix"].split("/")[-2]
                              for prefix
                              in toplevel_query.get("CommonPrefixes", [])]
@@ -562,11 +569,9 @@ class ReactionImages(discord.ext.commands.Cog):
             keys = await s3_keys(Bucket=ctx.bot.s3_bucket,
                                  Prefix=(f"pictures/{ctx.command.name}")
                                  )
-            # s3_objects = s3_response["Contents"]
-            # chosen_object = random.choice(s3_objects)
-            # chosen_key = chosen_object["Key"]
             chosen_key = random.choice(keys)
-            chosen_url = url_from_s3_key(ctx.bot.s3_bucket, chosen_key)
+            chosen_url = url_from_s3_key(
+                ctx.bot.s3_bucket, ctx.bot.s3_bucket_location, chosen_key)
             image_embed = await generate_image_embed(ctx, chosen_url)
             await ctx.send(embed=image_embed)
         else:
