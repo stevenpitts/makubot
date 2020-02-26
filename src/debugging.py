@@ -1,13 +1,11 @@
 import discord
-from discord.ext import commands, tasks
+from discord.ext import commands
 import logging
 from pathlib import Path
 from io import StringIO
-from datetime import datetime
 from discord.utils import escape_markdown
 import sys
 from . import commandutil
-import time
 
 SCRIPT_DIR = Path(__file__).parent
 PARENT_DIR = SCRIPT_DIR.parent
@@ -19,8 +17,6 @@ logger = logging.getLogger()
 class Debugging(discord.ext.commands.Cog):
     def __init__(self, bot):
         self.bot = bot
-        self.last_delay_time = time.time()
-        self.test_delay.start()
 
     @commands.command(hidden=True)
     @commands.is_owner()
@@ -71,14 +67,6 @@ class Debugging(discord.ext.commands.Cog):
                 break
         await ctx.channel.delete_messages(to_delete)
 
-    @tasks.loop(seconds=0)
-    async def test_delay(self):
-        new_delay_time = time.time()
-        delta_time = new_delay_time-self.last_delay_time
-        if delta_time > 0.1:
-            logger.warning(f"{datetime.now()}: Time delay: {delta_time}")
-        self.last_delay_time = new_delay_time
-
     @commands.command()
     @commands.cooldown(1, 1, type=commands.BucketType.user)
     async def ping(self, ctx):
@@ -110,9 +98,6 @@ class Debugging(discord.ext.commands.Cog):
         current_servers_string = "Current servers: {}".format(
             {guild.name: guild.id for guild in self.bot.guilds})
         await self.bot.makusu.send(f"```{current_servers_string}```")
-
-    def cog_unload(self):
-        self.test_delay.stop()
 
 
 def setup(bot):
