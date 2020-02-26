@@ -6,7 +6,7 @@ import importlib
 from pathlib import Path
 import logging
 import discord
-from discord.ext import commands, tasks
+from discord.ext import commands
 from . import commandutil
 from discord.utils import escape_markdown
 
@@ -38,14 +38,6 @@ class MakuCommands(discord.ext.commands.Cog):
             );
             """)
         self.bot.db_connection.commit()
-        self.backup_db.start()
-
-    def cog_unload(self):
-        self.backup_db.stop()
-
-    @tasks.loop(seconds=60)  # TODO make wayyyy longer
-    async def backup_db(self):
-        await commandutil.backup_db(self.bot.s3_bucket, self.bot.db_connection)
 
     @commands.command(hidden=True)
     @commands.is_owner()
