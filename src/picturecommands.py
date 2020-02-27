@@ -60,8 +60,9 @@ async def s3_hashes(Bucket, Prefix="/", Delimiter="/", start_after=""):
     return (await s3_keys_hashes(Bucket, Prefix, Delimiter, start_after))[1]
 
 
-def get_starting_collection_dirs_keys_hashes(Bucket):
-    keys, hashes = asyncio.run(s3_keys_hashes(Bucket, Prefix="pictures/"))
+def get_starting_keys_hashes(Bucket):
+    keys, hashes = asyncio.get_event_loop().run_until_complete(
+        s3_keys_hashes(Bucket, Prefix="pictures/"))
     toplevel_dirs = set(key.split("/")[1] for key in keys)
     collection_keys = {}
     collection_hashes = {}
@@ -72,7 +73,7 @@ def get_starting_collection_dirs_keys_hashes(Bucket):
             keys[i] for i in matching_indeces)
         collection_hashes[collection] = set(
             hashes[i] for i in matching_indeces)
-    return toplevel_dirs, collection_keys, collection_hashes
+    return collection_keys, collection_hashes
 
 
 def url_from_s3_key(s3_bucket, s3_bucket_location, s3_key, validate=False):
@@ -351,7 +352,7 @@ class PictureAdder(discord.ext.commands.Cog):
                         ExtraArgs={"ACL": "public-read"}
                         )
                     reaction_cog = self.bot.get_cog("ReactionImages")
-                    await reaction_cog.add_pictures_dir(image_collection)
+                    reaction_cog.add_pictures_dir(image_collection)
                     reaction_cog.collection_keys[image_collection].add(
                         image_key)
                     reaction_cog.collection_hashes[image_collection].add(
@@ -363,7 +364,7 @@ class PictureAdder(discord.ext.commands.Cog):
                     shutil.move(self.temp_save_dir / filename,
                                 image_dir / new_filename)
                     reaction_cog = self.bot.get_cog("ReactionImages")
-                    await reaction_cog.add_pictures_dir(image_collection)
+                    reaction_cog.add_pictures_dir(image_collection)
 
                 response = f"Your image {new_filename} was approved!"
                 await requestor.send(response)
@@ -463,9 +464,9 @@ class PictureAdder(discord.ext.commands.Cog):
             # Yes, I'm aware that the double randomness means it's not
             # a truely random image of all my images
             reaction_cog = self.bot.get_cog("ReactionImages")
-            chosen_command = random.choice(reaction_cog.collection_keys)
-            chosen_key = random.choice(
-                reaction_cog.collection_keys[chosen_command])
+            chosen_command_keys = list(random.choice(list(
+                reaction_cog.collection_keys.values())))
+            chosen_key = random.choice(chosen_command_keys)
             chosen_url = url_from_s3_key(
                 self.bot.s3_bucket, self.bot.s3_bucket_location, chosen_key)
             image_embed = await generate_image_embed(ctx,
@@ -576,22 +577,22 @@ class ReactionImages(discord.ext.commands.Cog):
                 self.image_aliases.get(real_cmd, []) + [alias_cmd])
 
         if self.bot.s3_bucket:
-            toplevel_dirs, self.collection_keys, self.collection_hashes = (
-                get_starting_collection_dirs_keys_hashes(self.bot.s3_bucket)
+            self.collection_keys, self.collection_hashes = (
+                get_starting_keys_hashes(self.bot.s3_bucket)
                 )
+            toplevel_dirs = list(self.collection_keys.keys())
+            for folder_name in toplevel_dirs:
+                self.add_pictures_dir(folder_name)
         else:
             toplevel_dirs = os.listdir(PICTURES_DIR)
-            add_pictures_dir_tasks = [
+            for folder_name in toplevel_dirs:
                 self.add_pictures_dir(folder_name)
-                for folder_name in toplevel_dirs]
-            asyncio.run(
-                asyncio.wait(add_pictures_dir_tasks))
 
     async def send_image_func(ctx):
         if ctx.bot.s3_bucket:
             reaction_cog = ctx.bot.get_cog("ReactionImages")
             keys = reaction_cog.collection_keys[ctx.command.name]
-            chosen_key = random.choice(keys)
+            chosen_key = random.choice(list(keys))
             chosen_url = url_from_s3_key(
                 ctx.bot.s3_bucket, ctx.bot.s3_bucket_location, chosen_key)
             image_embed = await generate_image_embed(ctx, chosen_url)
@@ -602,7 +603,7 @@ class ReactionImages(discord.ext.commands.Cog):
             async with ctx.typing():
                 await ctx.channel.send(file=discord.File(file_to_send))
 
-    async def add_pictures_dir(self, folder_name: str):
+    def add_pictures_dir(self, folder_name: str):
         if folder_name in self.bot.shared["pictures_commands"]:
             return
         self.bot.shared["pictures_commands"].append(folder_name)
@@ -616,18 +617,6 @@ class ReactionImages(discord.ext.commands.Cog):
         folder_command.instance = self
         folder_command.module = self.__module__
         self.bot.add_command(folder_command)
-        self.collection_keys[folder_name] = set(
-            await s3_keys(
-                Bucket=self.bot.s3_bucket,
-                Prefix=f"pictures/{folder_command}"
-                )
-            )
-        self.collection_hashes[folder_name] = set(
-            await s3_hashes(
-                Bucket=self.bot.s3_bucket,
-                Prefix=f"pictures/{folder_command}"
-                )
-            )
         for collection_alias in collection_aliases:
             self.bot.shared["pictures_commands"].append(collection_alias)
 
