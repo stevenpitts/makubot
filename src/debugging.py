@@ -115,7 +115,7 @@ class Debugging(discord.ext.commands.Cog):
             None, commandutil.backup_db, self.bot.s3_bucket)
         await ctx.send("Done!")
 
-    @tasks.loop(seconds=10)
+    @tasks.loop(hours=6)
     async def regular_db_backups(self):
         await asyncio.get_running_loop().run_in_executor(
             None, commandutil.backup_db, self.bot.s3_bucket)
