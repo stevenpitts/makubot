@@ -4,6 +4,7 @@ import logging
 from pathlib import Path
 from io import StringIO
 from discord.utils import escape_markdown
+from psycopg2.extras import RealDictCursor
 import sys
 from . import commandutil
 
@@ -46,6 +47,14 @@ class Debugging(discord.ext.commands.Cog):
             await ctx.send(f"{eval_output}{eval_result}{eval_err}".strip())
         else:
             await ctx.send("Hmm, I didn't get any output for that ;~;")
+
+    @commands.command(hidden=True)
+    @commands.is_owner()
+    async def superevalsql(self, ctx, *, to_eval: str):
+        cursor = self.bot.db_connection.cursor(cursor_factory=RealDictCursor)
+        cursor.execute(to_eval)
+        await ctx.send(str([dict(row) for row in cursor.fetchall()]))
+        self.bot.db_connection.commit()
 
     @commands.command(hidden=True)
     @commands.is_owner()
