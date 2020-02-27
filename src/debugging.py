@@ -113,6 +113,7 @@ class Debugging(discord.ext.commands.Cog):
         backup_key = f"{backups_dir}/{now_formatted}.pgdump"
         await asyncio.get_running_loop().run_in_executor(
             None, commandutil.backup_db, backup_key)
+        await ctx.send("Done!")
 
 
 def setup(bot):
