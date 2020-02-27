@@ -263,8 +263,10 @@ class PictureAdder(discord.ext.commands.Cog):
                 response = (
                     f"The image {filename} appears already in the collection!")
                 await requestor.send(response)
-                if status_message:
+                try:
                     await status_message.edit(content=response)
+                except discord.errors.NotFound:
+                    pass
                 return
             if self.bot.s3_bucket:
                 reaction_cog = self.bot.get_cog("ReactionImages")
@@ -278,13 +280,17 @@ class PictureAdder(discord.ext.commands.Cog):
                 request = await self.bot.makusu.send(
                     proposal, file=discord.File(self.temp_save_dir
                                                 / filename))
-                if status_message:
+                try:
                     await status_message.edit(content="Sent to Maku!")
+                except discord.errors.NotFound:
+                    pass
             except discord.errors.HTTPException:
                 response = f"Sorry, {filename} is too large ;~;"
                 await requestor.send(response)
-                if status_message:
+                try:
                     await status_message.edit(content=response)
+                except discord.errors.NotFound:
+                    pass
                 return
             no_emoji, yes_emoji = "❌", "✅"
             await request.add_reaction(no_emoji)
@@ -312,7 +318,10 @@ class PictureAdder(discord.ext.commands.Cog):
                         return reactions_from_maku[0] == yes_emoji
                     await asyncio.sleep(0)
 
-            await status_message.edit(content="Waiting for maku approval...")
+            try:
+                await status_message.edit(content="Waiting for maku approval...")
+            except discord.errors.NotFound:
+                pass
             approval_start_time = datetime.now()
             approved = await get_approval(request.id)
             approval_time = datetime.now() - approval_start_time
@@ -324,8 +333,10 @@ class PictureAdder(discord.ext.commands.Cog):
                 response = (
                     f"The image {filename} appears already in the collection!")
                 await requestor.send(response)
-                if status_message:
+                try:
                     await status_message.edit(content=response)
+                except discord.errors.NotFound:
+                    pass
             elif approved:
                 if self.bot.s3_bucket:
                     new_filename = commandutil.get_nonconflicting_filename(
@@ -360,17 +371,18 @@ class PictureAdder(discord.ext.commands.Cog):
 
                 response = f"Your image {new_filename} was approved!"
                 await requestor.send(response)
-                if status_message:
-                    try:
-                        await status_message.edit(content=response)
-                    except discord.errors.NotFound:
-                        print(f"{new_filename}, {request.id}, "
-                              f"{requestor.name}")
+                try:
+                    await status_message.edit(content=response)
+                except discord.errors.NotFound:
+                    pass
 
             else:
                 response = (f"Your image {filename} was not approved. "
                             "Feel free to ask Maku why ^_^")
-                await status_message.edit(content=response)
+                try:
+                    await status_message.edit(content=response)
+                except discord.errors.NotFound:
+                    pass
                 if status_message.channel != requestor.dm_channel:
                     await requestor.send(response)
         except (concurrent.futures._base.CancelledError,
@@ -380,8 +392,10 @@ class PictureAdder(discord.ext.commands.Cog):
             print(commandutil.get_formatted_traceback(e))
             response = f"Something went wrong with {filename}, sorry!"
             await requestor.send(response)
-            if status_message:
+            try:
                 await status_message.edit(content=response)
+            except discord.errors.NotFound:
+                pass
 
     def get_aliases_of_cmd(self, real_cmd):
         cursor = self.bot.db_connection.cursor(cursor_factory=RealDictCursor)
