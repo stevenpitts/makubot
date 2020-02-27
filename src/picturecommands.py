@@ -267,13 +267,8 @@ class PictureAdder(discord.ext.commands.Cog):
                     await status_message.edit(content=response)
                 return
             if self.bot.s3_bucket:
-                list_query = await asyncio.get_running_loop().run_in_executor(
-                    None,
-                    S3.list_objects_v2,
-                    Bucket=self.bot.s3_bucket,
-                    Prefix=(f"pictures/{image_collection}")
-                    )
-                is_new = list_query["KeyCount"] == 0
+                reaction_cog = self.bot.get_cog("ReactionImages")
+                is_new = image_dir in reaction_cog.image_keys
             else:
                 is_new = image_dir.exists()
             new_addition = "" if is_new else "***NEW*** "
