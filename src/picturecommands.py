@@ -35,34 +35,44 @@ class NotVideo(Exception):
     pass
 
 
-async def s3_keys(Bucket, Prefix="/", Delimiter="/", start_after=""):
+async def s3_keys_hashes(Bucket, Prefix="/", Delimiter="/", start_after=""):
     s3_paginator = boto3.client("s3").get_paginator("list_objects_v2")
     Prefix = Prefix[1:] if Prefix.startswith(Delimiter) else Prefix
     start_after = ((start_after or Prefix) if Prefix.endswith(Delimiter)
                    else start_after)
     keys = []
-    for page in s3_paginator.paginate(Bucket=Bucket,
-                                      Prefix=Prefix,
-                                      StartAfter=start_after):
-        for content in page.get("Contents", ()):
-            keys.append(content["Key"])
-        await asyncio.sleep(0)
-    return keys
-
-
-async def s3_hashes(Bucket, Prefix="/", Delimiter="/", start_after=""):
-    s3_paginator = boto3.client("s3").get_paginator("list_objects_v2")
-    Prefix = Prefix[1:] if Prefix.startswith(Delimiter) else Prefix
-    start_after = ((start_after or Prefix) if Prefix.endswith(Delimiter)
-                   else start_after)
     hashes = []
     for page in s3_paginator.paginate(Bucket=Bucket,
                                       Prefix=Prefix,
                                       StartAfter=start_after):
         for content in page.get("Contents", ()):
+            keys.append(content["Key"])
             hashes.append(content["ETag"][1:-1])
         await asyncio.sleep(0)
-    return hashes
+    return keys, hashes
+
+
+async def s3_keys(Bucket, Prefix="/", Delimiter="/", start_after=""):
+    return (await s3_keys_hashes(Bucket, Prefix, Delimiter, start_after))[0]
+
+
+async def s3_hashes(Bucket, Prefix="/", Delimiter="/", start_after=""):
+    return (await s3_keys_hashes(Bucket, Prefix, Delimiter, start_after))[1]
+
+
+def get_starting_collection_dirs_keys_hashes(Bucket):
+    keys, hashes = asyncio.run(s3_keys_hashes(Bucket, Prefix="pictures/"))
+    toplevel_dirs = set(key.split("/")[1] for key in keys)
+    collection_keys = {}
+    collection_hashes = {}
+    for collection in toplevel_dirs:
+        matching_indeces = [i for i, key in enumerate(keys)
+                            if key.split("/")[1] == collection]
+        collection_keys[collection] = set(
+            keys[i] for i in matching_indeces)
+        collection_hashes[collection] = set(
+            hashes[i] for i in matching_indeces)
+    return toplevel_dirs, collection_keys, collection_hashes
 
 
 def url_from_s3_key(s3_bucket, s3_bucket_location, s3_key, validate=False):
@@ -341,7 +351,7 @@ class PictureAdder(discord.ext.commands.Cog):
                         ExtraArgs={"ACL": "public-read"}
                         )
                     reaction_cog = self.bot.get_cog("ReactionImages")
-                    reaction_cog.add_pictures_dir(image_collection)
+                    await reaction_cog.add_pictures_dir(image_collection)
                     reaction_cog.collection_keys[image_collection].add(
                         image_key)
                     reaction_cog.collection_hashes[image_collection].add(
@@ -353,7 +363,7 @@ class PictureAdder(discord.ext.commands.Cog):
                     shutil.move(self.temp_save_dir / filename,
                                 image_dir / new_filename)
                     reaction_cog = self.bot.get_cog("ReactionImages")
-                    reaction_cog.add_pictures_dir(image_collection)
+                    await reaction_cog.add_pictures_dir(image_collection)
 
                 response = f"Your image {new_filename} was approved!"
                 await requestor.send(response)
@@ -540,8 +550,6 @@ class ReactionImages(discord.ext.commands.Cog):
     def __init__(self, bot):
         self.bot = bot
         self.bot.shared["pictures_commands"] = []
-        self.collection_keys = dict()
-        self.collection_hashes = dict()
 
         cursor = self.bot.db_connection.cursor()
         cursor.execute(
@@ -566,21 +574,18 @@ class ReactionImages(discord.ext.commands.Cog):
             real_cmd = alias_pictures_result["real"]
             self.image_aliases[real_cmd] = (
                 self.image_aliases.get(real_cmd, []) + [alias_cmd])
-        if bot.s3_bucket:
-            toplevel_query = S3.list_objects_v2(
-                Bucket=bot.s3_bucket,
-                Prefix="pictures/",
-                Delimiter="/"
+
+        if self.bot.s3_bucket:
+            toplevel_dirs, self.collection_keys, self.collection_hashes = (
+                get_starting_collection_dirs_keys_hashes(self.bot.s3_bucket)
                 )
-            toplevel_dirs = [prefix["Prefix"].split("/")[-2]
-                             for prefix
-                             in toplevel_query.get("CommonPrefixes", [])]
-            for folder_name in toplevel_dirs:
-                self.add_pictures_dir(folder_name)
         else:
             toplevel_dirs = os.listdir(PICTURES_DIR)
-            for folder_name in toplevel_dirs:
+            add_pictures_dir_tasks = [
                 self.add_pictures_dir(folder_name)
+                for folder_name in toplevel_dirs]
+            asyncio.run(
+                asyncio.wait(add_pictures_dir_tasks))
 
     async def send_image_func(ctx):
         if ctx.bot.s3_bucket:
@@ -597,7 +602,7 @@ class ReactionImages(discord.ext.commands.Cog):
             async with ctx.typing():
                 await ctx.channel.send(file=discord.File(file_to_send))
 
-    def add_pictures_dir(self, folder_name: str):
+    async def add_pictures_dir(self, folder_name: str):
         if folder_name in self.bot.shared["pictures_commands"]:
             return
         self.bot.shared["pictures_commands"].append(folder_name)
