@@ -401,7 +401,8 @@ class PictureAdder(discord.ext.commands.Cog):
         return [result["alias"] for result in results]
 
     def get_cmd_from_alias(self, alias_cmd):
-        if alias_cmd in self.bot.shared["pictures_commands"]:
+        reaction_cog = self.bot.get_cog("ReactionImages")
+        if alias_cmd in reaction_cog.pictures_commands:
             return alias_cmd
         cursor = self.bot.db_connection.cursor(cursor_factory=RealDictCursor)
         cursor.execute(
@@ -450,7 +451,8 @@ class PictureAdder(discord.ext.commands.Cog):
             )
         self.bot.db_connection.commit()
         true_command.aliases += [ref_invocation]
-        self.bot.shared["pictures_commands"] += [ref_invocation]
+        reaction_cog = self.bot.get_cog("ReactionImages")
+        reaction_cog.pictures_commands += [ref_invocation]
         self.bot.all_commands[ref_invocation] = true_command
         await ctx.send("Added!")
 
@@ -524,7 +526,7 @@ class PictureAdder(discord.ext.commands.Cog):
 class ReactionImages(discord.ext.commands.Cog):
     def __init__(self, bot):
         self.bot = bot
-        self.bot.shared["pictures_commands"] = []
+        self.pictures_commands = []
 
         cursor = self.bot.db_connection.cursor()
         cursor.execute(
@@ -564,25 +566,25 @@ class ReactionImages(discord.ext.commands.Cog):
 
     @commands.command(aliases=["randomimage", "yo", "hey", "makubot"])
     async def random_image(self, ctx):
-    """For true shitposting."""
-    if self.bot.s3_bucket:
-        # Yes, I'm aware that the double randomness means it's not
-        # a truely random image of all my images
-        chosen_command_keys = list(random.choice(list(
-            self.collection_keys.values())))
-        chosen_key = random.choice(chosen_command_keys)
-        chosen_url = url_from_s3_key(
-            self.bot.s3_bucket, self.bot.s3_bucket_location, chosen_key)
-        image_embed = await generate_image_embed(ctx,
-                                                 chosen_url,
-                                                 call_bot_name=True)
-        await ctx.send(embed=image_embed)
-    else:
-        files = [Path(dirpath) / Path(filename)
-                 for dirpath, dirnames, filenames in os.walk(PICTURES_DIR)
-                 for filename in filenames]
-        chosen_file = random.choice(files)
-        await ctx.send(file=discord.File(chosen_file))
+        """For true shitposting."""
+        if self.bot.s3_bucket:
+            # Yes, I'm aware that the double randomness means it's not
+            # a truely random image of all my images
+            chosen_command_keys = list(random.choice(list(
+                self.collection_keys.values())))
+            chosen_key = random.choice(chosen_command_keys)
+            chosen_url = url_from_s3_key(
+                self.bot.s3_bucket, self.bot.s3_bucket_location, chosen_key)
+            image_embed = await generate_image_embed(ctx,
+                                                     chosen_url,
+                                                     call_bot_name=True)
+            await ctx.send(embed=image_embed)
+        else:
+            files = [Path(dirpath) / Path(filename)
+                     for dirpath, dirnames, filenames in os.walk(PICTURES_DIR)
+                     for filename in filenames]
+            chosen_file = random.choice(files)
+            await ctx.send(file=discord.File(chosen_file))
 
     async def send_image_func(ctx):
         if ctx.bot.s3_bucket:
@@ -600,9 +602,9 @@ class ReactionImages(discord.ext.commands.Cog):
                 await ctx.channel.send(file=discord.File(file_to_send))
 
     def add_pictures_dir(self, folder_name: str):
-        if folder_name in self.bot.shared["pictures_commands"]:
+        if folder_name in self.pictures_commands:
             return
-        self.bot.shared["pictures_commands"].append(folder_name)
+        self.pictures_commands.append(folder_name)
         collection_aliases = self.image_aliases.get(folder_name, [])
         folder_command = commands.Command(
             ReactionImages.send_image_func,
@@ -614,12 +616,12 @@ class ReactionImages(discord.ext.commands.Cog):
         folder_command.module = self.__module__
         self.bot.add_command(folder_command)
         for collection_alias in collection_aliases:
-            self.bot.shared["pictures_commands"].append(collection_alias)
+            self.pictures_commands.append(collection_alias)
 
     @commands.command(aliases=["listreactions"])
     async def list_reactions(self, ctx):
         """List all my reactions"""
-        pictures_desc = ", ".join(self.bot.shared["pictures_commands"])
+        pictures_desc = ", ".join(self.pictures_commands)
         block_size = 1500
         text_blocks = [f"{pictures_desc[i:i+block_size]}"
                        for i in range(0, len(pictures_desc), block_size)]
