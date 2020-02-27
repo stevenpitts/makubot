@@ -1,14 +1,9 @@
 from . import makubot
 import sys
 import os
-from pathlib import Path
 import asyncio
 import time
 import threading
-
-SCRIPT_DIR = Path(__file__).parent
-PARENT_DIR = SCRIPT_DIR.parent
-DATA_DIR = PARENT_DIR / "data"
 
 
 def profile_bot(bot):
@@ -26,16 +21,6 @@ def profile_bot(bot):
 
 
 def main():
-    os.makedirs(str(DATA_DIR / "pictures"), exist_ok=True)
-
-    default_text = {"makubot.log": "",
-                    "data.json": "{}",
-                    "deletion_log.txt": ""}
-    for filename, to_write in default_text.items():
-        if not os.path.isfile(str(DATA_DIR / filename)):
-            with open(str(DATA_DIR / filename), "w") as f:
-                f.write(to_write)
-
     token = os.environ["DISCORD_BOT_TOKEN"]
     # Use local storage if S3_BUCKET isn't set in environment
     s3_bucket = os.environ.get("S3_BUCKET", None)

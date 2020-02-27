@@ -1,16 +1,11 @@
 import discord
 from discord.ext import commands
 import logging
-from pathlib import Path
 import random
 import asyncio
 import itertools
 import re
 from . import commandutil
-
-SCRIPT_DIR = Path(__file__).parent
-PARENT_DIR = SCRIPT_DIR.parent
-DATA_DIR = PARENT_DIR / "data"
 
 logger = logging.getLogger()
 

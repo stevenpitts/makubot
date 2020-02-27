@@ -1,16 +1,11 @@
 import discord
 from discord.ext import commands
 import logging
-from pathlib import Path
 from io import StringIO
 from discord.utils import escape_markdown
 from psycopg2.extras import RealDictCursor
 import sys
 from . import commandutil
-
-SCRIPT_DIR = Path(__file__).parent
-PARENT_DIR = SCRIPT_DIR.parent
-DATA_DIR = PARENT_DIR / "data"
 
 logger = logging.getLogger()
 

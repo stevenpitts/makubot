@@ -319,7 +319,8 @@ class PictureAdder(discord.ext.commands.Cog):
                     await asyncio.sleep(0)
 
             try:
-                await status_message.edit(content="Waiting for maku approval...")
+                await status_message.edit(
+                    content="Waiting for maku approval...")
             except discord.errors.NotFound:
                 pass
             approval_start_time = datetime.now()

@@ -18,18 +18,10 @@ try:
 except ImportError:
     pass  # Let the exception get raised later, they might be running locally
 
-
-SCRIPT_DIR = Path(__file__).parent
-PARENT_DIR = SCRIPT_DIR.parent
-DATA_DIR = PARENT_DIR / "data"
 LOGGING_FORMAT = ("%(asctime)-15s %(levelname)s in %(funcName)s "
                   "at %(pathname)s:%(lineno)d: %(message)s")
-logging.basicConfig(filename=DATA_DIR/"makubot.log", level=logging.INFO,
-                    format=LOGGING_FORMAT)
-stderr_handler = logging.StreamHandler(sys.stderr)
-stderr_handler.setLevel(logging.WARNING)
-logger = logging.getLogger()
-logger.addHandler(stderr_handler)
+logging.basicConfig(
+    stream=sys.stderr, level=logging.INFO, format=LOGGING_FORMAT)
 
 DATABASE_CONNECT_MAX_RETRIES = 10
 

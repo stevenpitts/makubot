@@ -4,11 +4,6 @@ import logging
 import re
 import asyncio
 from . import commandutil
-from pathlib import Path
-
-SCRIPT_DIR = Path(__file__).parent
-PARENT_DIR = SCRIPT_DIR.parent
-DATA_DIR = PARENT_DIR / "data"
 
 MOVE_EMOTE = "\U0001f232"
 

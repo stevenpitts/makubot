@@ -3,19 +3,12 @@ Module containing the majority of the basic commands makubot can execute.
 """
 import sys
 import importlib
-from pathlib import Path
 import logging
 import discord
 from discord.ext import commands
 from . import commandutil
 from psycopg2.extras import RealDictCursor
 from discord.utils import escape_markdown
-
-
-SCRIPT_DIR = Path(__file__).parent
-PARENT_DIR = SCRIPT_DIR.parent
-DATA_DIR = PARENT_DIR / "data"
-DATAFILE_PATH = DATA_DIR / "data.json"
 
 logger = logging.getLogger()
 

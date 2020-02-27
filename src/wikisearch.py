@@ -1,12 +1,7 @@
 import discord
 from discord.ext import commands
 import logging
-from pathlib import Path
 import wikipedia
-
-SCRIPT_DIR = Path(__file__).parent
-PARENT_DIR = SCRIPT_DIR.parent
-DATA_DIR = PARENT_DIR / "data"
 
 logger = logging.getLogger()
 

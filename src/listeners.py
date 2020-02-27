@@ -1,5 +1,4 @@
 import random
-from pathlib import Path
 import discord
 from discord.ext import commands
 from discord.ext.commands.errors import (CommandError, CommandNotFound,
@@ -10,10 +9,6 @@ from discord.ext.commands.errors import (CommandError, CommandNotFound,
                                          MissingRequiredArgument,
                                          BadArgument)
 from . import commandutil
-
-SCRIPT_DIR = Path(__file__).parent
-PARENT_DIR = SCRIPT_DIR.parent
-DATA_DIR = PARENT_DIR / "data"
 
 
 class Listeners(discord.ext.commands.Cog):
