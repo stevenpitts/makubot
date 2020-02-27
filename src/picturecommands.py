@@ -628,6 +628,15 @@ class ReactionImages(discord.ext.commands.Cog):
         for text_block in text_blocks:
             await ctx.send(f"```{escape_markdown(text_block)}```")
 
+    @commands.command(aliases=["howbig"])
+    async def how_big(self, ctx, cmd_name):
+        try:
+            command_size = len(self.collection_keys[cmd_name])
+        except KeyError:
+            await ctx.send("That's not an image command :o")
+        image_plurality = "image" if command_size == 1 else "images"
+        await ctx.send(f"{cmd_name} has {command_size} {image_plurality}!")
+
     @commands.command(aliases=["bigten"])
     async def big_ten(self, ctx):
         """List ten biggest image commands!"""
