@@ -454,29 +454,6 @@ class PictureAdder(discord.ext.commands.Cog):
         self.bot.all_commands[ref_invocation] = true_command
         await ctx.send("Added!")
 
-    @commands.command(aliases=["randomimage", "yo", "hey", "makubot"])
-    async def random_image(self, ctx):
-        """For true shitposting."""
-        if self.bot.s3_bucket:
-            # Yes, I'm aware that the double randomness means it's not
-            # a truely random image of all my images
-            reaction_cog = self.bot.get_cog("ReactionImages")
-            chosen_command_keys = list(random.choice(list(
-                reaction_cog.collection_keys.values())))
-            chosen_key = random.choice(chosen_command_keys)
-            chosen_url = url_from_s3_key(
-                self.bot.s3_bucket, self.bot.s3_bucket_location, chosen_key)
-            image_embed = await generate_image_embed(ctx,
-                                                     chosen_url,
-                                                     call_bot_name=True)
-            await ctx.send(embed=image_embed)
-        else:
-            files = [Path(dirpath) / Path(filename)
-                     for dirpath, dirnames, filenames in os.walk(PICTURES_DIR)
-                     for filename in filenames]
-            chosen_file = random.choice(files)
-            await ctx.send(file=discord.File(chosen_file))
-
     @commands.command(aliases=["addimage", "addimageraw"])
     async def add_image(self, ctx, image_collection: str, *, urls: str = ""):
         """Requests an image be added.
@@ -584,6 +561,28 @@ class ReactionImages(discord.ext.commands.Cog):
             toplevel_dirs = os.listdir(PICTURES_DIR)
             for folder_name in toplevel_dirs:
                 self.add_pictures_dir(folder_name)
+
+    @commands.command(aliases=["randomimage", "yo", "hey", "makubot"])
+    async def random_image(self, ctx):
+    """For true shitposting."""
+    if self.bot.s3_bucket:
+        # Yes, I'm aware that the double randomness means it's not
+        # a truely random image of all my images
+        chosen_command_keys = list(random.choice(list(
+            self.collection_keys.values())))
+        chosen_key = random.choice(chosen_command_keys)
+        chosen_url = url_from_s3_key(
+            self.bot.s3_bucket, self.bot.s3_bucket_location, chosen_key)
+        image_embed = await generate_image_embed(ctx,
+                                                 chosen_url,
+                                                 call_bot_name=True)
+        await ctx.send(embed=image_embed)
+    else:
+        files = [Path(dirpath) / Path(filename)
+                 for dirpath, dirnames, filenames in os.walk(PICTURES_DIR)
+                 for filename in filenames]
+        chosen_file = random.choice(files)
+        await ctx.send(file=discord.File(chosen_file))
 
     async def send_image_func(ctx):
         if ctx.bot.s3_bucket:
