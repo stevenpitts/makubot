@@ -381,7 +381,7 @@ class PictureAdder(discord.ext.commands.Cog):
             response = f"Something went wrong with {filename}, sorry!"
             await requestor.send(response)
             if status_message:
-                await status_message.edit(response)
+                await status_message.edit(content=response)
 
     def get_aliases_of_cmd(self, real_cmd):
         cursor = self.bot.db_connection.cursor(cursor_factory=RealDictCursor)
