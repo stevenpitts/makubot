@@ -171,7 +171,6 @@ class ReminderCommands(discord.ext.commands.Cog):
 
     def cog_unload(self):
         self.cycle_reminders.stop()
-        self.reminders_db.conn.close()
 
     @commands.command(aliases=["remindme"])
     async def remind_me(self, ctx, *, time_and_reminder: str):

@@ -35,7 +35,7 @@ class NotVideo(Exception):
     pass
 
 
-async def s3_keys_hashes(Bucket, Prefix="/", Delimiter="/", start_after=""):
+def s3_keys_hashes(Bucket, Prefix="/", Delimiter="/", start_after=""):
     s3_paginator = boto3.client("s3").get_paginator("list_objects_v2")
     Prefix = Prefix[1:] if Prefix.startswith(Delimiter) else Prefix
     start_after = ((start_after or Prefix) if Prefix.endswith(Delimiter)
@@ -48,21 +48,19 @@ async def s3_keys_hashes(Bucket, Prefix="/", Delimiter="/", start_after=""):
         for content in page.get("Contents", ()):
             keys.append(content["Key"])
             hashes.append(content["ETag"][1:-1])
-        await asyncio.sleep(0)
     return keys, hashes
 
 
-async def s3_keys(Bucket, Prefix="/", Delimiter="/", start_after=""):
-    return (await s3_keys_hashes(Bucket, Prefix, Delimiter, start_after))[0]
+def s3_keys(Bucket, Prefix="/", Delimiter="/", start_after=""):
+    return s3_keys_hashes(Bucket, Prefix, Delimiter, start_after)[0]
 
 
-async def s3_hashes(Bucket, Prefix="/", Delimiter="/", start_after=""):
-    return (await s3_keys_hashes(Bucket, Prefix, Delimiter, start_after))[1]
+def s3_hashes(Bucket, Prefix="/", Delimiter="/", start_after=""):
+    return s3_keys_hashes(Bucket, Prefix, Delimiter, start_after)[1]
 
 
 def get_starting_keys_hashes(Bucket):
-    keys, hashes = asyncio.get_event_loop().run_until_complete(
-        s3_keys_hashes(Bucket, Prefix="pictures/"))
+    keys, hashes = s3_keys_hashes(Bucket, Prefix="pictures/")
     toplevel_dirs = set(key.split("/")[1] for key in keys)
     collection_keys = {}
     collection_hashes = {}
@@ -227,9 +225,8 @@ async def collection_has_image_bytes(collection: str,
                                      s3_bucket=False):
     image_hash = hashlib.md5(image_bytes).hexdigest()
     if s3_bucket:
-        existing_checksums = await s3_hashes(Bucket=s3_bucket,
-                                             Prefix=f"pictures/{collection}/"
-                                             )
+        existing_checksums = s3_hashes(
+            Bucket=s3_bucket, Prefix=f"pictures/{collection}/")
         return image_hash in existing_checksums
     else:
         collection_dir = PICTURES_DIR / collection
@@ -629,6 +626,24 @@ class ReactionImages(discord.ext.commands.Cog):
                        for i in range(0, len(pictures_desc), block_size)]
         for text_block in text_blocks:
             await ctx.send(f"```{escape_markdown(text_block)}```")
+
+    @commands.command(aliases=["bigten"])
+    async def big_ten(self, ctx):
+        """List ten biggest image commands!"""
+        command_sizes = {
+            command: len(keys)
+            for command, keys in self.collection_keys.items()
+            }
+        commands_sorted = sorted(
+            command_sizes.keys(),
+            key=lambda command: command_sizes[command],
+            reverse=True
+            )
+        top_ten_commands = commands_sorted[:10]
+        message = "\n".join([
+            f"{command}: {command_sizes[command]}"
+            for command in top_ten_commands])
+        await ctx.send(message)
 
 
 def setup(bot):
