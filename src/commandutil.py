@@ -16,7 +16,11 @@ import discord
 logger = logging.getLogger()
 
 
-def backup_db(backup_location):
+def backup_db(s3_bucket):
+    now_formatted = datetime.now().strftime("%Y/%m/%d/%H/%M/%S")
+    backups_dir = f"s3://{s3_bucket}/backups"
+    backup_location = f"{backups_dir}/{now_formatted}.pgdump"
+
     cmd = f"pg_dump | aws s3 cp - {backup_location}"
     try:
         subprocess.run(

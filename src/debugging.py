@@ -1,10 +1,9 @@
 import discord
-from discord.ext import commands
+from discord.ext import commands, tasks
 import logging
 from io import StringIO
 from discord.utils import escape_markdown
 from psycopg2.extras import RealDictCursor
-from datetime import datetime
 import asyncio
 import sys
 from . import commandutil
@@ -15,6 +14,10 @@ logger = logging.getLogger()
 class Debugging(discord.ext.commands.Cog):
     def __init__(self, bot):
         self.bot = bot
+        self.regular_db_backups.start()
+
+    def cog_unload(self):
+        self.regular_db_backups.stop()
 
     @commands.command(hidden=True)
     @commands.is_owner()
@@ -108,12 +111,18 @@ class Debugging(discord.ext.commands.Cog):
     @commands.command(hidden=True, aliases=["backupdatabase", "backupdb"])
     @commands.is_owner()
     async def backup_db(self, ctx):
-        now_formatted = datetime.now().strftime("%Y/%m/%d/%H/%M/%S")
-        backups_dir = f"s3://{self.bot.s3_bucket}/backups"
-        backup_key = f"{backups_dir}/{now_formatted}.pgdump"
         await asyncio.get_running_loop().run_in_executor(
-            None, commandutil.backup_db, backup_key)
+            None, commandutil.backup_db, self.bot.s3_bucket)
         await ctx.send("Done!")
+
+    @tasks.loop(seconds=10)
+    async def regular_db_backups(self):
+        await asyncio.get_running_loop().run_in_executor(
+            None, commandutil.backup_db, self.bot.s3_bucket)
+
+    @regular_db_backups.before_loop
+    async def before_regular_db_backups(self):
+        await self.bot.wait_until_ready()
 
 
 def setup(bot):
