@@ -4,6 +4,8 @@ import logging
 from io import StringIO
 from discord.utils import escape_markdown
 from psycopg2.extras import RealDictCursor
+from datetime import datetime
+import asyncio
 import sys
 from . import commandutil
 
@@ -102,6 +104,15 @@ class Debugging(discord.ext.commands.Cog):
         current_servers_string = "Current servers: {}".format(
             {guild.name: guild.id for guild in self.bot.guilds})
         await self.bot.makusu.send(f"```{current_servers_string}```")
+
+    @commands.command(hidden=True, aliases=["backupdatabase", "backupdb"])
+    @commands.is_owner()
+    async def backup_db(self, ctx):
+        now_formatted = datetime.now().strftime("%Y/%m/%d/%H/%M/%S")
+        backups_dir = f"s3://{self.bot.s3_bucket}/backups"
+        backup_key = f"{backups_dir}/{now_formatted}.pgdump"
+        await asyncio.get_running_loop().run_in_executor(
+            None, commandutil.backup_db, backup_key)
 
 
 def setup(bot):

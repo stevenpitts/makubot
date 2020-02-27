@@ -2,7 +2,7 @@ FROM python:3.8
 
 WORKDIR /usr/src/app
 
-RUN apt-get -yqq update && apt-get -yqq install ffmpeg
+RUN apt-get -yqq update && apt-get -yqq install ffmpeg awscli postgresql-client
 
 COPY requirements.txt requirements.txt
 

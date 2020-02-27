@@ -1,7 +1,7 @@
 version: '3.7'
 services:
     mbdb:
-        image: postgres
+        image: postgres:11
         networks:
             - net
         hostname: mbdb

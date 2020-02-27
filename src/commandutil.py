@@ -2,7 +2,9 @@ import traceback
 import re
 from pathlib import Path
 import itertools
+import logging
 from datetime import datetime
+import subprocess
 try:
     import boto3
     import botocore
@@ -10,6 +12,21 @@ try:
 except ImportError:
     pass  # Might just be running locally
 import discord
+
+logger = logging.getLogger()
+
+
+def backup_db(backup_location):
+    cmd = f"pg_dump | aws s3 cp - {backup_location}"
+    try:
+        subprocess.run(
+            cmd, shell=True, check=True, capture_output=True)
+    except subprocess.CalledProcessError as e:
+        logger.info(f"Failed backup output: {e.stdout}")
+        logger.error(
+            f"Backup failed with exit code {e.returncode} and err {e.stderr}."
+            )
+        raise
 
 
 def s3_object_exists(s3_bucket, key):
