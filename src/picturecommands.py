@@ -12,7 +12,6 @@ import concurrent
 import subprocess
 import youtube_dl
 import tempfile
-import urllib
 from psycopg2.extras import RealDictCursor
 import hashlib
 from datetime import datetime
@@ -35,32 +34,8 @@ class NotVideo(Exception):
     pass
 
 
-def s3_keys_hashes(Bucket, Prefix="/", Delimiter="/", start_after=""):
-    s3_paginator = boto3.client("s3").get_paginator("list_objects_v2")
-    Prefix = Prefix[1:] if Prefix.startswith(Delimiter) else Prefix
-    start_after = ((start_after or Prefix) if Prefix.endswith(Delimiter)
-                   else start_after)
-    keys = []
-    hashes = []
-    for page in s3_paginator.paginate(Bucket=Bucket,
-                                      Prefix=Prefix,
-                                      StartAfter=start_after):
-        for content in page.get("Contents", ()):
-            keys.append(content["Key"])
-            hashes.append(content["ETag"][1:-1])
-    return keys, hashes
-
-
-def s3_keys(Bucket, Prefix="/", Delimiter="/", start_after=""):
-    return s3_keys_hashes(Bucket, Prefix, Delimiter, start_after)[0]
-
-
-def s3_hashes(Bucket, Prefix="/", Delimiter="/", start_after=""):
-    return s3_keys_hashes(Bucket, Prefix, Delimiter, start_after)[1]
-
-
-def get_starting_keys_hashes(Bucket):
-    keys, hashes = s3_keys_hashes(Bucket, Prefix="pictures/")
+def get_starting_keys_hashes(bucket):
+    keys, hashes = commandutil.s3_keys_hashes(bucket, prefix="pictures/")
     toplevel_dirs = set(key.split("/")[1] for key in keys)
     collection_keys = {}
     collection_hashes = {}
@@ -72,19 +47,6 @@ def get_starting_keys_hashes(Bucket):
         collection_hashes[collection] = set(
             hashes[i] for i in matching_indeces)
     return collection_keys, collection_hashes
-
-
-def url_from_s3_key(s3_bucket, s3_bucket_location, s3_key, validate=False):
-    url = (f"https://{s3_bucket}.s3.{s3_bucket_location}"
-           f".amazonaws.com/{s3_key}")
-    if validate:
-        # Raise HTTPError if url 404s or whatever
-        try:
-            urllib.request.urlopen(url)
-        except urllib.error.HTTPError as e:
-            print(f"URL {url} failed due to {e.code} {e.reason}")
-            raise
-    return url
 
 
 async def generate_image_embed(ctx,
@@ -220,30 +182,29 @@ async def convert_video(video_input, video_output, log=False):
             f"ffmpeg failed to convert {video_input} to {video_output}")
 
 
-async def collection_has_image_bytes(collection: str,
-                                     image_bytes,
-                                     s3_bucket=False):
-    image_hash = hashlib.md5(image_bytes).hexdigest()
-    if s3_bucket:
-        existing_checksums = s3_hashes(
-            Bucket=s3_bucket, Prefix=f"pictures/{collection}/")
-        return image_hash in existing_checksums
-    else:
-        collection_dir = PICTURES_DIR / collection
-        if not collection_dir.exists():
-            return False
-        existing_files = (collection_dir / picture_filename
-                          for picture_filename in os.listdir(collection_dir))
-        existing_bytes = (file.read_bytes() for file in existing_files)
-        existing_checksums = (hashlib.md5(bytes).hexdigest()
-                              for bytes in existing_bytes)
-        return image_hash in existing_checksums
-
-
 class PictureAdder(discord.ext.commands.Cog):
     def __init__(self, bot):
         self.bot = bot
         self.temp_save_dir = self.bot.shared["temp_dir"]
+
+    async def collection_has_image_bytes(self,
+                                         collection: str,
+                                         image_bytes):
+        image_hash = hashlib.md5(image_bytes).hexdigest()
+        if self.bot.s3_bucket:
+            reactions_cog = self.bot.get_cog("ReactionImages")
+            return image_hash in reactions_cog.collection_hashes
+        else:
+            collection_dir = PICTURES_DIR / collection
+            if not collection_dir.exists():
+                return False
+            existing_files = (
+                collection_dir / picture_filename
+                for picture_filename in os.listdir(collection_dir))
+            existing_bytes = (file.read_bytes() for file in existing_files)
+            existing_checksums = (hashlib.md5(bytes).hexdigest()
+                                  for bytes in existing_bytes)
+            return image_hash in existing_checksums
 
     async def image_suggestion(self, image_collection, filename, requestor,
                                image_bytes=None, status_message=None):
@@ -257,9 +218,8 @@ class PictureAdder(discord.ext.commands.Cog):
                     filename, self.temp_save_dir)
                 with open(self.temp_save_dir / filename, "wb") as f:
                     f.write(image_bytes)
-            if await collection_has_image_bytes(image_collection,
-                                                image_bytes,
-                                                self.bot.s3_bucket):
+            if await self.collection_has_image_bytes(image_collection,
+                                                     image_bytes,):
                 response = (
                     f"The image {filename} appears already in the collection!")
                 await requestor.send(response)
@@ -328,9 +288,8 @@ class PictureAdder(discord.ext.commands.Cog):
             approval_time = datetime.now() - approval_start_time
             logger.info(f"{filename} took {approval_time} to get approved")
             await request.delete()
-            if await collection_has_image_bytes(image_collection,
-                                                image_bytes,
-                                                self.bot.s3_bucket):
+            if await self.collection_has_image_bytes(image_collection,
+                                                     image_bytes):
                 response = (
                     f"The image {filename} appears already in the collection!")
                 await requestor.send(response)
@@ -583,7 +542,7 @@ class ReactionImages(discord.ext.commands.Cog):
             chosen_command_keys = list(random.choice(list(
                 self.collection_keys.values())))
             chosen_key = random.choice(chosen_command_keys)
-            chosen_url = url_from_s3_key(
+            chosen_url = commandutil.url_from_s3_key(
                 self.bot.s3_bucket, self.bot.s3_bucket_location, chosen_key)
             image_embed = await generate_image_embed(ctx,
                                                      chosen_url,
@@ -601,7 +560,7 @@ class ReactionImages(discord.ext.commands.Cog):
             reaction_cog = ctx.bot.get_cog("ReactionImages")
             keys = reaction_cog.collection_keys[ctx.command.name]
             chosen_key = random.choice(list(keys))
-            chosen_url = url_from_s3_key(
+            chosen_url = commandutil.url_from_s3_key(
                 ctx.bot.s3_bucket, ctx.bot.s3_bucket_location, chosen_key)
             image_embed = await generate_image_embed(ctx, chosen_url)
             await ctx.send(embed=image_embed)

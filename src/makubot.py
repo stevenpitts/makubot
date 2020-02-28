@@ -12,6 +12,7 @@ from discord.ext import commands
 from pathlib import Path
 import time
 import psycopg2
+from . import commandutil
 try:
     import boto3
     S3 = boto3.client("s3")
@@ -58,9 +59,9 @@ class MakuBot(commands.Bot):
                                              "rolegiver"
                                              ]
         self.s3_bucket = s3_bucket
-        if s3_bucket:
+        if self.s3_bucket:
             self.s3_bucket_location = S3.get_bucket_location(
-                Bucket=s3_bucket
+                Bucket=self.s3_bucket
                 )["LocationConstraint"]
         self.google_api_key = google_api_key
         self.db_host = db_host
@@ -85,6 +86,8 @@ class MakuBot(commands.Bot):
                 break
         else:
             raise psycopg2.OperationalError("Couldn't connect after retries")
+
+        commandutil.restore_db(self.s3_bucket)
 
         for extension in self.shared["default_extensions"]:
             self.load_extension(f"src.{extension}")

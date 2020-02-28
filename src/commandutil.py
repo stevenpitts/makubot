@@ -4,6 +4,7 @@ from pathlib import Path
 import itertools
 import logging
 from datetime import datetime
+import urllib
 import subprocess
 try:
     import boto3
@@ -14,6 +15,69 @@ except ImportError:
 import discord
 
 logger = logging.getLogger()
+
+
+def url_from_s3_key(s3_bucket, s3_bucket_location, s3_key, validate=False):
+    url = (f"https://{s3_bucket}.s3.{s3_bucket_location}"
+           f".amazonaws.com/{s3_key}")
+    if validate:
+        # Raise HTTPError if url 404s or whatever
+        try:
+            urllib.request.urlopen(url)
+        except urllib.error.HTTPError as e:
+            print(f"URL {url} failed due to {e.code} {e.reason}")
+            raise
+    return url
+
+
+def s3_keys_hashes(bucket, prefix="/", delimiter="/", start_after=""):
+    s3_paginator = boto3.client("s3").get_paginator("list_objects_v2")
+    prefix = prefix[1:] if prefix.startswith(delimiter) else prefix
+    start_after = ((start_after or prefix) if prefix.endswith(delimiter)
+                   else start_after)
+    keys = []
+    hashes = []
+    for page in s3_paginator.paginate(Bucket=bucket,
+                                      Prefix=prefix,
+                                      StartAfter=start_after):
+        for content in page.get("Contents", ()):
+            keys.append(content["Key"])
+            hashes.append(content["ETag"][1:-1])
+    return keys, hashes
+
+
+def s3_keys(bucket, prefix="/", delimiter="/", start_after=""):
+    return s3_keys_hashes(bucket, prefix, delimiter, start_after)[0]
+
+
+def s3_hashes(bucket, prefix="/", delimiter="/", start_after=""):
+    return s3_keys_hashes(bucket, prefix, delimiter, start_after)[1]
+
+
+def restore_db(s3_bucket):
+    backup_keys = s3_keys(s3_bucket, prefix="/backups")
+    if not backup_keys:
+        logger.info("No backups were present when db restore was attempted")
+        return
+    keys_by_date = sorted(backup_keys, reverse=True)
+    most_recent_key = keys_by_date[0]
+    logger.info(f"Restoring most recent key: {most_recent_key}")
+    backup_location = f"s3://{s3_bucket}/{most_recent_key}"
+    file_location = f"/tmp/{most_recent_key}"
+    logger.info(f"Restoring {backup_location}")
+    cmd = (f"aws s3 cp {backup_location} {file_location} "
+           f"&& psql -f {file_location} && rm {file_location}")
+    logger.info(f"Preparing to run {cmd}")
+    try:
+        subprocess.run(
+            cmd, shell=True, check=True, capture_output=True)
+    except subprocess.CalledProcessError as e:
+        logger.info(f"Failed backup output: {e.stdout}")
+        logger.error(
+            f"Backup failed with exit code {e.returncode} and err {e.stderr}."
+            )
+        raise
+    logger.info("Successfully restored database")
 
 
 def backup_db(s3_bucket):
