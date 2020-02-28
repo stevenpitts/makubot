@@ -10,6 +10,7 @@ import asyncio
 import shutil
 import concurrent
 import subprocess
+import urllib.parse
 import youtube_dl
 import tempfile
 from psycopg2.extras import RealDictCursor
@@ -52,6 +53,7 @@ def get_starting_keys_hashes(bucket):
 async def generate_image_embed(ctx,
                                url,
                                call_bot_name=False):
+    url = urllib.parse.quote(url, "\./_-:")
     if getattr(ctx.me, "nick", None):
         bot_nick = ctx.me.nick
     else:
