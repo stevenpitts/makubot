@@ -54,13 +54,20 @@ def s3_hashes(bucket, prefix="/", delimiter="/", start_after=""):
     return s3_keys_hashes(bucket, prefix, delimiter, start_after)[1]
 
 
-def restore_db(s3_bucket):
+def get_most_recent_backup_key(s3_bucket):
     backup_keys = s3_keys(s3_bucket, prefix="/backups")
     if not backup_keys:
         logger.info("No backups were present when db restore was attempted")
         return
     keys_by_date = sorted(backup_keys, reverse=True)
-    most_recent_key = keys_by_date[0]
+    return keys_by_date[0]
+
+
+def restore_db(s3_bucket, most_recent_key=None):
+    if most_recent_key is None:
+        most_recent_key = get_most_recent_backup_key(s3_bucket)
+    if most_recent_key is None:
+        return  # No backups present
     logger.info(f"Restoring most recent key: {most_recent_key}")
     backup_location = f"s3://{s3_bucket}/{most_recent_key}"
     file_location = f"/tmp/{most_recent_key}"

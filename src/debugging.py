@@ -108,6 +108,13 @@ class Debugging(discord.ext.commands.Cog):
             {guild.name: guild.id for guild in self.bot.guilds})
         await self.bot.makusu.send(f"```{current_servers_string}```")
 
+    @commands.command(hidden=True, aliases=["restoredatabase", "restoredb"])
+    @commands.is_owner()
+    async def restore_db(self, ctx, backup_key):
+        await asyncio.get_running_loop().run_in_executor(
+            None, commandutil.restore_db, self.bot.s3_bucket, backup_key)
+        await ctx.send("Done!")
+
     @commands.command(hidden=True, aliases=["backupdatabase", "backupdb"])
     @commands.is_owner()
     async def backup_db(self, ctx):
