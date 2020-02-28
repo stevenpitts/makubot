@@ -4,6 +4,7 @@ Module containing the majority of the basic commands makubot can execute.
 import sys
 import importlib
 import logging
+import itertools
 import discord
 from discord.ext import commands
 from . import commandutil
@@ -16,14 +17,15 @@ logger = logging.getLogger()
 class MakuCommands(discord.ext.commands.Cog):
     def __init__(self, bot):
         self.bot = bot
-        self.bot.description = """
+        version_formatted = ".".join(map(str, sys.version_info[:3]))
+        self.bot.description = f"""
         Hey there! I'm Makubot!
         I'm a dumb bot made by a person who codes stuff.
-        I'm currently running Python {}.
+        I'm currently running Python {version_formatted}.
         Also you can just ask Makusu2#2222. They love making new friends <333
-        """.format(".".join(map(str, sys.version_info[:3])))
-        prefixes = [m+b+punc+maybespace for m in "mM" for b in "bB"
-                    for punc in ".!" for maybespace in [" ", ""]]
+        """
+        prefix_combinations = itertools.product('mM', 'bB', '.!', [' ', ''])
+        prefixes = [''.join(r) for r in prefix_combinations]
         self.bot.command_prefix = commands.when_mentioned_or(*prefixes)
         cursor = self.bot.db_connection.cursor(cursor_factory=RealDictCursor)
         cursor.execute(
