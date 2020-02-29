@@ -371,7 +371,7 @@ class PictureAdder(discord.ext.commands.Cog):
         results = cursor.fetchall()
         return [result["alias"] for result in results]
 
-    def get_cmd_from_alias(self, alias_cmd):
+    def get_cmd_from_alias(self, alias_cmd, none_if_not_exist=False):
         reaction_cog = self.bot.get_cog("ReactionImages")
         if alias_cmd in reaction_cog.pictures_commands:
             return alias_cmd
@@ -385,7 +385,9 @@ class PictureAdder(discord.ext.commands.Cog):
             )
         results = cursor.fetchall()
         if not results:
-            return None
+            if none_if_not_exist:
+                return None
+            return alias_cmd
         assert len(results) == 1
         return results[0]["real_cmd"]
 
