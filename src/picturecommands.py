@@ -364,7 +364,7 @@ class PictureAdder(discord.ext.commands.Cog):
         cursor.execute(
             """
             SELECT * FROM alias_pictures
-            WHERE real == %s;
+            WHERE real = %s;
             """,
             (real_cmd)
             )
@@ -379,7 +379,7 @@ class PictureAdder(discord.ext.commands.Cog):
         cursor.execute(
             """
             SELECT * FROM alias_pictures
-            WHERE alias == %s;
+            WHERE alias = %s;
             """,
             (alias_cmd,)
             )
