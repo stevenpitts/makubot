@@ -313,6 +313,7 @@ class PictureAdder(discord.ext.commands.Cog):
                 new_filename = commandutil.get_nonconflicting_filename(
                     filename, image_dir, s3_bucket=self.bot.s3_bucket)
                 image_key = f"pictures/{image_collection}/{new_filename}"
+
                 def upload_image_func():
                     return S3.upload_file(
                         str(self.temp_save_dir / filename),
@@ -341,12 +342,10 @@ class PictureAdder(discord.ext.commands.Cog):
 
             response = f"Your image {new_filename} was approved!"
             await requestor.send(response)
-                try:
-                    await status_message.edit(content=response)
-                except discord.errors.NotFound:
-                    pass
-
-            else:
+            try:
+                await status_message.edit(content=response)
+            except discord.errors.NotFound:
+                pass
         except (concurrent.futures._base.CancelledError,
                 asyncio.exceptions.CancelledError):
             print(f"Cancelled error on {filename}")
