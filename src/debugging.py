@@ -5,6 +5,7 @@ from io import StringIO
 from discord.utils import escape_markdown
 from psycopg2.extras import RealDictCursor
 import asyncio
+import concurrent
 import sys
 from . import commandutil
 
@@ -111,21 +112,24 @@ class Debugging(discord.ext.commands.Cog):
     @commands.command(hidden=True, aliases=["restoredatabase", "restoredb"])
     @commands.is_owner()
     async def restore_db(self, ctx, backup_key):
-        await asyncio.get_running_loop().run_in_executor(
-            None, commandutil.restore_db, self.bot.s3_bucket, backup_key)
+        with concurrent.futures.ThreadPoolExecutor() as pool:
+            await asyncio.get_running_loop().run_in_executor(
+                pool, commandutil.restore_db, self.bot.s3_bucket, backup_key)
         await ctx.send("Done!")
 
     @commands.command(hidden=True, aliases=["backupdatabase", "backupdb"])
     @commands.is_owner()
     async def backup_db(self, ctx):
-        await asyncio.get_running_loop().run_in_executor(
-            None, commandutil.backup_db, self.bot.s3_bucket)
+        with concurrent.futures.ThreadPoolExecutor() as pool:
+            await asyncio.get_running_loop().run_in_executor(
+                pool, commandutil.backup_db, self.bot.s3_bucket)
         await ctx.send("Done!")
 
     @tasks.loop(hours=6)
     async def regular_db_backups(self):
-        await asyncio.get_running_loop().run_in_executor(
-            None, commandutil.backup_db, self.bot.s3_bucket)
+        with concurrent.futures.ThreadPoolExecutor() as pool:
+            await asyncio.get_running_loop().run_in_executor(
+                pool, commandutil.backup_db, self.bot.s3_bucket)
 
     @regular_db_backups.before_loop
     async def before_regular_db_backups(self):

@@ -96,8 +96,9 @@ async def get_media_bytes_and_name(url, status_message=None, do_raw=False,
         with youtube_dl.YoutubeDL(ydl_options) as ydl:
             await status_message.edit(content=f"Downloading...{loading_emoji}")
             download_start_time = datetime.now()
-            await asyncio.get_running_loop().run_in_executor(
-                None, ydl.extract_info, url)
+            with concurrent.futures.ThreadPoolExecutor() as pool:
+                await asyncio.get_running_loop().run_in_executor(
+                    pool, ydl.extract_info, url)
             download_time = datetime.now() - download_start_time
             logger.debug(f"{url} took {download_time} to download")
             files_in_dir = os.listdir(temp_dir)
@@ -320,10 +321,11 @@ class PictureAdder(discord.ext.commands.Cog):
                         self.bot.s3_bucket,
                         image_key,
                         ExtraArgs={"ACL": "public-read"})
-                await asyncio.get_running_loop().run_in_executor(
-                    None,
-                    upload_image_func
-                    )
+                with concurrent.futures.ThreadPoolExecutor() as pool:
+                    await asyncio.get_running_loop().run_in_executor(
+                        pool,
+                        upload_image_func
+                        )
                 reaction_cog = self.bot.get_cog("ReactionImages")
                 if image_collection not in reaction_cog.collection_keys:
                     reaction_cog.collection_keys[image_collection] = set()
