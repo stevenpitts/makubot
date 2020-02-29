@@ -381,7 +381,7 @@ class PictureAdder(discord.ext.commands.Cog):
             SELECT * FROM alias_pictures
             WHERE alias == %s;
             """,
-            (alias_cmd)
+            (alias_cmd,)
             )
         results = cursor.fetchall()
         if not results:
