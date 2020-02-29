@@ -91,7 +91,7 @@ async def get_media_bytes_and_name(url, status_message=None, do_raw=False,
             "quiet": True,
             "no_warnings": True,
             "format": quality_format,
-            "outtmpl": f"{temp_dir}/%(title)s-%(id)s.%(ext)s"
+            "outtmpl": f"{temp_dir}/%(title)s.%(ext)s"
             }
         with youtube_dl.YoutubeDL(ydl_options) as ydl:
             await status_message.edit(content=f"Downloading...{loading_emoji}")
