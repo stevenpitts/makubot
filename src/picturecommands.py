@@ -288,7 +288,7 @@ class PictureAdder(discord.ext.commands.Cog):
             approval_start_time = datetime.now()
             approved = await get_approval(request.id)
             approval_time = datetime.now() - approval_start_time
-            logger.info(f"{filename} took {approval_time} to get approved")
+            logger.debug(f"{filename} took {approval_time} to get approved")
             await request.delete()
             if await self.collection_has_image_bytes(image_collection,
                                                      image_bytes):
