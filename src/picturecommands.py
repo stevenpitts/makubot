@@ -99,7 +99,7 @@ async def get_media_bytes_and_name(url, status_message=None, do_raw=False,
             await asyncio.get_running_loop().run_in_executor(
                 None, ydl.extract_info, url)
             download_time = datetime.now() - download_start_time
-            logger.info(f"{url} took {download_time} to download")
+            logger.debug(f"{url} took {download_time} to download")
             files_in_dir = os.listdir(temp_dir)
             if len(files_in_dir) == 0:
                 raise youtube_dl.utils.DownloadError("No file found")
