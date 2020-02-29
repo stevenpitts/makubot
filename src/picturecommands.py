@@ -299,43 +299,8 @@ class PictureAdder(discord.ext.commands.Cog):
                     await status_message.edit(content=response)
                 except discord.errors.NotFound:
                     pass
-            elif approved:
-                if self.bot.s3_bucket:
-                    new_filename = commandutil.get_nonconflicting_filename(
-                        filename, image_dir, s3_bucket=self.bot.s3_bucket)
-                    image_key = f"pictures/{image_collection}/{new_filename}"
-                    await asyncio.get_running_loop().run_in_executor(
-                        None,
-                        S3.upload_file,
-                        str(self.temp_save_dir / filename),
-                        self.bot.s3_bucket,
-                        image_key,
-                        ExtraArgs={"ACL": "public-read"}
-                        )
-                    reaction_cog = self.bot.get_cog("ReactionImages")
-                    reaction_cog.add_pictures_dir(image_collection)
-                    reaction_cog.collection_keys[image_collection].add(
-                        image_key)
-                    image_hash = hashlib.md5(image_bytes).hexdigest()
-                    reaction_cog.collection_hashes[image_collection].add(
-                        image_hash)
-                else:
-                    image_dir.mkdir(parents=True, exist_ok=True)
-                    new_filename = commandutil.get_nonconflicting_filename(
-                        filename, image_dir)
-                    shutil.move(self.temp_save_dir / filename,
-                                image_dir / new_filename)
-                    reaction_cog = self.bot.get_cog("ReactionImages")
-                    reaction_cog.add_pictures_dir(image_collection)
-
-                response = f"Your image {new_filename} was approved!"
-                await requestor.send(response)
-                try:
-                    await status_message.edit(content=response)
-                except discord.errors.NotFound:
-                    pass
-
-            else:
+                return
+            if not approved:
                 response = (f"Your image {filename} was not approved. "
                             "Feel free to ask Maku why ^_^")
                 try:
@@ -344,6 +309,44 @@ class PictureAdder(discord.ext.commands.Cog):
                     pass
                 if status_message.channel != requestor.dm_channel:
                     await requestor.send(response)
+            if self.bot.s3_bucket:
+                new_filename = commandutil.get_nonconflicting_filename(
+                    filename, image_dir, s3_bucket=self.bot.s3_bucket)
+                image_key = f"pictures/{image_collection}/{new_filename}"
+                def upload_image_func():
+                    return S3.upload_file(
+                        str(self.temp_save_dir / filename),
+                        self.bot.s3_bucket,
+                        image_key,
+                        ExtraArgs={"ACL": "public-read"})
+                await asyncio.get_running_loop().run_in_executor(
+                    None,
+                    upload_image_func
+                    )
+                reaction_cog = self.bot.get_cog("ReactionImages")
+                reaction_cog.collection_keys[image_collection].add(
+                    image_key)
+                image_hash = hashlib.md5(image_bytes).hexdigest()
+                reaction_cog.collection_hashes[image_collection].add(
+                    image_hash)
+                reaction_cog.add_pictures_dir(image_collection)
+            else:
+                image_dir.mkdir(parents=True, exist_ok=True)
+                new_filename = commandutil.get_nonconflicting_filename(
+                    filename, image_dir)
+                shutil.move(self.temp_save_dir / filename,
+                            image_dir / new_filename)
+            reaction_cog = self.bot.get_cog("ReactionImages")
+            reaction_cog.add_pictures_dir(image_collection)
+
+            response = f"Your image {new_filename} was approved!"
+            await requestor.send(response)
+                try:
+                    await status_message.edit(content=response)
+                except discord.errors.NotFound:
+                    pass
+
+            else:
         except (concurrent.futures._base.CancelledError,
                 asyncio.exceptions.CancelledError):
             print(f"Cancelled error on {filename}")
