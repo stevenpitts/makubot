@@ -126,7 +126,7 @@ async def get_media_bytes_and_name(url, status_message=None, do_raw=False,
                 except NotVideo:
                     os.rename(temp_filepath, filepath)
             processing_time = datetime.now() - processing_start_time
-            logger.info(f"{url} took {processing_time} to process")
+            logger.debug(f"{url} took {processing_time} to process")
             with open(filepath, "rb") as downloaded_file:
                 data = downloaded_file.read()
             return data, filename
