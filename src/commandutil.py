@@ -5,6 +5,7 @@ import itertools
 import logging
 from datetime import datetime
 import urllib
+import aiohttp
 import subprocess
 try:
     import boto3
@@ -17,16 +18,30 @@ import discord
 logger = logging.getLogger()
 
 
+def obfuscate_amazon(url):
+    # Amazon doesn't need free advertising
+    return url.replace("amazon", "%61%6d%61%7a%6f%6e")
+
+
+def improve_url(url, obfuscate=False):
+    if obfuscate:
+        url = obfuscate_amazon(url)
+    url = url.replace(" ", "+")
+    return url
+
+
 def url_from_s3_key(s3_bucket,
                     s3_bucket_location,
                     s3_key,
                     validate=False,
-                    obfuscate=True):
+                    improve=False,
+                    obfuscate=False):
     url = (f"https://{s3_bucket}.s3.{s3_bucket_location}"
            f".amazonaws.com/{s3_key}")
+    if improve:
+        url = improve_url(url)
     if obfuscate:
-        # Amazon doesn't need free advertising
-        url = url.replace("amazon", "%61%6d%61%7a%6f%6e")
+        url = obfuscate_amazon(url)
     if validate:
         # Raise HTTPError if url 404s or whatever
         try:
@@ -175,3 +190,13 @@ def readable_timedelta(old, new=None):
 async def clean(ctx, s):
     converter = discord.ext.commands.converter.clean_content()
     return await converter.convert(ctx, s)
+
+
+async def url_media_type(url):
+    async with aiohttp.request("HEAD", url) as response:
+        return response.content_type
+
+
+async def url_is_image(url):
+    media_type = await url_media_type(url)
+    return media_type.split("/")[0].lower() == "image"

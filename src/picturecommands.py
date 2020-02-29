@@ -10,7 +10,6 @@ import asyncio
 import shutil
 import concurrent
 import subprocess
-import urllib.parse
 import youtube_dl
 import tempfile
 from psycopg2.extras import RealDictCursor
@@ -53,7 +52,7 @@ def get_starting_keys_hashes(bucket):
 async def generate_image_embed(ctx,
                                url,
                                call_bot_name=False):
-    url = urllib.parse.quote(url, "\\./_-:")
+    url = commandutil.improve_url(url)
     if getattr(ctx.me, "nick", None):
         bot_nick = ctx.me.nick
     else:
@@ -552,11 +551,19 @@ class ReactionImages(discord.ext.commands.Cog):
                 self.collection_keys.values())))
             chosen_key = random.choice(chosen_command_keys)
             chosen_url = commandutil.url_from_s3_key(
-                self.bot.s3_bucket, self.bot.s3_bucket_location, chosen_key)
+                self.bot.s3_bucket,
+                self.bot.s3_bucket_location,
+                chosen_key,
+                improve=True)
             image_embed = await generate_image_embed(ctx,
                                                      chosen_url,
                                                      call_bot_name=True)
-            await ctx.send(embed=image_embed)
+            sent_message = await ctx.send(embed=image_embed)
+            if sent_message.embeds[0].image.url == discord.Embed.Empty:
+                new_url = commandutil.improve_url(
+                    chosen_url,
+                    obfuscate=True)
+                sent_message.edit(embed=None, content=new_url)
         else:
             files = [Path(dirpath) / Path(filename)
                      for dirpath, dirnames, filenames in os.walk(PICTURES_DIR)
@@ -570,9 +577,17 @@ class ReactionImages(discord.ext.commands.Cog):
             keys = reaction_cog.collection_keys[ctx.command.name]
             chosen_key = random.choice(list(keys))
             chosen_url = commandutil.url_from_s3_key(
-                ctx.bot.s3_bucket, ctx.bot.s3_bucket_location, chosen_key)
+                ctx.bot.s3_bucket,
+                ctx.bot.s3_bucket_location,
+                chosen_key,
+                improve=True)
             image_embed = await generate_image_embed(ctx, chosen_url)
-            await ctx.send(embed=image_embed)
+            sent_message = await ctx.send(embed=image_embed)
+            if not await commandutil.url_is_image(chosen_url):
+                new_url = commandutil.improve_url(
+                    chosen_url,
+                    obfuscate=True)
+                await sent_message.edit(embed=None, content=new_url)
         else:
             true_path = PICTURES_DIR / ctx.command.name
             file_to_send = true_path / random.choice(os.listdir(true_path))
