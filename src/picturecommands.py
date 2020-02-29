@@ -326,9 +326,9 @@ class PictureAdder(discord.ext.commands.Cog):
                     )
                 reaction_cog = self.bot.get_cog("ReactionImages")
                 if image_collection not in reaction_cog.collection_keys:
-                    reaction_cog.collection_keys[image_collection] = dict()
+                    reaction_cog.collection_keys[image_collection] = set()
                 if image_collection not in reaction_cog.collection_hashes:
-                    reaction_cog.collection_hashes[image_collection] = dict()
+                    reaction_cog.collection_hashes[image_collection] = set()
                 reaction_cog.collection_keys[image_collection].add(
                     image_key)
                 image_hash = hashlib.md5(image_bytes).hexdigest()
