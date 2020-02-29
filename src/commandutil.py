@@ -17,9 +17,16 @@ import discord
 logger = logging.getLogger()
 
 
-def url_from_s3_key(s3_bucket, s3_bucket_location, s3_key, validate=False):
+def url_from_s3_key(s3_bucket,
+                    s3_bucket_location,
+                    s3_key,
+                    validate=False,
+                    obfuscate=True):
     url = (f"https://{s3_bucket}.s3.{s3_bucket_location}"
            f".amazonaws.com/{s3_key}")
+    if obfuscate:
+        # Amazon doesn't need free advertising
+        url = url.replace("amazon", "%61%6d%61%7a%6f%6e")
     if validate:
         # Raise HTTPError if url 404s or whatever
         try:
