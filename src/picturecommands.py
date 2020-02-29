@@ -304,10 +304,6 @@ class PictureAdder(discord.ext.commands.Cog):
                     new_filename = commandutil.get_nonconflicting_filename(
                         filename, image_dir, s3_bucket=self.bot.s3_bucket)
                     image_key = f"pictures/{image_collection}/{new_filename}"
-                    image_hash = S3.head_object(
-                        Bucket=self.bot.s3_bucket,
-                        Key=image_key
-                        )["ETag"][1:-1]
                     await asyncio.get_running_loop().run_in_executor(
                         None,
                         S3.upload_file,
@@ -320,6 +316,7 @@ class PictureAdder(discord.ext.commands.Cog):
                     reaction_cog.add_pictures_dir(image_collection)
                     reaction_cog.collection_keys[image_collection].add(
                         image_key)
+                    image_hash = hashlib.md5(image_bytes).hexdigest()
                     reaction_cog.collection_hashes[image_collection].add(
                         image_hash)
                 else:
