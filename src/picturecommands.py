@@ -438,6 +438,9 @@ class PictureAdder(discord.ext.commands.Cog):
         """Requests an image be added.
         mb.addimage nao http://static.zerochan.net/Tomori.Nao.full.1901643.jpg
         Then, it'll be sent to maku for approval!"""
+        logger.info(
+            f"Called add_image with ctx {ctx.__dict__}, "
+            f"image_collection {image_collection}, and urls {urls}.")
         do_raw = ctx.invoked_with == "addimageraw"
         if " " in image_collection:
             await ctx.send("Spaces replaced with underscores")
