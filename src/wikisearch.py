@@ -14,12 +14,17 @@ class Wikisearch(discord.ext.commands.Cog):
     async def whatis(self, ctx, *, query):
         """Searches Wikipedia to see what something is! Give it a try!"""
         try:
-            result = wikipedia.page(wikipedia.search(query)[0])
+            first_result = wikipedia.suggest(query)
+            result = wikipedia.page(first_result.replace(" ", "_"))
             summary = "".join(result.summary)[:1024]
         except wikipedia.exceptions.DisambiguationError:
             await ctx.send("Sorry, please be more specific than that ;~;")
         except IndexError:
             await ctx.send("Hmm, I can't find anything matching that...")
+        except wikipedia.exceptions.PageError:
+            await ctx.send(
+                f"Wikipedia suggested the {first_result} page "
+                "for that, but I can't find that page... weird.")
         else:
             embed = discord.Embed(title="Results", description=query)
             embed.add_field(name=result.url, value=summary)
