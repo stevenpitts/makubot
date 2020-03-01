@@ -7,9 +7,14 @@ from psycopg2.extras import RealDictCursor
 import asyncio
 import concurrent
 import sys
+import os
 from . import commandutil
 
 logger = logging.getLogger()
+
+
+BACKUP_TIME_DELTA_HOURS = os.environ.get(
+    "BACKUP_TIME_DELTA_HOURS", 24)
 
 
 class Debugging(discord.ext.commands.Cog):
@@ -125,7 +130,7 @@ class Debugging(discord.ext.commands.Cog):
                 pool, commandutil.backup_db, self.bot.s3_bucket)
         await ctx.send("Done!")
 
-    @tasks.loop(hours=6)
+    @tasks.loop(hours=BACKUP_TIME_DELTA_HOURS)
     async def regular_db_backups(self):
         with concurrent.futures.ThreadPoolExecutor() as pool:
             await asyncio.get_running_loop().run_in_executor(
