@@ -14,8 +14,8 @@ class Wikisearch(discord.ext.commands.Cog):
     async def whatis(self, ctx, *, query):
         """Searches Wikipedia to see what something is! Give it a try!"""
         try:
-            first_result = wikipedia.suggest(query)
-            result = wikipedia.page(first_result.replace(" ", "_"))
+            first_result = wikipedia.search(query)[0]
+            result = wikipedia.page(first_result)
             summary = "".join(result.summary)[:1024]
         except wikipedia.exceptions.DisambiguationError:
             await ctx.send("Sorry, please be more specific than that ;~;")
