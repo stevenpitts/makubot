@@ -555,6 +555,7 @@ class ReactionImages(discord.ext.commands.Cog):
                 self.bot.s3_bucket_location,
                 chosen_key,
                 improve=True)
+            logging.info(f"Sending url in random_image func: {chosen_url}")
             image_embed = await generate_image_embed(ctx,
                                                      chosen_url,
                                                      call_bot_name=True)
@@ -581,6 +582,7 @@ class ReactionImages(discord.ext.commands.Cog):
                 ctx.bot.s3_bucket_location,
                 chosen_key,
                 improve=True)
+            logging.info(f"Sending url in send_image func: {chosen_url}")
             image_embed = await generate_image_embed(ctx, chosen_url)
             sent_message = await ctx.send(embed=image_embed)
             if not await commandutil.url_is_image(chosen_url):
