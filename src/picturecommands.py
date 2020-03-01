@@ -362,6 +362,8 @@ class PictureAdder(discord.ext.commands.Cog):
                 await status_message.edit(content=response)
             except discord.errors.NotFound:
                 pass
+            await self.bot.makusu.send(
+                "Something went wrong in image_suggestion")
 
     def get_aliases_of_cmd(self, real_cmd):
         cursor = self.bot.db_connection.cursor(cursor_factory=RealDictCursor)
@@ -489,6 +491,7 @@ class PictureAdder(discord.ext.commands.Cog):
                 return
             except BaseException:
                 await status_message.edit(content="Something went wrong ;a;")
+                await self.bot.makusu.send("Something went wrong in add_image")
                 raise
             else:
                 await status_message.edit(content="Sent to Maku for approval!")

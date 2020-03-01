@@ -55,6 +55,7 @@ class Listeners(discord.ext.commands.Cog):
         else:
             print(commandutil.get_formatted_traceback(caught_exception))
             await ctx.send("Something went wrong, sorry!")
+            await self.bot.makusu.send("Something went wrong!")
 
     @commands.Cog.listener()
     async def on_error(self, ctx, caught_exception):
