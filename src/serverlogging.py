@@ -1,16 +1,10 @@
 import discord
 from discord.ext import commands
 import logging
-import codecs
 import aiohttp
 from datetime import datetime
-from pathlib import Path
+from psycopg2.extras import RealDictCursor
 import asyncio
-
-SCRIPT_DIR = Path(__file__).parent
-PARENT_DIR = SCRIPT_DIR.parent
-DATA_DIR = PARENT_DIR / 'data'
-DELETION_LOG_PATH = DATA_DIR / 'deletion_log.txt'
 
 logger = logging.getLogger()
 
@@ -19,44 +13,129 @@ class ServerLogging(discord.ext.commands.Cog):
     def __init__(self, bot):
         self.bot = bot
         self.last_deleted_message = {}
-        '''Maps channel ID to (last deleted message content, sender)'''
+        """Maps channel ID to (last deleted message content, sender)"""
+        cursor = self.bot.db_connection.cursor()
+        cursor.execute(
+            """
+            CREATE TABLE IF NOT EXISTS log_channels (
+            guild_id CHARACTER(18) PRIMARY KEY,
+            log_channel_id CHARACTER(18));
+            """)
+        cursor.execute(
+            """
+            CREATE TABLE IF NOT EXISTS extra_log_channel (
+            guild_id CHARACTER(18) PRIMARY KEY,
+            log_channel_id CHARACTER(18));
+            """)
+        self.bot.db_connection.commit()
 
-    @commands.command(hidden=True, aliases=['removelogchannel'])
+    @commands.command(hidden=True, aliases=["removelogchannel"])
     @commands.is_owner()
     async def remove_log_channel(self, ctx):
-        self.bot.shared['data']['log_channels'].pop(str(ctx.guild.id), None)
+        cursor = self.bot.db_connection.cursor(cursor_factory=RealDictCursor)
+        cursor.execute(
+            """
+            DELETE FROM log_channels WHERE guild_id = %s
+            """,
+            (ctx.guild.id,)
+            )
+        self.bot.db_connection.commit()
         await ctx.send("Coolio")
 
-    @commands.command(hidden=True, aliases=['addlogchannel'])
+    @commands.command(hidden=True, aliases=["addlogchannel"])
     @commands.is_owner()
     async def add_log_channel(self, ctx, log_channel: discord.TextChannel):
         guild_id, log_channel_id = str(ctx.guild.id), str(log_channel.id)
-        self.bot.shared['data']['log_channels'][guild_id] = log_channel_id
+        # self.bot.shared["data"]["log_channels"][guild_id] = log_channel_id
+        # TODO see what happens when you add a second log channel
+        # (wouldn't be unique primary key)
+        cursor = self.bot.db_connection.cursor()
+        cursor.execute(
+            """
+            INSERT INTO log_channels (
+            guild_id,
+            log_channel_id)
+            VALUES (%s, %s)
+            """,
+            (guild_id, log_channel_id)
+            )
+        self.bot.db_connection.commit()
         await ctx.send(r"You gotcha \o/")
 
-    @commands.command(aliases=['what was that',
-                               'whatwasthat?',
-                               'what was that?'])
+    @commands.command(aliases=["what was that",
+                               "whatwasthat?",
+                               "what was that?"])
     async def whatwasthat(self, ctx):
-        '''Tells you what that fleeting message was'''
+        """Tells you what that fleeting message was"""
         try:
             await ctx.send(self.last_deleted_message.pop(ctx.channel.id))
         except KeyError:
             await ctx.send("I can't find anything, sorry :(")
 
+    @commands.command(hidden=True)
+    @commands.is_owner()
+    async def set_extra_log_channel(self, ctx,
+                                    log_channel: discord.TextChannel):
+        cursor = self.bot.db_connection.cursor(cursor_factory=RealDictCursor)
+        cursor.execute(
+            """
+            DELETE FROM extra_log_channel *;
+            """
+            )
+        cursor.execute(
+            """
+            INSERT INTO extra_log_channel (
+            guild_id,
+            log_channel_id)
+            VALUES (%s, %s)
+            """,
+            (str(log_channel.guild.id), str(log_channel.id))
+            )
+        self.bot.db_connection.commit()
+        await ctx.send("Done!")
+
+    def get_extra_log_channel(self):
+        cursor = self.bot.db_connection.cursor(cursor_factory=RealDictCursor)
+        cursor.execute(
+            """
+            SELECT * FROM extra_log_channel;
+            """
+            )
+        results = cursor.fetchall()
+        if not results:
+            return None
+        result = results[0]
+        channel_id = result["log_channel_id"]
+        extra_log_channel = self.bot.get_channel(int(channel_id))
+        return extra_log_channel
+
     async def get_log_channels(self, guild, channel):
-        log_channels = self.bot.shared['data']['log_channels']
+        # log_channels = self.bot.shared["data"]["log_channels"]
+        if guild is None:
+            return [self.get_extra_log_channel()]
+        cursor = self.bot.db_connection.cursor(cursor_factory=RealDictCursor)
+        cursor.execute(
+            """
+            SELECT * FROM log_channels
+            WHERE guild_id = %s
+            AND log_channel_id != %s
+            LIMIT 1""",
+            (str(guild.id), str(channel.id))
+            )
+        log_channel_results = cursor.fetchall()
+        extra_log_channel = self.get_extra_log_channel()
+        if not log_channel_results:
+            if extra_log_channel:
+                return (extra_log_channel,)
+            return ()
+        log_to_channel_dict = log_channel_results[0]
         log_to_channels = []
-        extra_log_channel = self.bot.get_channel(
-            int(self.bot.shared['data']['extra_log_channel']))
-        try:
-            log_channel_id = log_channels[str(guild.id)]
-            should_be_logged = log_channel_id != str(channel.id)
-        except (AttributeError, KeyError):
-            should_be_logged = False
-        if should_be_logged:
-            log_to_channels.append(self.bot.get_channel(int(log_channel_id)))
-        if channel != extra_log_channel:
+        log_to_channel_id = log_to_channel_dict["log_channel_id"]
+        if log_to_channel_id != str(channel.id):
+            log_to_channel_obj = self.bot.get_channel(
+                int(log_to_channel_id))
+            log_to_channels.append(log_to_channel_obj)
+        if extra_log_channel and log_to_channel_id != extra_log_channel.id:
             log_to_channels.append(extra_log_channel)
         return tuple(log_to_channels)
 
@@ -144,7 +223,7 @@ class ServerLogging(discord.ext.commands.Cog):
         guild_description = getattr(message.guild, "name", "DMs")
         attachment_files = []
         for attachment in message.attachments:
-            filepath = self.bot.shared['temp_dir'] / attachment.filename
+            filepath = self.bot.shared["temp_dir"] / attachment.filename
             try:
                 try:
                     await attachment.save(filepath, use_cached=True)
@@ -156,22 +235,20 @@ class ServerLogging(discord.ext.commands.Cog):
                 continue
             attachment_files.append(filepath)
         num_failed = len(message.attachments) - len(attachment_files)
-        failed_attachments_str = (f' ({num_failed} failed to save)'
-                                  if num_failed else '')
-        embed_content_str = '\n'.join([f"Embed: {captured_embed.to_dict()}"
+        failed_attachments_str = (f" ({num_failed} failed to save)"
+                                  if num_failed else "")
+        embed_content_str = "\n".join([f"Embed: {captured_embed.to_dict()}"
                                        for captured_embed in message.embeds])
         embed_content_str = str(embed_content_str).strip()
         deletion_description = (
-            f'{datetime.now()}: A message from {message.author.name} '
-            f'has been deleted in {message.channel} of {guild_description} '
-            f'with {len(message.attachments)} attachment(s)'
-            f'{failed_attachments_str} and '
-            f'{len(message.embeds)} embed(s)')
+            f"{datetime.now()}: A message from {message.author.name} "
+            f"has been deleted in {message.channel} of {guild_description} "
+            f"with {len(message.attachments)} attachment(s)"
+            f"{failed_attachments_str} and "
+            f"{len(message.embeds)} embed(s)")
         deletion_text = (f"{deletion_description}: "
                          f"{message.content}\n{embed_content_str}")
         self.last_deleted_message[message.channel.id] = deletion_text
-        with codecs.open(DELETION_LOG_PATH, 'a', 'utf-8') as deletion_log_file:
-            deletion_log_file.write(deletion_text+'\n')
         log_to_channels = await self.get_log_channels(message.guild,
                                                       message.channel)
         embed = discord.Embed(
@@ -189,6 +266,6 @@ class ServerLogging(discord.ext.commands.Cog):
 
 
 def setup(bot):
-    logger.info('serverlogging starting setup')
+    logger.info("serverlogging starting setup")
     bot.add_cog(ServerLogging(bot))
-    logger.info('serverlogging ending setup')
+    logger.info("serverlogging ending setup")

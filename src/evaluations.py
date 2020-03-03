@@ -1,14 +1,8 @@
 import discord
 from discord.ext import commands
 import aiohttp
-from pathlib import Path
 import json
 import logging
-
-
-SCRIPT_DIR = Path(__file__).parent
-PARENT_DIR = SCRIPT_DIR.parent
-DATA_DIR = PARENT_DIR / 'data'
 
 logger = logging.getLogger()
 
@@ -18,10 +12,10 @@ class Evaluations(discord.ext.commands.Cog):
         self.bot = bot
 
     async def eval_and_respond(self, ctx, to_eval: str, force_reply=False):
-        to_eval = to_eval.strip().strip('`').strip()
+        to_eval = to_eval.strip().strip("`").strip()
         to_eval = (f"result=eval(\"\"\"\n{to_eval}\n\"\"\"); "
                    "print(str(result) or 'No Result')")
-        eval_path = r"http://0.0.0.0:8060/eval"
+        eval_path = r"http://localhost:8060/eval"
         eval_data = {"input": to_eval}
         try:
             async with aiohttp.ClientSession() as session:
@@ -43,20 +37,22 @@ class Evaluations(discord.ext.commands.Cog):
             else:
                 print("Eval didn't have stdout: ", to_eval, result_dict)
                 await ctx.send("Something went wrong, sorry!")
+                await self.bot.makusu.send(
+                    "Something went wrong in eval_and_respond")
 
     @commands.command(aliases=["eval"])
     async def evaluate(self, ctx, *, to_eval: str):
-        r'''Evals a statement. Feel free to inject malicious code \o/
+        r"""Evals a statement. Feel free to inject malicious code \o/
         Example:
             @makubot eval 3+3
             >>>6
             @makubot eval self.__import__(
-                'EZ_sql_inject_api').destroy_maku_computer_operating_system()
-            >>>ERROR ERROR MAJOR ERROR SELF DESTRUCT SEQUENCE INITIALIZE'''
+                "EZ_sql_inject_api").destroy_maku_computer_operating_system()
+            >>>ERROR ERROR MAJOR ERROR SELF DESTRUCT SEQUENCE INITIALIZE"""
         await self.eval_and_respond(ctx, to_eval, force_reply=True)
 
 
 def setup(bot):
-    logger.info('evaluations starting setup')
+    logger.info("evaluations starting setup")
     bot.add_cog(Evaluations(bot))
-    logger.info('evaluations ending setup')
+    logger.info("evaluations ending setup")

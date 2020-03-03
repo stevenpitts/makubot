@@ -1,26 +1,29 @@
 import discord
 from discord.ext import commands, tasks
 import logging
-from pathlib import Path
 from io import StringIO
-from datetime import datetime
 from discord.utils import escape_markdown
+from psycopg2.extras import RealDictCursor
+import asyncio
+import concurrent
 import sys
+import os
 from . import commandutil
-import time
-
-SCRIPT_DIR = Path(__file__).parent
-PARENT_DIR = SCRIPT_DIR.parent
-DATA_DIR = PARENT_DIR / 'data'
 
 logger = logging.getLogger()
+
+
+BACKUP_TIME_DELTA_HOURS = os.environ.get(
+    "BACKUP_TIME_DELTA_HOURS", 24)
 
 
 class Debugging(discord.ext.commands.Cog):
     def __init__(self, bot):
         self.bot = bot
-        self.last_delay_time = time.time()
-        self.test_delay.start()
+        self.regular_db_backups.start()
+
+    def cog_unload(self):
+        self.regular_db_backups.stop()
 
     @commands.command(hidden=True)
     @commands.is_owner()
@@ -32,13 +35,13 @@ class Debugging(discord.ext.commands.Cog):
     @commands.is_owner()
     async def supereval(self, ctx, *, to_eval: str):
         sys.stdout = StringIO()
-        eval_result = ''
-        eval_err = ''
+        eval_result = ""
+        eval_err = ""
         try:
-            eval_result = eval(to_eval) or ''
+            eval_result = eval(to_eval) or ""
         except Exception as e:
             eval_err = commandutil.get_formatted_traceback(e)
-        eval_output = sys.stdout.getvalue() or ''
+        eval_output = sys.stdout.getvalue() or ""
         sys.stdout = sys.__stdout__
         if eval_result or eval_output or eval_err:
             eval_result = (f"{escape_markdown(str(eval_result))}\n"
@@ -47,20 +50,28 @@ class Debugging(discord.ext.commands.Cog):
                            if eval_output else "")
             eval_err = (f"```{escape_markdown(str(eval_err))}```"
                         if eval_err else "")
-            await ctx.send(f'{eval_output}{eval_result}{eval_err}'.strip())
+            await ctx.send(f"{eval_output}{eval_result}{eval_err}".strip())
         else:
             await ctx.send("Hmm, I didn't get any output for that ;~;")
 
     @commands.command(hidden=True)
     @commands.is_owner()
-    async def clearshell(self, ctx):
-        '''Adds a few newlines to Maku's shell (for clean debugging)'''
-        print('\n'*10)
+    async def superevalsql(self, ctx, *, to_eval: str):
+        cursor = self.bot.db_connection.cursor(cursor_factory=RealDictCursor)
+        cursor.execute(to_eval)
+        await ctx.send(str([dict(row) for row in cursor.fetchall()]))
+        self.bot.db_connection.commit()
 
-    @commands.command(hidden=True, aliases=['deletehist'])
+    @commands.command(hidden=True)
+    @commands.is_owner()
+    async def clearshell(self, ctx):
+        """Adds a few newlines to Maku's shell (for clean debugging)"""
+        print("\n"*10)
+
+    @commands.command(hidden=True, aliases=["deletehist"])
     @commands.is_owner()
     async def removehist(self, ctx, num_to_delete: int):
-        '''Removes a specified number of previous messages by me'''
+        """Removes a specified number of previous messages by me"""
         bot_history = (message async for message in ctx.channel.history()
                        if message.author == self.bot.user)
         to_delete = []
@@ -71,18 +82,10 @@ class Debugging(discord.ext.commands.Cog):
                 break
         await ctx.channel.delete_messages(to_delete)
 
-    @tasks.loop(seconds=0)
-    async def test_delay(self):
-        new_delay_time = time.time()
-        delta_time = new_delay_time-self.last_delay_time
-        if delta_time > 0.1:
-            logger.warning(f"{datetime.now()}: Time delay: {delta_time}")
-        self.last_delay_time = new_delay_time
-
     @commands.command()
     @commands.cooldown(1, 1, type=commands.BucketType.user)
     async def ping(self, ctx):
-        '''
+        """
         Pong was the first commercially successful video game,
         which helped to establish the video game industry along with
         the first home console, the Magnavox Odyssey. Soon after its
@@ -98,23 +101,47 @@ class Debugging(discord.ext.commands.Cog):
         following its release. Pong is part of the permanent collection
         of the Smithsonian Institution in Washington, D.C.
         due to its cultural impact.
-        '''
-        time_passed = datetime.utcnow() - ctx.message.created_at
-        ms_passed = time_passed.microseconds/1000
-        await ctx.send(f'pong! It took me {ms_passed}ms to get the ping.')
+        """
+        response = await ctx.send(f"pong!")
+        time_delta = response.created_at - ctx.message.created_at
+        latency_ms = int((time_delta).total_seconds() * 1000)
+        await response.edit(content=f"pong! My latency is {latency_ms} ms.")
 
-    @commands.command(hidden=True, aliases=['status'])
+    @commands.command(hidden=True, aliases=["status"])
     @commands.is_owner()
     async def getstatus(self, ctx):
-        current_servers_string = 'Current servers: {}'.format(
+        current_servers_string = "Current servers: {}".format(
             {guild.name: guild.id for guild in self.bot.guilds})
         await self.bot.makusu.send(f"```{current_servers_string}```")
 
-    def cog_unload(self):
-        self.test_delay.stop()
+    @commands.command(hidden=True, aliases=["restoredatabase", "restoredb"])
+    @commands.is_owner()
+    async def restore_db(self, ctx, backup_key):
+        with concurrent.futures.ThreadPoolExecutor() as pool:
+            await asyncio.get_running_loop().run_in_executor(
+                pool, commandutil.restore_db, self.bot.s3_bucket, backup_key)
+        await ctx.send("Done!")
+
+    @commands.command(hidden=True, aliases=["backupdatabase", "backupdb"])
+    @commands.is_owner()
+    async def backup_db(self, ctx):
+        with concurrent.futures.ThreadPoolExecutor() as pool:
+            await asyncio.get_running_loop().run_in_executor(
+                pool, commandutil.backup_db, self.bot.s3_bucket)
+        await ctx.send("Done!")
+
+    @tasks.loop(hours=BACKUP_TIME_DELTA_HOURS)
+    async def regular_db_backups(self):
+        with concurrent.futures.ThreadPoolExecutor() as pool:
+            await asyncio.get_running_loop().run_in_executor(
+                pool, commandutil.backup_db, self.bot.s3_bucket)
+
+    @regular_db_backups.before_loop
+    async def before_regular_db_backups(self):
+        await self.bot.wait_until_ready()
 
 
 def setup(bot):
-    logger.info('debugging starting setup')
+    logger.info("debugging starting setup")
     bot.add_cog(Debugging(bot))
-    logger.info('debugging ending setup')
+    logger.info("debugging ending setup")

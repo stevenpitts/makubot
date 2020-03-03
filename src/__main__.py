@@ -1,20 +1,9 @@
 from . import makubot
 import sys
 import os
-from pathlib import Path
 import asyncio
 import time
 import threading
-try:
-    from . import tokens
-except ImportError:
-    if not os.path.isfile(str(Path(__file__).parent / 'tokens.py')):
-        with open(str(Path(__file__).parent / 'tokens.py'), 'w') as f:
-            f.write('realToken = None\ntestToken = None\ngoogleAPI = None\n')
-    from . import tokens
-SCRIPT_DIR = Path(__file__).parent
-PARENT_DIR = SCRIPT_DIR.parent
-DATA_DIR = PARENT_DIR / 'data'
 
 
 def profile_bot(bot):
@@ -32,26 +21,24 @@ def profile_bot(bot):
 
 
 def main():
-    os.makedirs(str(DATA_DIR / 'pictures'), exist_ok=True)
+    token = os.environ["DISCORD_BOT_TOKEN"]
+    # Use local storage if S3_BUCKET isn't set in environment
+    s3_bucket = os.environ.get("S3_BUCKET", None)
+    google_api_key = os.environ.get("GOOGLE_API_KEY", None)
+    db_host = os.environ["PGHOST"]
+    db_pass = os.environ["PGPASSWORD"]
+    db_port = os.environ["PGPORT"]
+    db_user = os.environ["PGUSER"]
 
-    default_text = {'makubot.log': '',
-                    'data.json': '{}',
-                    'deletion_log.txt': ''}
-    for filename, to_write in default_text.items():
-        if not os.path.isfile(str(DATA_DIR / filename)):
-            with open(str(DATA_DIR / filename), 'w') as f:
-                f.write(to_write)
+    makubot_bot = makubot.MakuBot(
+        s3_bucket=s3_bucket,
+        google_api_key=google_api_key,
+        db_host=db_host,
+        db_pass=db_pass,
+        db_port=db_port,
+        db_user=db_user
+        )
 
-    if bool('test' in sys.argv) == bool('real' in sys.argv):
-        raise ValueError('You must pass only one of "test" or "real" in args.')
-    if 'test' in sys.argv and tokens.testToken is None:
-        raise ValueError('You must replace testToken in tokens.py '
-                         'with your own test token first.')
-    elif 'real' in sys.argv and tokens.realToken is None:
-        raise ValueError('You must replace realToken in tokens.py '
-                         'with your own token first.')
-    token = tokens.testToken if 'test' in sys.argv else tokens.realToken
-    makubot_bot = makubot.MakuBot()
     if "profile" in sys.argv:
         profile_thread = threading.Thread(
             target=profile_bot, args=[makubot_bot])
