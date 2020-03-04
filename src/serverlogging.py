@@ -38,7 +38,7 @@ class ServerLogging(discord.ext.commands.Cog):
             DELETE FROM log_channels WHERE guild_id = %s
             """,
             (ctx.guild.id,)
-            )
+        )
         self.bot.db_connection.commit()
         await ctx.send("Coolio")
 
@@ -58,7 +58,7 @@ class ServerLogging(discord.ext.commands.Cog):
             VALUES (%s, %s)
             """,
             (guild_id, log_channel_id)
-            )
+        )
         self.bot.db_connection.commit()
         await ctx.send(r"You gotcha \o/")
 
@@ -81,7 +81,7 @@ class ServerLogging(discord.ext.commands.Cog):
             """
             DELETE FROM extra_log_channel *;
             """
-            )
+        )
         cursor.execute(
             """
             INSERT INTO extra_log_channel (
@@ -90,7 +90,7 @@ class ServerLogging(discord.ext.commands.Cog):
             VALUES (%s, %s)
             """,
             (str(log_channel.guild.id), str(log_channel.id))
-            )
+        )
         self.bot.db_connection.commit()
         await ctx.send("Done!")
 
@@ -100,7 +100,7 @@ class ServerLogging(discord.ext.commands.Cog):
             """
             SELECT * FROM extra_log_channel;
             """
-            )
+        )
         results = cursor.fetchall()
         if not results:
             return None
@@ -120,8 +120,8 @@ class ServerLogging(discord.ext.commands.Cog):
             WHERE guild_id = %s
             AND log_channel_id != %s
             LIMIT 1""",
-            (str(guild.id), str(channel.id))
-            )
+            (str(guild.id), str(channel.get(id)))
+        )
         log_channel_results = cursor.fetchall()
         extra_log_channel = self.get_extra_log_channel()
         if not log_channel_results:
@@ -153,7 +153,7 @@ class ServerLogging(discord.ext.commands.Cog):
             description=(f"{datetime.now()}: A message from "
                          f"{before.author.name} has been "
                          f"edited in {before.channel} of {guild_description}.")
-            )
+        )
         if after.content != before.content:
             before_content = before.content[:1000].strip() or "[NOTHING]"
             after_content = after.content[:1000].strip() or "[NOTHING]"
@@ -191,7 +191,7 @@ class ServerLogging(discord.ext.commands.Cog):
             description=(
                 f"{after} has updated their "
                 f"{'username' if new_username else 'avatar'}")
-            )
+        )
         if new_username:
             embed.add_field(name="Old", value=str(before))
             embed.add_field(name="New", value=str(after))
