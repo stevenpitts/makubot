@@ -120,7 +120,7 @@ class ServerLogging(discord.ext.commands.Cog):
             WHERE guild_id = %s
             AND log_channel_id != %s
             LIMIT 1""",
-            (str(guild.id), str(channel.get(id)))
+            (str(guild.id), str(getattr(channel, "id", None)))
         )
         log_channel_results = cursor.fetchall()
         extra_log_channel = self.get_extra_log_channel()
