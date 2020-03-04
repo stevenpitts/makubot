@@ -72,6 +72,7 @@ class MakuCommands(discord.ext.commands.Cog):
     @commands.is_owner()
     async def perish(self, ctx):
         """Murders me :( """
+        commandutil.backup_db(self.bot.s3_bucket)
         await self.bot.close()
 
     def get_free_guild_ids(self):
@@ -80,7 +81,7 @@ class MakuCommands(discord.ext.commands.Cog):
             """
             SELECT * FROM free_guilds
             """,
-            )
+        )
         results = cursor.fetchall()
         return [result["guild_id"] for result in results]
 
