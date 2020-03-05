@@ -163,9 +163,7 @@ def get_nonconflicting_filename(candidate_filename: str,
     except ValueError:
         raise("Filename was not valid (needs prefix and suffix")
     for addition in itertools.count():
-        candidate_filename = (f"{filename_prefix}"
-                              f"{addition}."
-                              f"{filename_suffix}")
+        candidate_filename = f"{filename_prefix}{addition}.{filename_suffix}"
         if not candidate_filename_exists(candidate_filename):
             return candidate_filename
     raise AssertionError("Shouldn't ever get here")
