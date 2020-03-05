@@ -347,7 +347,8 @@ class PictureAdder(discord.ext.commands.Cog):
                 filename, image_dir,
                 existing_keys=reaction_cog.collection_keys.get(
                     image_collection, [])
-            image_key=f"pictures/{image_collection}/{new_filename}"
+            )
+            image_key = f"pictures/{image_collection}/{new_filename}"
 
             def upload_image_func():
                 return S3.upload_file(
@@ -361,25 +362,25 @@ class PictureAdder(discord.ext.commands.Cog):
                     upload_image_func
                 )
             if image_collection not in reaction_cog.collection_keys:
-                reaction_cog.collection_keys[image_collection]=set()
+                reaction_cog.collection_keys[image_collection] = set()
             if image_collection not in reaction_cog.collection_hashes:
-                reaction_cog.collection_hashes[image_collection]=set()
+                reaction_cog.collection_hashes[image_collection] = set()
             reaction_cog.collection_keys[image_collection].add(
                 image_key)
-            image_hash=hashlib.md5(image_bytes).hexdigest()
+            image_hash = hashlib.md5(image_bytes).hexdigest()
             reaction_cog.collection_hashes[image_collection].add(
                 image_hash)
             reaction_cog.add_pictures_dir(image_collection)
         else:
             image_dir.mkdir(parents=True, exist_ok=True)
-            new_filename=commandutil.get_nonconflicting_filename(
+            new_filename = commandutil.get_nonconflicting_filename(
                 filename, image_dir)
             shutil.move(self.temp_save_dir / filename,
                         image_dir / new_filename)
-        reaction_cog=self.bot.get_cog("ReactionImages")
+        reaction_cog = self.bot.get_cog("ReactionImages")
         reaction_cog.add_pictures_dir(image_collection)
 
-        response=f"Your image {new_filename} was approved!"
+        response = f"Your image {new_filename} was approved!"
         await requestor.send(response)
         try:
             await status_message.edit(content=response)
@@ -387,7 +388,7 @@ class PictureAdder(discord.ext.commands.Cog):
             pass
 
     def get_aliases_of_cmd(self, real_cmd):
-        cursor=self.bot.db_connection.cursor(cursor_factory=RealDictCursor)
+        cursor = self.bot.db_connection.cursor(cursor_factory=RealDictCursor)
         cursor.execute(
             """
             SELECT * FROM alias_pictures
@@ -395,14 +396,14 @@ class PictureAdder(discord.ext.commands.Cog):
             """,
             (real_cmd)
         )
-        results=cursor.fetchall()
+        results = cursor.fetchall()
         return [result["alias"] for result in results]
 
     def get_cmd_from_alias(self, alias_cmd, none_if_not_exist=False):
-        reaction_cog=self.bot.get_cog("ReactionImages")
+        reaction_cog = self.bot.get_cog("ReactionImages")
         if alias_cmd in reaction_cog.pictures_commands:
             return alias_cmd
-        cursor=self.bot.db_connection.cursor(cursor_factory=RealDictCursor)
+        cursor = self.bot.db_connection.cursor(cursor_factory=RealDictCursor)
         cursor.execute(
             """
             SELECT * FROM alias_pictures
@@ -410,7 +411,7 @@ class PictureAdder(discord.ext.commands.Cog):
             """,
             (alias_cmd,)
         )
-        results=cursor.fetchall()
+        results = cursor.fetchall()
         if not results:
             if none_if_not_exist:
                 return None
@@ -430,16 +431,16 @@ class PictureAdder(discord.ext.commands.Cog):
         elif not self.bot.get_command(true_invocation):
             await ctx.send(f"{true_invocation} isn't a command, though :<")
             return
-        true_invocation=self.get_cmd_from_alias(true_invocation)
-        true_command=self.bot.get_command(true_invocation)
-        maps_to_image=(hasattr(true_command, "instance")
+        true_invocation = self.get_cmd_from_alias(true_invocation)
+        true_command = self.bot.get_command(true_invocation)
+        maps_to_image = (hasattr(true_command, "instance")
                          and isinstance(true_command.instance,
                                         ReactionImages))
         if not maps_to_image:
             await ctx.send(f"{true_invocation} is not an image command :?")
             return
 
-        cursor=self.bot.db_connection.cursor()
+        cursor = self.bot.db_connection.cursor()
         cursor.execute(
             """
             INSERT INTO alias_pictures (
@@ -451,29 +452,29 @@ class PictureAdder(discord.ext.commands.Cog):
         )
         self.bot.db_connection.commit()
         true_command.aliases += [ref_invocation]
-        reaction_cog=self.bot.get_cog("ReactionImages")
+        reaction_cog = self.bot.get_cog("ReactionImages")
         reaction_cog.pictures_commands += [ref_invocation]
-        self.bot.all_commands[ref_invocation]=true_command
+        self.bot.all_commands[ref_invocation] = true_command
         await ctx.send("Added!")
 
     @commands.command(aliases=["addimage", "addimageraw"])
-    async def add_image(self, ctx, image_collection: str, *, urls: str=""):
+    async def add_image(self, ctx, image_collection: str, *, urls: str = ""):
         """Requests an image be added.
         mb.addimage nao http://static.zerochan.net/Tomori.Nao.full.1901643.jpg
         Then, it'll be sent to maku for approval!"""
         logger.info(
             f"Called add_image with ctx {ctx.__dict__}, "
             f"image_collection {image_collection}, and urls {urls}.")
-        do_raw=ctx.invoked_with == "addimageraw"
+        do_raw = ctx.invoked_with == "addimageraw"
         if " " in image_collection:
             await ctx.send("Spaces replaced with underscores")
-        image_collection=image_collection.strip().lower().replace(" ", "_")
+        image_collection = image_collection.strip().lower().replace(" ", "_")
         if not image_collection.isalnum():
             await ctx.send("Please only include letters and numbers.")
             return
-        image_collection=self.get_cmd_from_alias(image_collection)
-        existing_command=self.bot.get_command(image_collection)
-        command_taken=(existing_command is not None
+        image_collection = self.get_cmd_from_alias(image_collection)
+        existing_command = self.bot.get_command(image_collection)
+        command_taken = (existing_command is not None
                          and (not hasattr(existing_command, "instance")
                               or not isinstance(existing_command.instance,
                                                 ReactionImages)))
@@ -484,15 +485,15 @@ class PictureAdder(discord.ext.commands.Cog):
             await ctx.send("You must include a URL at the end of your "
                            "message or attach image(s).")
             return
-        urls=urls.split() + [attachment.url for attachment
+        urls = urls.split() + [attachment.url for attachment
                                in ctx.message.attachments]
-        image_suggestion_coros=[]
-        loading_emoji=discord.utils.get(self.bot.emojis,
+        image_suggestion_coros = []
+        loading_emoji = discord.utils.get(self.bot.emojis,
                                           name="makubot_loading")
         for url in urls:
             try:
-                status_message=await ctx.send(f"Querying... {loading_emoji}")
-                data, filename=await get_media_bytes_and_name(
+                status_message = await ctx.send(f"Querying... {loading_emoji}")
+                data, filename = await get_media_bytes_and_name(
                     url, status_message=status_message, do_raw=do_raw,
                     loading_emoji=loading_emoji)
             except(youtube_dl.utils.DownloadError,
@@ -500,7 +501,7 @@ class PictureAdder(discord.ext.commands.Cog):
                    aiohttp.client_exceptions.InvalidURL,
                    discord.errors.HTTPException,
                    FileNotFoundError) as e:
-                traceback=commandutil.get_formatted_traceback(e)
+                traceback = commandutil.get_formatted_traceback(e)
                 logger.warning(f"Couldn't download image: {traceback}")
                 await asyncio.sleep(1)  # TODO fix race condition, added to
                 # counter status message update from separate thread
@@ -511,7 +512,7 @@ class PictureAdder(discord.ext.commands.Cog):
                     content="Sorry, the download messed up; please try again!")
                 return
             except BaseException as e:
-                formatted_tb=commandutil.get_formatted_traceback(e)
+                formatted_tb = commandutil.get_formatted_traceback(e)
                 await status_message.edit(content="Something went wrong ;a;")
                 await self.bot.makusu.send(
                     f"Something went wrong in add_image\n```{formatted_tb}```")
@@ -521,7 +522,7 @@ class PictureAdder(discord.ext.commands.Cog):
                 image_suggestion_coros.append(self.image_suggestion(
                     image_collection, filename, ctx.author,
                     image_bytes=data, status_message=status_message))
-        all_suggestion_coros=asyncio.gather(*image_suggestion_coros)
+        all_suggestion_coros = asyncio.gather(*image_suggestion_coros)
         try:
             await all_suggestion_coros
         except BaseException:
@@ -531,10 +532,10 @@ class PictureAdder(discord.ext.commands.Cog):
 
 class ReactionImages(discord.ext.commands.Cog):
     def __init__(self, bot):
-        self.bot=bot
-        self.pictures_commands=[]
+        self.bot = bot
+        self.pictures_commands = []
 
-        cursor=self.bot.db_connection.cursor()
+        cursor = self.bot.db_connection.cursor()
         cursor.execute(
             """
             CREATE TABLE IF NOT EXISTS alias_pictures (
@@ -543,30 +544,30 @@ class ReactionImages(discord.ext.commands.Cog):
             """)
         self.bot.db_connection.commit()
 
-        cursor=self.bot.db_connection.cursor(cursor_factory=RealDictCursor)
+        cursor = self.bot.db_connection.cursor(cursor_factory=RealDictCursor)
         cursor.execute(
             """
             SELECT * FROM alias_pictures
             """
         )
-        alias_pictures_results=cursor.fetchall()
+        alias_pictures_results = cursor.fetchall()
 
-        self.image_aliases={}
+        self.image_aliases = {}
         for alias_pictures_result in alias_pictures_results:
-            alias_cmd=alias_pictures_result["alias"]
-            real_cmd=alias_pictures_result["real"]
-            self.image_aliases[real_cmd]=(
+            alias_cmd = alias_pictures_result["alias"]
+            real_cmd = alias_pictures_result["real"]
+            self.image_aliases[real_cmd] = (
                 self.image_aliases.get(real_cmd, []) + [alias_cmd])
 
         if self.bot.s3_bucket:
-            self.collection_keys, self.collection_hashes=(
+            self.collection_keys, self.collection_hashes = (
                 get_starting_keys_hashes(self.bot.s3_bucket)
             )
-            toplevel_dirs=list(self.collection_keys.keys())
+            toplevel_dirs = list(self.collection_keys.keys())
             for folder_name in toplevel_dirs:
                 self.add_pictures_dir(folder_name)
         else:
-            toplevel_dirs=os.listdir(PICTURES_DIR)
+            toplevel_dirs = os.listdir(PICTURES_DIR)
             for folder_name in toplevel_dirs:
                 self.add_pictures_dir(folder_name)
 
@@ -576,52 +577,52 @@ class ReactionImages(discord.ext.commands.Cog):
         if self.bot.s3_bucket:
             # Yes, I'm aware that the double randomness means it's not
             # a truely random image of all my images
-            chosen_command_keys=list(random.choice(list(
+            chosen_command_keys = list(random.choice(list(
                 self.collection_keys.values())))
-            chosen_key=random.choice(chosen_command_keys)
-            chosen_url=commandutil.url_from_s3_key(
+            chosen_key = random.choice(chosen_command_keys)
+            chosen_url = commandutil.url_from_s3_key(
                 self.bot.s3_bucket,
                 self.bot.s3_bucket_location,
                 chosen_key,
                 improve=True)
             logging.info(f"Sending url in random_image func: {chosen_url}")
-            image_embed=await generate_image_embed(ctx,
+            image_embed = await generate_image_embed(ctx,
                                                      chosen_url,
                                                      call_bot_name=True)
-            sent_message=await ctx.send(embed=image_embed)
+            sent_message = await ctx.send(embed=image_embed)
             if sent_message.embeds[0].image.url == discord.Embed.Empty:
-                new_url=commandutil.improve_url(
+                new_url = commandutil.improve_url(
                     chosen_url,
                     obfuscate=True)
                 sent_message.edit(embed=None, content=new_url)
         else:
-            files=[Path(dirpath) / Path(filename)
+            files = [Path(dirpath) / Path(filename)
                      for dirpath, dirnames, filenames in os.walk(PICTURES_DIR)
                      for filename in filenames]
-            chosen_file=random.choice(files)
+            chosen_file = random.choice(files)
             await ctx.send(file=discord.File(chosen_file))
 
     async def send_image_func(ctx):
         if ctx.bot.s3_bucket:
-            reaction_cog=ctx.bot.get_cog("ReactionImages")
-            keys=reaction_cog.collection_keys[ctx.command.name]
-            chosen_key=random.choice(list(keys))
-            chosen_url=commandutil.url_from_s3_key(
+            reaction_cog = ctx.bot.get_cog("ReactionImages")
+            keys = reaction_cog.collection_keys[ctx.command.name]
+            chosen_key = random.choice(list(keys))
+            chosen_url = commandutil.url_from_s3_key(
                 ctx.bot.s3_bucket,
                 ctx.bot.s3_bucket_location,
                 chosen_key,
                 improve=True)
             logging.info(f"Sending url in send_image func: {chosen_url}")
-            image_embed=await generate_image_embed(ctx, chosen_url)
-            sent_message=await ctx.send(embed=image_embed)
+            image_embed = await generate_image_embed(ctx, chosen_url)
+            sent_message = await ctx.send(embed=image_embed)
             if not await commandutil.url_is_image(chosen_url):
-                new_url=commandutil.improve_url(
+                new_url = commandutil.improve_url(
                     chosen_url,
                     obfuscate=True)
                 await sent_message.edit(embed=None, content=new_url)
         else:
-            true_path=PICTURES_DIR / ctx.command.name
-            file_to_send=true_path / random.choice(os.listdir(true_path))
+            true_path = PICTURES_DIR / ctx.command.name
+            file_to_send = true_path / random.choice(os.listdir(true_path))
             async with ctx.typing():
                 await ctx.channel.send(file=discord.File(file_to_send))
 
@@ -629,15 +630,15 @@ class ReactionImages(discord.ext.commands.Cog):
         if folder_name in self.pictures_commands:
             return
         self.pictures_commands.append(folder_name)
-        collection_aliases=self.image_aliases.get(folder_name, [])
-        folder_command=commands.Command(
+        collection_aliases = self.image_aliases.get(folder_name, [])
+        folder_command = commands.Command(
             ReactionImages.send_image_func,
             name=folder_name,
             brief=folder_name,
             aliases=collection_aliases,
             hidden=True)
-        folder_command.instance=self
-        folder_command.module=self.__module__
+        folder_command.instance = self
+        folder_command.module = self.__module__
         self.bot.add_command(folder_command)
         for collection_alias in collection_aliases:
             self.pictures_commands.append(collection_alias)
@@ -645,9 +646,9 @@ class ReactionImages(discord.ext.commands.Cog):
     @commands.command(aliases=["listreactions"])
     async def list_reactions(self, ctx):
         """List all my reactions"""
-        pictures_desc=", ".join(self.pictures_commands)
-        block_size=1500
-        text_blocks=[f"{pictures_desc[i:i+block_size]}"
+        pictures_desc = ", ".join(self.pictures_commands)
+        block_size = 1500
+        text_blocks = [f"{pictures_desc[i:i+block_size]}"
                        for i in range(0, len(pictures_desc), block_size)]
         for text_block in text_blocks:
             await ctx.send(f"```{escape_markdown(text_block)}```")
@@ -655,27 +656,27 @@ class ReactionImages(discord.ext.commands.Cog):
     @commands.command(aliases=["howbig"])
     async def how_big(self, ctx, cmd_name):
         try:
-            command_size=len(self.collection_keys[cmd_name])
+            command_size = len(self.collection_keys[cmd_name])
         except KeyError:
             await ctx.send("That's not an image command :o")
             return
-        image_plurality="image" if command_size == 1 else "images"
+        image_plurality = "image" if command_size == 1 else "images"
         await ctx.send(f"{cmd_name} has {command_size} {image_plurality}!")
 
     @commands.command(aliases=["bigten"])
     async def big_ten(self, ctx):
         """List ten biggest image commands!"""
-        command_sizes={
+        command_sizes = {
             command: len(keys)
             for command, keys in self.collection_keys.items()
         }
-        commands_sorted=sorted(
+        commands_sorted = sorted(
             command_sizes.keys(),
             key=lambda command: command_sizes[command],
             reverse=True
         )
-        top_ten_commands=commands_sorted[:10]
-        message="\n".join([
+        top_ten_commands = commands_sorted[:10]
+        message = "\n".join([
             f"{command}: {command_sizes[command]}"
             for command in top_ten_commands])
         await ctx.send(message)
