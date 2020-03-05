@@ -267,7 +267,8 @@ class PictureAdder(discord.ext.commands.Cog):
                             aiohttp.client_exceptions.ClientOSError,
                             discord.errors.HTTPException):
                         logger.warning(
-                            f"Got error on {request_id}")
+                            f"Got error on {request_id}",
+                            exc_info=True)
                         await asyncio.sleep(10)
                     reactions_from_maku = [
                         reaction.emoji for reaction in request.reactions
