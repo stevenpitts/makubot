@@ -151,35 +151,24 @@ def slugify(candidate_filename: str):
 
 def get_nonconflicting_filename(candidate_filename: str,
                                 directory: Path,
-                                s3_bucket=None):
-    if s3_bucket:
-        if not s3_object_exists(s3_bucket, candidate_filename):
+                                collection_keys=None):
+    def candidate_filename_exists(candidate_filename):
+        if collection_keys:
+            return candidate_filename in collection_keys
+        return (directory / candidate_filename).is_file()
+    if not candidate_filename_exists(candidate_filename):
+        return candidate_filename
+    try:
+        filename_prefix, filename_suffix = candidate_filename.split(".", 1)
+    except ValueError:
+        raise("Filename was not valid (needs prefix and suffix")
+    for addition in itertools.count():
+        candidate_filename = (f"{filename_prefix}"
+                              f"{addition}."
+                              f"{filename_suffix}")
+        if not candidate_filename_exists(candidate_filename):
             return candidate_filename
-        try:
-            filename_prefix, filename_suffix = candidate_filename.split(".", 1)
-        except ValueError:
-            raise("Filename was not valid (needs prefix and suffix")
-        for addition in itertools.count():
-            candidate_filename = (f"{filename_prefix}"
-                                  f"{addition}."
-                                  f"{filename_suffix}")
-            if not s3_object_exists(s3_bucket, candidate_filename):
-                return candidate_filename
-        raise AssertionError("Shouldn't ever get here")
-    else:
-        if not (directory / candidate_filename).is_file():
-            return candidate_filename
-        try:
-            filename_prefix, filename_suffix = candidate_filename.split(".", 1)
-        except ValueError:
-            raise("Filename was not valid (needs prefix and suffix")
-        for addition in itertools.count():
-            candidate_filename = (f"{filename_prefix}"
-                                  f"{addition}."
-                                  f"{filename_suffix}")
-            if not (directory / candidate_filename).is_file():
-                return candidate_filename
-        raise AssertionError("Shouldn't ever get here")
+    raise AssertionError("Shouldn't ever get here")
 
 
 def readable_timedelta(old, new=None):

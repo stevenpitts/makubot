@@ -341,9 +341,11 @@ class PictureAdder(discord.ext.commands.Cog):
                                    status_message,
                                    image_bytes):
         image_dir = PICTURES_DIR / image_collection
+        reaction_cog = self.bot.get_cog("ReactionImages")
         if self.bot.s3_bucket:
             new_filename = commandutil.get_nonconflicting_filename(
-                filename, image_dir, s3_bucket=self.bot.s3_bucket)
+                filename, image_dir,
+                collection_keys=reaction_cog.collection_keys)
             image_key = f"pictures/{image_collection}/{new_filename}"
 
             def upload_image_func():
@@ -357,7 +359,6 @@ class PictureAdder(discord.ext.commands.Cog):
                     pool,
                     upload_image_func
                 )
-            reaction_cog = self.bot.get_cog("ReactionImages")
             if image_collection not in reaction_cog.collection_keys:
                 reaction_cog.collection_keys[image_collection] = set()
             if image_collection not in reaction_cog.collection_hashes:
