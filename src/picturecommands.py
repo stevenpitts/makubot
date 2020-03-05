@@ -68,7 +68,7 @@ async def generate_image_embed(ctx,
                       )
     embed_description = (
         f"{call_beginning}{cleaned_query}" if has_content else ""
-        )
+    )
     image_embed_dict = {
         "description": embed_description,
         "author": {"name": ctx.author.name,
@@ -76,7 +76,7 @@ async def generate_image_embed(ctx,
                    } if has_content else {},
         "image": {"url": url},
         "footer": {"text": f"-{bot_nick}", "icon_url": str(ctx.me.avatar_url)},
-        }
+    }
     image_embed = discord.Embed.from_dict(image_embed_dict)
     return image_embed
 
@@ -91,7 +91,7 @@ async def get_media_bytes_and_name(url, status_message=None, do_raw=False,
             "no_warnings": True,
             "format": quality_format,
             "outtmpl": f"{temp_dir}/%(title)s.%(ext)s"
-            }
+        }
         with youtube_dl.YoutubeDL(ydl_options) as ydl:
             await status_message.edit(content=f"Downloading...{loading_emoji}")
             download_start_time = datetime.now()
@@ -324,7 +324,7 @@ class PictureAdder(discord.ext.commands.Cog):
                     await asyncio.get_running_loop().run_in_executor(
                         pool,
                         upload_image_func
-                        )
+                    )
                 reaction_cog = self.bot.get_cog("ReactionImages")
                 if image_collection not in reaction_cog.collection_keys:
                     reaction_cog.collection_keys[image_collection] = set()
@@ -373,7 +373,7 @@ class PictureAdder(discord.ext.commands.Cog):
             WHERE real = %s;
             """,
             (real_cmd)
-            )
+        )
         results = cursor.fetchall()
         return [result["alias"] for result in results]
 
@@ -388,7 +388,7 @@ class PictureAdder(discord.ext.commands.Cog):
             WHERE alias = %s;
             """,
             (alias_cmd,)
-            )
+        )
         results = cursor.fetchall()
         if not results:
             if none_if_not_exist:
@@ -427,7 +427,7 @@ class PictureAdder(discord.ext.commands.Cog):
             VALUES (%s, %s);
             """,
             (ref_invocation, true_invocation)
-            )
+        )
         self.bot.db_connection.commit()
         true_command.aliases += [ref_invocation]
         reaction_cog = self.bot.get_cog("ReactionImages")
@@ -525,7 +525,7 @@ class ReactionImages(discord.ext.commands.Cog):
             """
             SELECT * FROM alias_pictures
             """
-            )
+        )
         alias_pictures_results = cursor.fetchall()
 
         self.image_aliases = {}
@@ -538,7 +538,7 @@ class ReactionImages(discord.ext.commands.Cog):
         if self.bot.s3_bucket:
             self.collection_keys, self.collection_hashes = (
                 get_starting_keys_hashes(self.bot.s3_bucket)
-                )
+            )
             toplevel_dirs = list(self.collection_keys.keys())
             for folder_name in toplevel_dirs:
                 self.add_pictures_dir(folder_name)
@@ -635,6 +635,7 @@ class ReactionImages(discord.ext.commands.Cog):
             command_size = len(self.collection_keys[cmd_name])
         except KeyError:
             await ctx.send("That's not an image command :o")
+            return
         image_plurality = "image" if command_size == 1 else "images"
         await ctx.send(f"{cmd_name} has {command_size} {image_plurality}!")
 
@@ -644,12 +645,12 @@ class ReactionImages(discord.ext.commands.Cog):
         command_sizes = {
             command: len(keys)
             for command, keys in self.collection_keys.items()
-            }
+        }
         commands_sorted = sorted(
             command_sizes.keys(),
             key=lambda command: command_sizes[command],
             reverse=True
-            )
+        )
         top_ten_commands = commands_sorted[:10]
         message = "\n".join([
             f"{command}: {command_sizes[command]}"
