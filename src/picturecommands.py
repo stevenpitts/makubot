@@ -311,7 +311,7 @@ class PictureAdder(discord.ext.commands.Cog):
                 if status_message.channel != requestor.dm_channel:
                     await requestor.send(response)
                 return
-            return self.apply_image_approved(
+            return await self.apply_image_approved(
                 filename,
                 image_collection,
                 requestor,
