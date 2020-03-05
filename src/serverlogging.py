@@ -111,8 +111,9 @@ class ServerLogging(discord.ext.commands.Cog):
 
     async def get_log_channels(self, guild, channel):
         # log_channels = self.bot.shared["data"]["log_channels"]
+        extra_log_channel = self.get_extra_log_channel()
         if guild is None:
-            return [self.get_extra_log_channel()]
+            return [extra_log_channel] if extra_log_channel else []
         cursor = self.bot.db_connection.cursor(cursor_factory=RealDictCursor)
         cursor.execute(
             """
@@ -123,7 +124,6 @@ class ServerLogging(discord.ext.commands.Cog):
             (str(guild.id), str(getattr(channel, "id", None)))
         )
         log_channel_results = cursor.fetchall()
-        extra_log_channel = self.get_extra_log_channel()
         if not log_channel_results:
             if extra_log_channel:
                 return (extra_log_channel,)
