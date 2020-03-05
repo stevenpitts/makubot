@@ -1,5 +1,6 @@
 import random
 import discord
+import logging
 from discord.ext import commands
 from discord.ext.commands.errors import (CommandError, CommandNotFound,
                                          CommandOnCooldown, NotOwner,
@@ -9,6 +10,8 @@ from discord.ext.commands.errors import (CommandError, CommandNotFound,
                                          MissingRequiredArgument,
                                          BadArgument)
 from . import commandutil
+
+logger = logging.getLogger()
 
 
 class Listeners(discord.ext.commands.Cog):
@@ -22,7 +25,7 @@ class Listeners(discord.ext.commands.Cog):
         guild_is_free = (
             str(member.guild.id)
             in self.bot.get_cog("MakuCommands").get_free_guild_ids()
-            )
+        )
         if not guild_is_free:
             return
         try:
@@ -53,9 +56,12 @@ class Listeners(discord.ext.commands.Cog):
                                            BadArgument)):
             await ctx.send(str(caught_exception))
         else:
-            print(commandutil.get_formatted_traceback(caught_exception))
+            formatted_tb = commandutil.get_formatted_traceback(
+                caught_exception)
+            logger.error(formatted_tb)
             await ctx.send("Something went wrong, sorry!")
-            await self.bot.makusu.send("Something went wrong!")
+            await self.bot.makusu.send(
+                f"Something went wrong!\n```{formatted_tb}```")
 
     @commands.Cog.listener()
     async def on_error(self, ctx, caught_exception):
@@ -68,7 +74,7 @@ class Listeners(discord.ext.commands.Cog):
         guild_is_free = (
             str(message.guild.id)
             in self.bot.get_cog("MakuCommands").get_free_guild_ids()
-            )
+        )
         if ("+hug" in message.content.lower()
                 and str(self.bot.user.id) in message.content):
             hug_responses = (
