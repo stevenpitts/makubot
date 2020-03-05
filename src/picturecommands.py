@@ -100,7 +100,7 @@ async def get_media_bytes_and_name(url, status_message=None, do_raw=False,
                 await asyncio.get_running_loop().run_in_executor(
                     pool, ydl.extract_info, url)  # This guy takes a while
             download_time = datetime.now() - download_start_time
-            logger.debug(f"{url} took {download_time} to download")
+            logger.info(f"{url} took {download_time} to download")
             files_in_dir = os.listdir(temp_dir)
             if len(files_in_dir) == 0:
                 raise youtube_dl.utils.DownloadError("No file found")
@@ -127,7 +127,7 @@ async def get_media_bytes_and_name(url, status_message=None, do_raw=False,
                 except NotVideo:
                     os.rename(temp_filepath, filepath)
             processing_time = datetime.now() - processing_start_time
-            logger.debug(f"{url} took {processing_time} to process")
+            logger.info(f"{url} took {processing_time} to process")
             with open(filepath, "rb") as downloaded_file:
                 data = downloaded_file.read()
             return data, filename
@@ -290,7 +290,7 @@ class PictureAdder(discord.ext.commands.Cog):
             approval_start_time = datetime.now()
             approved = await get_approval(request.id)
             approval_time = datetime.now() - approval_start_time
-            logger.debug(f"{filename} took {approval_time} to get approved")
+            logger.info(f"{filename} took {approval_time} to get approved")
             await request.delete()
             if await self.collection_has_image_bytes(image_collection,
                                                      image_bytes):
