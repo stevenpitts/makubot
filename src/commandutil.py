@@ -151,10 +151,10 @@ def slugify(candidate_filename: str):
 
 def get_nonconflicting_filename(candidate_filename: str,
                                 directory: Path,
-                                collection_keys=None):
+                                existing_keys=None):
     def candidate_filename_exists(candidate_filename):
-        if collection_keys:
-            return candidate_filename in collection_keys
+        if existing_keys:
+            return candidate_filename in existing_keys
         return (directory / candidate_filename).is_file()
     if not candidate_filename_exists(candidate_filename):
         return candidate_filename

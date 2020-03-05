@@ -9,7 +9,6 @@ import aiohttp
 import asyncio
 import shutil
 import concurrent
-import time
 import subprocess
 import youtube_dl
 import tempfile
@@ -345,7 +344,7 @@ class PictureAdder(discord.ext.commands.Cog):
         if self.bot.s3_bucket:
             new_filename = commandutil.get_nonconflicting_filename(
                 filename, image_dir,
-                collection_keys=reaction_cog.collection_keys)
+                existing_keys=reaction_cog.collection_keys[image_collection])
             image_key = f"pictures/{image_collection}/{new_filename}"
 
             def upload_image_func():
