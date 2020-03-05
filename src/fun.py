@@ -44,7 +44,7 @@ class Fun(discord.ext.commands.Cog):
         """Bullies me :("""
         if ctx.guild and ctx.guild.get_member(self.bot.makusu.id) is not None:
             await ctx.send(f"{self.bot.makusu.mention} "
-                           "HELP I\"M BEING BULLIED ;a;")
+                           "HELP I'M BEING BULLIED ;a;")
         else:
             await ctx.send("M-maku? W-where are you? Help!!!!")
 
@@ -59,7 +59,7 @@ class Fun(discord.ext.commands.Cog):
         """Prepare to be spammed by the greatest emojis you've ever seen"""
         max_reacts = 20
         emojis_random_order = iter(sorted(self.bot.emojis,
-                                   key=lambda *args: random.random()))
+                                          key=lambda *args: random.random()))
         emojis_to_add = itertools.islice(emojis_random_order, max_reacts)
         emoji_futures = [ctx.message.add_reaction(emoji_to_add)
                          for emoji_to_add in emojis_to_add]
@@ -112,7 +112,8 @@ class Fun(discord.ext.commands.Cog):
         elif len(set(text)) < len(text):
             await ctx.send("I can't do duplicate letters :<")
             return
-        text_emojis = [chr(ord("🇦")+ord(letter)-ord("a")) for letter in text]
+        text_emojis = [chr(ord("🇦")+ord(letter)-ord("a"))
+                       for letter in text]
         present_emojis = [reaction.emoji for reaction in message.reactions]
         shared_emojis = set(text_emojis) & set(present_emojis)
         if shared_emojis:
