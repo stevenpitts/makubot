@@ -619,6 +619,9 @@ class ReactionImages(discord.ext.commands.Cog):
                 new_url = commandutil.improve_url(
                     chosen_url,
                     obfuscate=True)
+                logger.info(
+                    "URL wasn't image, so turned to text URL. "
+                    f"{chosen_url} -> {new_url}")
                 await sent_message.edit(embed=None, content=new_url)
         else:
             true_path = PICTURES_DIR / ctx.command.name
