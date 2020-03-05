@@ -196,7 +196,7 @@ class PictureAdder(discord.ext.commands.Cog):
         image_hash = hashlib.md5(image_bytes).hexdigest()
         if self.bot.s3_bucket:
             reactions_cog = self.bot.get_cog("ReactionImages")
-            return image_hash in reactions_cog.collection_hashes
+            return image_hash in reactions_cog.collection_hashes[collection]
         else:
             collection_dir = PICTURES_DIR / collection
             if not collection_dir.exists():
