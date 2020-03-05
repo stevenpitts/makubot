@@ -492,9 +492,11 @@ class PictureAdder(discord.ext.commands.Cog):
                 await status_message.edit(
                     content="Sorry, the download messed up; please try again!")
                 return
-            except BaseException:
+            except BaseException as e:
+                formatted_tb = commandutil.get_formatted_traceback(e)
                 await status_message.edit(content="Something went wrong ;a;")
-                await self.bot.makusu.send("Something went wrong in add_image")
+                await self.bot.makusu.send(
+                    f"Something went wrong in add_image\n```{formatted_tb}```")
                 raise
             else:
                 await status_message.edit(content="Sent to Maku for approval!")
