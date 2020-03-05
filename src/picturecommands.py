@@ -233,7 +233,7 @@ class PictureAdder(discord.ext.commands.Cog):
                 return
             if self.bot.s3_bucket:
                 reaction_cog = self.bot.get_cog("ReactionImages")
-                is_new = image_dir not in reaction_cog.collection_keys
+                is_new = image_collection not in reaction_cog.collection_keys
             else:
                 is_new = not image_dir.exists()
             new_addition = "***NEW*** " if is_new else ""
