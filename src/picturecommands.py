@@ -269,7 +269,7 @@ class PictureAdder(discord.ext.commands.Cog):
                         logger.warning(
                             f"Got error on {request_id}",
                             exc_info=True)
-                        await asyncio.sleep(10)
+                        await asyncio.sleep(30)
                     reactions_from_maku = [
                         reaction.emoji for reaction in request.reactions
                         if reaction.count == 2 and reaction.emoji in (
@@ -279,7 +279,7 @@ class PictureAdder(discord.ext.commands.Cog):
                     elif len(reactions_from_maku) == 1:
                         assert reactions_from_maku[0] in (yes_emoji, no_emoji)
                         return reactions_from_maku[0] == yes_emoji
-                    await asyncio.sleep(0)
+                    await asyncio.sleep(30)
 
             try:
                 await status_message.edit(
