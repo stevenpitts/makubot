@@ -9,6 +9,7 @@ import aiohttp
 import asyncio
 import shutil
 import concurrent
+import time
 import subprocess
 import youtube_dl
 import tempfile
@@ -97,7 +98,7 @@ async def get_media_bytes_and_name(url, status_message=None, do_raw=False,
             download_start_time = datetime.now()
             with concurrent.futures.ThreadPoolExecutor() as pool:
                 await asyncio.get_running_loop().run_in_executor(
-                    pool, ydl.extract_info, url)
+                    pool, ydl.extract_info, url)  # This guy takes a while
             download_time = datetime.now() - download_start_time
             logger.debug(f"{url} took {download_time} to download")
             files_in_dir = os.listdir(temp_dir)
