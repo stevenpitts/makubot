@@ -25,7 +25,7 @@ class Evaluations(discord.ext.commands.Cog):
         except aiohttp.client_exceptions.ClientConnectorError:
             await ctx.send(
                 "The eval function isn't currently running, sorry!")
-            print("Failed eval due to not running")
+            logger.warning("Failed eval due to not running")
             return
         result_dict = json.loads(result_text)
         if result_dict.get("stdout", ""):
@@ -35,7 +35,8 @@ class Evaluations(discord.ext.commands.Cog):
             if returncode in (137, 139):
                 await ctx.send("That looks way too difficult NGL")
             else:
-                print("Eval didn't have stdout: ", to_eval, result_dict)
+                logger.warning("Eval didn't have stdout: ",
+                               to_eval, result_dict)
                 await ctx.send("Hmm, I didn't get any stdout for that...")
 
     @commands.command(aliases=["eval"])

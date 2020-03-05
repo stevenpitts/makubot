@@ -52,11 +52,11 @@ class MakuCommands(discord.ext.commands.Cog):
                 reload_response += f"Failed to reload {to_reload}\n"
                 fail_tb = commandutil.get_formatted_traceback(e)
                 fail_message = f"Error reloading {to_reload}: \n{fail_tb}\n\n"
-                print(fail_message)
+                logger.error(fail_message)
                 logger.info(fail_message)
         reload_response += "Done!"
         await ctx.send(reload_response)
-        print("Reloaded")
+        logger.info("Reloaded")
 
     @commands.command(aliases=["are you free",
                                "areyoufree?",

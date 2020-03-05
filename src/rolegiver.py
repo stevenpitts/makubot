@@ -4,7 +4,6 @@ import logging
 import concurrent
 import asyncio
 from psycopg2.extras import RealDictCursor
-from . import commandutil
 
 logger = logging.getLogger()
 
@@ -56,7 +55,7 @@ class RoleGiver(discord.ext.commands.Cog):
             """
             SELECT * FROM rolegivers;
             """
-            )
+        )
         results = cursor.fetchall()
         id_order = ["channel_id", "message_id", "role_id", "emoji_id"]
         return [[int(result[id_name]) for id_name in id_order]
@@ -75,7 +74,7 @@ class RoleGiver(discord.ext.commands.Cog):
             VALUES (%s, %s, %s, %s);
             """,
             (str(message_id), str(channel_id), str(role_id), str(emoji_id))
-            )
+        )
         self.bot.db_connection.commit()
 
     @tasks.loop(seconds=5)  # TODO change to 60 after confirmed working
@@ -88,8 +87,8 @@ class RoleGiver(discord.ext.commands.Cog):
         except (concurrent.futures._base.CancelledError,
                 asyncio.exceptions.CancelledError):
             return
-        except Exception as e:
-            print(commandutil.get_formatted_traceback(e))
+        except Exception:
+            logger.error(exc_info=True)
 
     @cycle_rolegivers.before_loop
     async def before_cycling(self):

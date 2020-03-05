@@ -24,6 +24,8 @@ LOGGING_FORMAT = ("%(asctime)-15s %(levelname)s in %(funcName)s "
 logging.basicConfig(
     stream=sys.stderr, level=logging.INFO, format=LOGGING_FORMAT)
 
+logger = logging.getLogger()
+
 DATABASE_CONNECT_MAX_RETRIES = 10
 
 
@@ -40,7 +42,7 @@ class MakuBot(commands.Bot):
                               command_prefix=commands.when_mentioned,
                               case_insensitive=True,
                               owner_id=203285581004931072)
-        print("Bot entering setup")
+        logger.info("Bot entering setup")
         self.makusu = None
         self.shared = {}
         self.temp_dir_pointer = tempfile.TemporaryDirectory()
@@ -62,7 +64,7 @@ class MakuBot(commands.Bot):
         if self.s3_bucket:
             self.s3_bucket_location = S3.get_bucket_location(
                 Bucket=self.s3_bucket
-                )["LocationConstraint"]
+            )["LocationConstraint"]
         self.google_api_key = google_api_key
         self.db_host = db_host
         self.db_pass = db_pass
@@ -77,9 +79,10 @@ class MakuBot(commands.Bot):
                     password=self.db_pass,
                     port=self.db_port,
                     user=self.db_user,
-                    )
+                )
             except psycopg2.OperationalError:
-                print("Couldn't connect to mbdb, retrying in a few seconds")
+                logger.info(
+                    "Couldn't connect to mbdb, retrying in a few seconds")
                 time.sleep(5)
                 continue
             else:
@@ -97,9 +100,9 @@ class MakuBot(commands.Bot):
         Called when MakuBot has logged in and is ready to accept commands
         """
         self.makusu = await self.fetch_user(self.owner_id)
-        print(
+        logger.info(
             f"\n\n\nLogged in at {datetime.now()} as {self.user.name} "
             f"with ID {self.user.id}\n\n\n"
-            )
+        )
         await self.change_presence(activity=discord.Game(
             name=r"Nao is being tsun to me :<"))

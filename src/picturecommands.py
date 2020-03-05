@@ -506,8 +506,8 @@ class PictureAdder(discord.ext.commands.Cog):
         all_suggestion_coros = asyncio.gather(*image_suggestion_coros)
         try:
             await all_suggestion_coros
-        except BaseException as e:
-            print(commandutil.get_formatted_traceback(e))
+        except BaseException:
+            logger.error(exc_info=True)
             all_suggestion_coros.cancel()
 
 

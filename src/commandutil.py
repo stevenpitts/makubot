@@ -47,7 +47,7 @@ def url_from_s3_key(s3_bucket,
         try:
             urllib.request.urlopen(url)
         except urllib.error.HTTPError as e:
-            print(f"URL {url} failed due to {e.code} {e.reason}")
+            logger.error(f"URL {url} failed due to {e.code} {e.reason}")
             raise
     return url
 
@@ -104,7 +104,7 @@ def restore_db(s3_bucket, most_recent_key=None):
         logger.info(f"Failed backup output: {e.stdout}")
         logger.error(
             f"Backup failed with exit code {e.returncode} and err {e.stderr}."
-            )
+        )
         raise
     logger.info("Successfully restored database")
 
@@ -122,7 +122,7 @@ def backup_db(s3_bucket):
         logger.info(f"Failed backup output: {e.stdout}")
         logger.error(
             f"Backup failed with exit code {e.returncode} and err {e.stderr}."
-            )
+        )
         raise
 
 

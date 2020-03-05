@@ -32,9 +32,9 @@ class Listeners(discord.ext.commands.Cog):
             await member.guild.system_channel.send(
                 f"Hi {member.mention}! Maku loves you! <333333")
         except AttributeError:
-            print(f"{member.mention} joined, but guild "
-                  f"{member.guild.name} has no system_channel. ID is "
-                  f"{member.guild._system_channel_id}.")
+            logger.warning(f"{member.mention} joined, but guild "
+                           f"{member.guild.name} has no system_channel. ID is "
+                           f"{member.guild._system_channel_id}.")
 
     @commands.Cog.listener()
     async def on_command_error(self, ctx,
@@ -65,7 +65,7 @@ class Listeners(discord.ext.commands.Cog):
 
     @commands.Cog.listener()
     async def on_error(self, ctx, caught_exception):
-        print(commandutil.get_formatted_traceback(caught_exception))
+        logger.error(commandutil.get_formatted_traceback(caught_exception))
 
     @commands.Cog.listener()
     async def on_message(self, message: discord.Message):

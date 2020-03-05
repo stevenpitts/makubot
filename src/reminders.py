@@ -58,7 +58,7 @@ class RemindersDB:
              user_id,
              channel_id,
              reminder_message)
-            )
+        )
         self.bot.db_connection.commit()
 
     def drop_reminder(self, reminder_id):
@@ -68,7 +68,7 @@ class RemindersDB:
             DELETE FROM reminders WHERE id = %s
             """,
             (reminder_id,)
-            )
+        )
         self.bot.db_connection.commit()
 
     def ready_reminders(self):
@@ -280,8 +280,8 @@ class ReminderCommands(discord.ext.commands.Cog):
                 self.reminders_db.drop_reminder(reminder["id"])
         except concurrent.futures._base.CancelledError:
             return
-        except Exception as e:
-            print(commandutil.get_formatted_traceback(e))
+        except Exception:
+            logger.error(exc_info=True)
 
     @cycle_reminders.before_loop
     async def before_cycling(self):

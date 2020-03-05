@@ -37,7 +37,7 @@ def main():
         db_pass=db_pass,
         db_port=db_port,
         db_user=db_user
-        )
+    )
 
     if "profile" in sys.argv:
         profile_thread = threading.Thread(
