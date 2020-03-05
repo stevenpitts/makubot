@@ -310,48 +310,13 @@ class PictureAdder(discord.ext.commands.Cog):
                     pass
                 if status_message.channel != requestor.dm_channel:
                     await requestor.send(response)
-            if self.bot.s3_bucket:
-                new_filename = commandutil.get_nonconflicting_filename(
-                    filename, image_dir, s3_bucket=self.bot.s3_bucket)
-                image_key = f"pictures/{image_collection}/{new_filename}"
-
-                def upload_image_func():
-                    return S3.upload_file(
-                        str(self.temp_save_dir / filename),
-                        self.bot.s3_bucket,
-                        image_key,
-                        ExtraArgs={"ACL": "public-read"})
-                with concurrent.futures.ThreadPoolExecutor() as pool:
-                    await asyncio.get_running_loop().run_in_executor(
-                        pool,
-                        upload_image_func
-                    )
-                reaction_cog = self.bot.get_cog("ReactionImages")
-                if image_collection not in reaction_cog.collection_keys:
-                    reaction_cog.collection_keys[image_collection] = set()
-                if image_collection not in reaction_cog.collection_hashes:
-                    reaction_cog.collection_hashes[image_collection] = set()
-                reaction_cog.collection_keys[image_collection].add(
-                    image_key)
-                image_hash = hashlib.md5(image_bytes).hexdigest()
-                reaction_cog.collection_hashes[image_collection].add(
-                    image_hash)
-                reaction_cog.add_pictures_dir(image_collection)
-            else:
-                image_dir.mkdir(parents=True, exist_ok=True)
-                new_filename = commandutil.get_nonconflicting_filename(
-                    filename, image_dir)
-                shutil.move(self.temp_save_dir / filename,
-                            image_dir / new_filename)
-            reaction_cog = self.bot.get_cog("ReactionImages")
-            reaction_cog.add_pictures_dir(image_collection)
-
-            response = f"Your image {new_filename} was approved!"
-            await requestor.send(response)
-            try:
-                await status_message.edit(content=response)
-            except discord.errors.NotFound:
-                pass
+                return
+            return self.apply_image_approved(
+                filename,
+                image_collection,
+                requestor,
+                status_message,
+                image_bytes)
         except (concurrent.futures._base.CancelledError,
                 asyncio.exceptions.CancelledError):
             logger.error(f"Cancelled error on {filename}")
@@ -367,6 +332,56 @@ class PictureAdder(discord.ext.commands.Cog):
             await self.bot.makusu.send(
                 "Something went wrong in image_suggestion"
                 f"\n```{formatted_tb}```")
+
+    async def apply_image_approved(self,
+                                   filename,
+                                   image_collection,
+                                   requestor,
+                                   status_message,
+                                   image_bytes):
+        image_dir = PICTURES_DIR / image_collection
+        if self.bot.s3_bucket:
+            new_filename = commandutil.get_nonconflicting_filename(
+                filename, image_dir, s3_bucket=self.bot.s3_bucket)
+            image_key = f"pictures/{image_collection}/{new_filename}"
+
+            def upload_image_func():
+                return S3.upload_file(
+                    str(self.temp_save_dir / filename),
+                    self.bot.s3_bucket,
+                    image_key,
+                    ExtraArgs={"ACL": "public-read"})
+            with concurrent.futures.ThreadPoolExecutor() as pool:
+                await asyncio.get_running_loop().run_in_executor(
+                    pool,
+                    upload_image_func
+                )
+            reaction_cog = self.bot.get_cog("ReactionImages")
+            if image_collection not in reaction_cog.collection_keys:
+                reaction_cog.collection_keys[image_collection] = set()
+            if image_collection not in reaction_cog.collection_hashes:
+                reaction_cog.collection_hashes[image_collection] = set()
+            reaction_cog.collection_keys[image_collection].add(
+                image_key)
+            image_hash = hashlib.md5(image_bytes).hexdigest()
+            reaction_cog.collection_hashes[image_collection].add(
+                image_hash)
+            reaction_cog.add_pictures_dir(image_collection)
+        else:
+            image_dir.mkdir(parents=True, exist_ok=True)
+            new_filename = commandutil.get_nonconflicting_filename(
+                filename, image_dir)
+            shutil.move(self.temp_save_dir / filename,
+                        image_dir / new_filename)
+        reaction_cog = self.bot.get_cog("ReactionImages")
+        reaction_cog.add_pictures_dir(image_collection)
+
+        response = f"Your image {new_filename} was approved!"
+        await requestor.send(response)
+        try:
+            await status_message.edit(content=response)
+        except discord.errors.NotFound:
+            pass
 
     def get_aliases_of_cmd(self, real_cmd):
         cursor = self.bot.db_connection.cursor(cursor_factory=RealDictCursor)
