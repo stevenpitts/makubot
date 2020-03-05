@@ -354,9 +354,10 @@ class PictureAdder(discord.ext.commands.Cog):
                 pass
         except (concurrent.futures._base.CancelledError,
                 asyncio.exceptions.CancelledError):
-            print(f"Cancelled error on {filename}")
+            logger.error(f"Cancelled error on {filename}")
         except BaseException as e:
-            print(commandutil.get_formatted_traceback(e))
+            formatted_tb = commandutil.get_formatted_traceback(e)
+            logger.error(formatted_tb)
             response = f"Something went wrong with {filename}, sorry!"
             await requestor.send(response)
             try:
@@ -364,7 +365,8 @@ class PictureAdder(discord.ext.commands.Cog):
             except discord.errors.NotFound:
                 pass
             await self.bot.makusu.send(
-                "Something went wrong in image_suggestion")
+                "Something went wrong in image_suggestion"
+                f"\n```{formatted_tb}```")
 
     def get_aliases_of_cmd(self, real_cmd):
         cursor = self.bot.db_connection.cursor(cursor_factory=RealDictCursor)
