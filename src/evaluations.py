@@ -36,9 +36,7 @@ class Evaluations(discord.ext.commands.Cog):
                 await ctx.send("That looks way too difficult NGL")
             else:
                 print("Eval didn't have stdout: ", to_eval, result_dict)
-                await ctx.send("Something went wrong, sorry!")
-                await self.bot.makusu.send(
-                    "Something went wrong in eval_and_respond")
+                await ctx.send("Hmm, I didn't get any stdout for that...")
 
     @commands.command(aliases=["eval"])
     async def evaluate(self, ctx, *, to_eval: str):
