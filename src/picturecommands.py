@@ -526,7 +526,7 @@ class PictureAdder(discord.ext.commands.Cog):
         try:
             await all_suggestion_coros
         except BaseException:
-            logger.error(exc_info=True)
+            logger.error("Got exception in add_image: ", exc_info=True)
             all_suggestion_coros.cancel()
 
 
