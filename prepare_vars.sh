@@ -15,8 +15,3 @@ export bot_secret_key=`echo $credentials | jq -r ".AWS_SECRET_ACCESS_KEY"`
 export google_api_key=`echo $credentials | jq -r ".GOOGLE_API_KEY"`
 export discord_token=`echo $credentials | jq -r ".DISCORD_TOKEN"`
 export pgpassword=`echo $credentials | jq -r ".PGPASSWORD"`
-
-docker-compose up --build > mblog.txt 2>&1 &
-
-
-docker-compose up --detach --build bot
