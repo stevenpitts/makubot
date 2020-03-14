@@ -7,6 +7,7 @@ from datetime import datetime
 import urllib
 import aiohttp
 import subprocess
+from psycopg2.extras import RealDictCursor
 try:
     import boto3
     import botocore
@@ -83,6 +84,45 @@ def get_most_recent_backup_key(s3_bucket):
     return keys_by_date[0]
 
 
+def get_num_tables(db_connection):
+    cursor = db_connection.cursor(cursor_factory=RealDictCursor)
+    cursor.execute(
+        """
+        SELECT COUNT(*) FROM pg_stat_user_tables;
+        """
+    )
+    results = cursor.fetchall()
+    num_tables_result = results[0]["count"]
+    num_tables = int(num_tables_result)
+    return num_tables
+
+
+def drop_all_tables(db_connection):
+    cursor = db_connection.cursor()
+    cursor.execute(
+        """
+        DROP SCHEMA public CASCADE;
+        CREATE SCHEMA public;
+        GRANT ALL ON SCHEMA public TO postgres;
+        GRANT ALL ON SCHEMA public TO public;
+        COMMENT ON SCHEMA public IS 'standard public schema';
+        """
+    )
+    db_connection.commit()
+
+
+def backup_and_drop_all(db_connection, s3_bucket):
+    num_tables = get_num_tables(db_connection)
+    logger.info(f"Started with {num_tables} tables")
+    if num_tables:
+        logger.info("Backing up existing database")
+        backup_db(s3_bucket)
+        logger.info("Backed up existing database")
+    logger.info("Dropping all tables")
+    drop_all_tables(db_connection)
+    logger.info("Dropped all tables")
+
+
 def restore_db(s3_bucket, most_recent_key=None):
     if most_recent_key is None:
         most_recent_key = get_most_recent_backup_key(s3_bucket)
@@ -111,6 +151,7 @@ def backup_db(s3_bucket):
     now_formatted = datetime.now().strftime("%Y.%m.%d.%H.%M.%S")
     backups_dir = f"s3://{s3_bucket}/backups"
     backup_location = f"{backups_dir}/{now_formatted}.pgdump"
+    logger.info(f"Backing up database to {backup_location}")
 
     cmd = f"pg_dump | aws s3 cp - {backup_location}"
     try:
