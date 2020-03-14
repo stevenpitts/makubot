@@ -101,6 +101,7 @@ class MakuCommands(discord.ext.commands.Cog):
             VALUES (%s)
             """,
             (str(ctx.message.guild.id),))
+        self.bot.db_connection.commit()
         await ctx.send("Ayaya~")
 
     @commands.command()
