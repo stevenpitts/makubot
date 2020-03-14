@@ -26,7 +26,7 @@ logging.basicConfig(
 
 logger = logging.getLogger()
 
-logger.info("Entering makubot.py")
+logger.info("\n\nEntering makubot.py\n\n")
 
 DATABASE_CONNECT_MAX_RETRIES = 10
 
