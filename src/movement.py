@@ -77,7 +77,7 @@ class Movement(discord.ext.commands.Cog):
         save_pin_futures = []
         for message in await ctx.channel.pins():
             pin_embed_dict = {
-                "title": await commandutil.clean(ctx, message.content),
+                "description": await commandutil.clean(ctx, message.content),
                 "footer": {"text": f"In {message.channel.name}"},
                 "author": {"name": message.author.name,
                            "icon_url": str(message.author.avatar_url)
