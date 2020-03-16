@@ -56,7 +56,7 @@ class Movement(discord.ext.commands.Cog):
                                                     channel_to_move_to,
                                                     message.author)
 
-    @commands.command(aliases=["savepins"])
+    @commands.command(aliases=["savepins", "capturepins"])
     async def save_pins(self, ctx, pins_channel: discord.TextChannel):
         """
         Send all the pins in the current channel
@@ -83,7 +83,7 @@ class Movement(discord.ext.commands.Cog):
                            "icon_url": str(message.author.avatar_url)
                            },
                 "timestamp": message.created_at.isoformat()
-             }
+            }
             pin_embed = discord.Embed.from_dict(pin_embed_dict)
             save_pin_futures.append(pins_channel.send(embed=pin_embed))
         await asyncio.gather(*save_pin_futures)
@@ -120,7 +120,7 @@ class Movement(discord.ext.commands.Cog):
             attachment_files = [
                 await attachment.to_file()
                 for attachment in message.attachments
-                ]
+            ]
             move_description = (f"{move_request_user.mention} has moved "
                                 f"this here from {message.channel.mention}. "
                                 f"OP was {message.author.mention}.\n"
