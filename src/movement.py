@@ -101,7 +101,7 @@ class Movement(discord.ext.commands.Cog):
             await ctx.send("I'm not sure if you're allowed to do that, sorry!")
             return
         unpin_futures = [pin.unpin() for pin in await ctx.channel.pins()]
-        await asyncio.gather(unpin_futures)
+        await asyncio.gather(*unpin_futures)
         await ctx.send("Done!")
 
     async def move_message_attempt(self, message: discord.Message,
