@@ -15,6 +15,7 @@ import tempfile
 from psycopg2.extras import RealDictCursor
 import hashlib
 from datetime import datetime
+import mimetypes
 try:
     import boto3
     S3 = boto3.client("s3")
@@ -378,11 +379,18 @@ class PictureAdder(discord.ext.commands.Cog):
             image_key = f"pictures/{image_collection}/{new_filename}"
 
             def upload_image_func():
+                local_path = self.temp_save_dir / filename
+                mimetype, _ = mimetypes.guess_type(local_path)
+                mimetype = mimetype or "binary/octet-steam"
                 return S3.upload_file(
-                    str(self.temp_save_dir / filename),
+                    str(local_path),
                     self.bot.s3_bucket,
                     image_key,
-                    ExtraArgs={"ACL": "public-read"})
+                    ExtraArgs={
+                        "ACL": "public-read",
+                        "ContentType": mimetype
+                    }
+                )
             with concurrent.futures.ThreadPoolExecutor() as pool:
                 await asyncio.get_running_loop().run_in_executor(
                     pool,
