@@ -182,6 +182,10 @@ def slugify(candidate_filename: str):
 def get_nonconflicting_filename(candidate_filename: str,
                                 directory: Path,
                                 existing_keys=None):
+    if existing_keys:
+        existing_keys = [
+            existing_key.split("/")[-1] for existing_key in existing_keys]
+
     def candidate_filename_exists(candidate_filename):
         if existing_keys:
             return candidate_filename in existing_keys
