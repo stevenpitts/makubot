@@ -19,28 +19,19 @@ import discord
 logger = logging.getLogger()
 
 
-def obfuscate_amazon(url):
-    # Amazon doesn't need free advertising
-    return url.replace("amazon", r"%61%6d%61%7a%6f%6e")
-
-
-def improve_url(url, obfuscate=False):
-    if obfuscate:
-        url = obfuscate_amazon(url)
-    url = url.replace(" ", "+")
-    return url
+def improve_url(url):
+    return url.replace(" ", "+")
 
 
 def url_from_s3_key(s3_bucket,
                     s3_bucket_location,
                     s3_key,
                     validate=False,
-                    improve=False,
-                    obfuscate=False):
+                    improve=False):
     url = (f"https://{s3_bucket}.s3.{s3_bucket_location}"
            f".amazonaws.com/{s3_key}")
     if improve:
-        url = improve_url(url, obfuscate=obfuscate)
+        url = improve_url(url)
     if validate:
         # Raise HTTPError if url 404s or whatever
         try:

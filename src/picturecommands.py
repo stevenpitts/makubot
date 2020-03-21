@@ -591,9 +591,7 @@ class ReactionImages(discord.ext.commands.Cog):
                                                      call_bot_name=True)
             sent_message = await ctx.send(embed=image_embed)
             if sent_message.embeds[0].image.url == discord.Embed.Empty:
-                new_url = commandutil.improve_url(
-                    chosen_url,
-                    obfuscate=True)
+                new_url = commandutil.improve_url(chosen_url)
                 sent_message.edit(embed=None, content=new_url)
         else:
             files = [Path(dirpath) / Path(filename)
@@ -617,8 +615,7 @@ class ReactionImages(discord.ext.commands.Cog):
             sent_message = await ctx.send(embed=image_embed)
             if not await commandutil.url_is_image(chosen_url):
                 new_url = commandutil.improve_url(
-                    chosen_url,
-                    obfuscate=True)
+                    chosen_url)
                 logger.info(
                     "URL wasn't image, so turned to text URL. "
                     f"{chosen_url} -> {new_url}")
