@@ -34,6 +34,33 @@ class NotVideo(Exception):
     pass
 
 
+async def send_image_func(ctx):
+    if ctx.bot.s3_bucket:
+        reaction_cog = ctx.bot.get_cog("ReactionImages")
+        keys = reaction_cog.collection_keys[ctx.command.name]
+        chosen_key = random.choice(list(keys))
+        chosen_url = commandutil.url_from_s3_key(
+            ctx.bot.s3_bucket,
+            ctx.bot.s3_bucket_location,
+            chosen_key,
+            improve=True)
+        logging.info(f"Sending url in send_image func: {chosen_url}")
+        image_embed = await generate_image_embed(ctx, chosen_url)
+        sent_message = await ctx.send(embed=image_embed)
+        if not await commandutil.url_is_image(chosen_url):
+            new_url = commandutil.improve_url(
+                chosen_url)
+            logger.info(
+                "URL wasn't image, so turned to text URL. "
+                f"{chosen_url} -> {new_url}")
+            await sent_message.edit(embed=None, content=new_url)
+    else:
+        true_path = PICTURES_DIR / ctx.command.name
+        file_to_send = true_path / random.choice(os.listdir(true_path))
+        async with ctx.typing():
+            await ctx.channel.send(file=discord.File(file_to_send))
+
+
 def get_starting_keys_hashes(bucket):
     keys, hashes = commandutil.s3_keys_hashes(bucket, prefix="pictures/")
     toplevel_dirs = set(key.split("/")[1] for key in keys)
@@ -600,39 +627,13 @@ class ReactionImages(discord.ext.commands.Cog):
             chosen_file = random.choice(files)
             await ctx.send(file=discord.File(chosen_file))
 
-    async def send_image_func(ctx):
-        if ctx.bot.s3_bucket:
-            reaction_cog = ctx.bot.get_cog("ReactionImages")
-            keys = reaction_cog.collection_keys[ctx.command.name]
-            chosen_key = random.choice(list(keys))
-            chosen_url = commandutil.url_from_s3_key(
-                ctx.bot.s3_bucket,
-                ctx.bot.s3_bucket_location,
-                chosen_key,
-                improve=True)
-            logging.info(f"Sending url in send_image func: {chosen_url}")
-            image_embed = await generate_image_embed(ctx, chosen_url)
-            sent_message = await ctx.send(embed=image_embed)
-            if not await commandutil.url_is_image(chosen_url):
-                new_url = commandutil.improve_url(
-                    chosen_url)
-                logger.info(
-                    "URL wasn't image, so turned to text URL. "
-                    f"{chosen_url} -> {new_url}")
-                await sent_message.edit(embed=None, content=new_url)
-        else:
-            true_path = PICTURES_DIR / ctx.command.name
-            file_to_send = true_path / random.choice(os.listdir(true_path))
-            async with ctx.typing():
-                await ctx.channel.send(file=discord.File(file_to_send))
-
     def add_pictures_dir(self, folder_name: str):
         if folder_name in self.pictures_commands:
             return
         self.pictures_commands.append(folder_name)
         collection_aliases = self.image_aliases.get(folder_name, [])
         folder_command = commands.Command(
-            ReactionImages.send_image_func,
+            send_image_func,
             name=folder_name,
             brief=folder_name,
             aliases=collection_aliases,
