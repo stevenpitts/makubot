@@ -59,8 +59,8 @@ class Movement(discord.ext.commands.Cog):
     @commands.command(aliases=["savepins", "capturepins"])
     async def save_pins(self, ctx, pins_channel: discord.TextChannel):
         """
-        Send all the pins in the current channel
-        to a dedicated pins channel!
+        Send all the pins in the current channel to a dedicated pins channel!
+        I currently don't support attachments.
         Remember to use mb.deleteallpins after this!
         """
         bot_as_member = ctx.guild.get_member(self.bot.user.id)
