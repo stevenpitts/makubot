@@ -30,6 +30,8 @@ PICTURES_DIR = DATA_DIR / "pictures"
 
 logger = logging.getLogger()
 
+NO_EMOJI, YES_EMOJI = "❌", "✅"
+
 
 class NotVideo(Exception):
     pass
@@ -216,6 +218,7 @@ class PictureAdder(discord.ext.commands.Cog):
     def __init__(self, bot):
         self.bot = bot
         self.temp_save_dir = self.bot.shared["temp_dir"]
+        self.pending_approval_message_ids = []
 
     async def collection_has_image_bytes(self,
                                          collection: str,
@@ -236,6 +239,36 @@ class PictureAdder(discord.ext.commands.Cog):
             existing_checksums = (hashlib.md5(bytes).hexdigest()
                                   for bytes in existing_bytes)
             return image_hash in existing_checksums
+
+    async def get_approval(self, request_id, peek_count=3):
+        assert request_id not in self.pending_approval_message_ids
+        self.pending_approval_message_ids.append(request_id)
+        try:
+            while True:
+                newest_ids = self.pending_approval_message_ids[-peek_count:]
+                if request_id not in newest_ids:
+                    await asyncio.sleep(0.25)
+                    continue
+                try:
+                    request = await self.bot.makusu.fetch_message(
+                        request_id)
+                except (aiohttp.client_exceptions.ServerDisconnectedError,
+                        aiohttp.client_exceptions.ClientOSError,
+                        discord.errors.HTTPException):
+                    logger.warning(f"Got error on {request_id}", exc_info=True)
+                    await asyncio.sleep(1)
+                reactions_from_maku = [
+                    reaction.emoji for reaction in request.reactions
+                    if reaction.count == 2
+                    and reaction.emoji in (NO_EMOJI, YES_EMOJI)]
+                if len(reactions_from_maku) > 1:
+                    await self.bot.makusu.send("You reacted twice...")
+                elif len(reactions_from_maku) == 1:
+                    assert reactions_from_maku[0] in (YES_EMOJI, NO_EMOJI)
+                    return reactions_from_maku[0] == YES_EMOJI
+                await asyncio.sleep(0.25)
+        finally:
+            self.pending_approval_message_ids.remove(request_id)
 
     async def image_suggestion(self, image_collection, filename, requestor,
                                image_bytes=None, status_message=None):
@@ -283,32 +316,9 @@ class PictureAdder(discord.ext.commands.Cog):
                 except discord.errors.NotFound:
                     pass
                 return
-            no_emoji, yes_emoji = "❌", "✅"
-            await request.add_reaction(no_emoji)
-            await request.add_reaction(yes_emoji)
 
-            async def get_approval(request_id):
-                while True:
-                    try:
-                        request = await self.bot.makusu.fetch_message(
-                            request_id)
-                    except (aiohttp.client_exceptions.ServerDisconnectedError,
-                            aiohttp.client_exceptions.ClientOSError,
-                            discord.errors.HTTPException):
-                        logger.warning(
-                            f"Got error on {request_id}",
-                            exc_info=True)
-                        await asyncio.sleep(1)
-                    reactions_from_maku = [
-                        reaction.emoji for reaction in request.reactions
-                        if reaction.count == 2 and reaction.emoji in (
-                            no_emoji, yes_emoji)]
-                    if len(reactions_from_maku) > 1:
-                        await self.bot.makusu.send("You reacted twice...")
-                    elif len(reactions_from_maku) == 1:
-                        assert reactions_from_maku[0] in (yes_emoji, no_emoji)
-                        return reactions_from_maku[0] == yes_emoji
-                    await asyncio.sleep(1)
+            await request.add_reaction(NO_EMOJI)
+            await request.add_reaction(YES_EMOJI)
 
             try:
                 await status_message.edit(
@@ -316,7 +326,7 @@ class PictureAdder(discord.ext.commands.Cog):
             except discord.errors.NotFound:
                 pass
             approval_start_time = datetime.now()
-            approved = await get_approval(request.id)
+            approved = await self.get_approval(request.id)
             approval_time = datetime.now() - approval_start_time
             logger.info(f"{filename} took {approval_time} to get approved")
             await request.delete()
