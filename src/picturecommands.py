@@ -247,7 +247,7 @@ class PictureAdder(discord.ext.commands.Cog):
             while True:
                 newest_ids = self.pending_approval_message_ids[-peek_count:]
                 if request_id not in newest_ids:
-                    await asyncio.sleep(0.25)
+                    await asyncio.sleep(0.1)
                     continue
                 try:
                     request = await self.bot.makusu.fetch_message(
@@ -266,7 +266,7 @@ class PictureAdder(discord.ext.commands.Cog):
                 elif len(reactions_from_maku) == 1:
                     assert reactions_from_maku[0] in (YES_EMOJI, NO_EMOJI)
                     return reactions_from_maku[0] == YES_EMOJI
-                await asyncio.sleep(0.25)
+                await asyncio.sleep(0.1)
         finally:
             self.pending_approval_message_ids.remove(request_id)
 
