@@ -56,7 +56,7 @@ class Movement(discord.ext.commands.Cog):
                                                     channel_to_move_to,
                                                     message.author)
 
-    @commands.command(aliases=["savepins", "capturepins"])
+    @commands.command(aliases=["savepins", "capturepins", "copypins"])
     async def save_pins(self, ctx, pins_channel: discord.TextChannel):
         """
         Send all the pins in the current channel to a dedicated pins channel!
@@ -76,15 +76,26 @@ class Movement(discord.ext.commands.Cog):
             return
         save_pin_futures = []
         for message in await ctx.channel.pins():
-            pin_embed_dict = {
-                "description": await commandutil.clean(ctx, message.content),
-                "footer": {"text": f"In {message.channel.name}"},
-                "author": {"name": message.author.name,
-                           "icon_url": str(message.author.avatar_url)
-                           },
-                "timestamp": message.created_at.isoformat()
-            }
-            pin_embed = discord.Embed.from_dict(pin_embed_dict)
+            just_copy_embed = (
+                not message.content
+                and not message.attachments
+                and message.embeds)
+            if just_copy_embed:
+                pin_embed = message.embeds[0].copy()
+            else:
+                pin_embed_dict = {
+                    "description": await commandutil.clean(
+                        ctx, message.content),
+                    "footer": {"text": f"In {message.channel.name}"},
+                    "author": {"name": message.author.name,
+                               "icon_url": str(message.author.avatar_url)
+                               },
+                    "timestamp": message.created_at.isoformat()
+                }
+                if message.attachments:
+                    pin_embed_dict["image"] = {
+                        "url": message.attachments[0].url}
+                pin_embed = discord.Embed.from_dict(pin_embed_dict)
             save_pin_futures.append(pins_channel.send(embed=pin_embed))
         await asyncio.gather(*save_pin_futures)
         await ctx.send("Done!")
