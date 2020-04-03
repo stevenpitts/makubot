@@ -64,6 +64,12 @@ class Debugging(discord.ext.commands.Cog):
 
     @commands.command(hidden=True)
     @commands.is_owner()
+    async def superevalrollback(self, ctx):
+        await self.bot.db_connection.rollback()
+        await ctx.send("Done")
+
+    @commands.command(hidden=True)
+    @commands.is_owner()
     async def clearshell(self, ctx):
         """Adds a few newlines to Maku's shell (for clean debugging)"""
         print("\n"*10)
