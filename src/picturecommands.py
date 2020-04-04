@@ -546,6 +546,22 @@ class ReactionImages(discord.ext.commands.Cog):
             alias TEXT PRIMARY KEY,
             real TEXT);
             """)
+        cursor.execute(
+            """
+            CREATE TABLE IF NOT EXISTS image_commands (
+            cmd TEXT PRIMARY KEY,
+            uid CHARACTER(18),
+            origin_sids CHARACTER(18)[]);
+            """)
+        cursor.execute(
+            """
+            CREATE TABLE IF NOT EXISTS images (
+            cmd TEXT REFERENCES image_commands(cmd),
+            image_key TEXT,
+            uid CHARACTER(18),
+            sid CHARACTER(18),
+            PRIMARY KEY (cmd, image_key));
+            """)
         self.bot.db_connection.commit()
 
         cursor = self.bot.db_connection.cursor(cursor_factory=RealDictCursor)
