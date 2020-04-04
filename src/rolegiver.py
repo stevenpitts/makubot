@@ -102,6 +102,10 @@ class RoleGiver(discord.ext.commands.Cog):
         """Have a message give whoever reacts to it with a given emoji
         a role. The emoji MUST be a custom emoji."""
         rolegiver_ids = [message.channel.id, message.id, role.id, emoji.id]
+        existing_message_ids = [ids[1] for ids in self.get_rolegiver_ids()]
+        if message.id in existing_message_ids:
+            await ctx.send("That message is already a rolegiver message :(")
+            return
         self.add_rolegiver_ids(*rolegiver_ids)
 
 
