@@ -548,6 +548,7 @@ class ReactionImages(discord.ext.commands.Cog):
                     image_key TEXT,
                     uid CHARACTER(18),
                     sid CHARACTER(18),
+                    md5 TEXT,
                     PRIMARY KEY (cmd, image_key))
                 CREATE TABLE commands (
                     cmd TEXT PRIMARY KEY,
