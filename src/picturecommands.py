@@ -14,6 +14,7 @@ from psycopg2.extras import RealDictCursor
 import hashlib
 from datetime import datetime
 import mimetypes
+import itertools
 import boto3
 from . import commandutil
 
@@ -384,8 +385,15 @@ class PictureAdder(discord.ext.commands.Cog):
             image_hash)
         reaction_cog.add_pictures_dir(image_collection)
 
-        reaction_cog = self.bot.get_cog("ReactionImages")
-        reaction_cog.add_pictures_dir(image_collection)
+        try:
+            sid = status_message.guild.id
+        except (discord.errors.NotFound, AttributeError):
+            sid = None
+
+        if not self.image_exists_in_cmd(image_key, image_collection):
+            self.add_image_to_db(
+                image_key, image_collection,
+                uid=requestor.id, sid=sid, md5=image_hash)
 
         response = f"Your image {new_filename} was approved!"
         await requestor.send(response)
@@ -559,7 +567,8 @@ class ReactionImages(discord.ext.commands.Cog):
                 CREATE TABLE aliases (
                     alias TEXT PRIMARY KEY,
                     real TEXT);
-            """)
+            """
+        )
         self.bot.db_connection.commit()
 
         cursor = self.bot.db_connection.cursor(cursor_factory=RealDictCursor)
@@ -581,8 +590,27 @@ class ReactionImages(discord.ext.commands.Cog):
             get_starting_keys_hashes(self.bot.s3_bucket)
         )
         toplevel_dirs = list(self.collection_keys.keys())
+        self.sync_s3_db()
         for folder_name in toplevel_dirs:
             self.add_pictures_dir(folder_name)
+
+    def sync_s3_db(self):
+        for cmd in self.collection_keys:
+            if not self.command_exists_in_db(cmd):
+                logger.info(f"DB didn't have {cmd=}, adding")
+                self.add_cmd_to_db(cmd, invoking_uid=None, invoking_sid=None)
+            assert (len(self.collection_keys[cmd])
+                    == len(self.collection_hashes[cmd]))
+            key_hash_pairs = itertools.zip(self.collection_keys[cmd],
+                                           self.collection_hashes[cmd]
+                                           )
+            for image_key, image_hash in key_hash_pairs:
+                if self.image_exists_in_cmd(image_key, cmd):
+                    continue
+                logger.info(f"DB didn't have {image_key} in {cmd}, adding "
+                            f"with {image_hash=}.")
+                self.add_image_to_db(
+                    image_key, cmd, uid=None, sid=None, md5=image_hash)
 
     @commands.command(aliases=["randomimage", "yo", "hey", "makubot"])
     async def random_image(self, ctx):
@@ -605,9 +633,73 @@ class ReactionImages(discord.ext.commands.Cog):
             new_url = commandutil.improve_url(chosen_url)
             sent_message.edit(embed=None, content=new_url)
 
-    def add_pictures_dir(self, folder_name: str):
+    def image_exists_in_cmd(self, image_key, cmd):
+        cursor = self.bot.db_connection.cursor(cursor_factory=RealDictCursor)
+        cursor.execute(
+            """
+            SELECT * FROM media.images
+            WHERE cmd = %s
+            AND image_key = %s
+            """,
+            (cmd, image_key)
+        )
+        results = cursor.fetchall()
+        return bool(results)
+
+    def add_image_to_db(self, image_key, cmd, uid=None, sid=None, md5=None):
+        cursor = self.bot.db_connection.cursor()
+        cursor.execute(
+            """
+            INSERT INTO media.images (
+            cmd,
+            image_key,
+            uid,
+            sid,
+            md5)
+            VALUES (%s, %s, %s, %s, %s);
+            """,
+            (cmd, image_key, uid, sid, md5)
+        )
+
+    def command_exists_in_db(self, cmd):
+        cursor = self.bot.db_connection.cursor(cursor_factory=RealDictCursor)
+        cursor.execute(
+            """
+            SELECT * FROM media.commands
+            WHERE cmd = %s;
+            """,
+            (cmd,)
+        )
+        results = cursor.fetchall()
+        return bool(results)
+
+    def add_cmd_to_db(self, cmd, invoking_uid=None, invoking_sid=None):
+        cursor = self.bot.db_connection.cursor()
+        cursor.execute(
+            """
+            INSERT INTO media.commands (
+            cmd,
+            uid)
+            VALUES (%s, %s);
+            """,
+            (cmd, invoking_uid)
+        )
+        cursor.execute(
+            """
+            INSERT INTO media.server_command_associations (
+            cmd,
+            uid)
+            VALUES (%s, %s);
+            """,
+            (invoking_sid, cmd)
+        )
+
+    def add_pictures_dir(self, folder_name: str,
+                         invoking_uid=None, invoking_sid=None):
         if folder_name in self.pictures_commands:
             return
+        if not self.command_exists_in_db(folder_name):
+            self.add_cmd_to_db(folder_name, invoking_uid, invoking_sid)
         self.pictures_commands.append(folder_name)
         collection_aliases = self.image_aliases.get(folder_name, [])
         folder_command = commands.Command(
