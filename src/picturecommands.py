@@ -398,7 +398,7 @@ class PictureAdder(discord.ext.commands.Cog):
         cursor = self.bot.db_connection.cursor(cursor_factory=RealDictCursor)
         cursor.execute(
             """
-            SELECT * FROM alias_pictures
+            SELECT * FROM media.aliases
             WHERE real = %s;
             """,
             (real_cmd)
@@ -410,7 +410,7 @@ class PictureAdder(discord.ext.commands.Cog):
         cursor = self.bot.db_connection.cursor(cursor_factory=RealDictCursor)
         cursor.execute(
             """
-            SELECT * FROM alias_pictures
+            SELECT * FROM media.aliases
             WHERE alias = %s;
             """,
             (alias_cmd,)
@@ -447,7 +447,7 @@ class PictureAdder(discord.ext.commands.Cog):
         cursor = self.bot.db_connection.cursor()
         cursor.execute(
             """
-            INSERT INTO alias_pictures (
+            INSERT INTO media.aliases (
             alias,
             real)
             VALUES (%s, %s);
@@ -542,32 +542,29 @@ class ReactionImages(discord.ext.commands.Cog):
         cursor = self.bot.db_connection.cursor()
         cursor.execute(
             """
-            CREATE TABLE IF NOT EXISTS alias_pictures (
-            alias TEXT PRIMARY KEY,
-            real TEXT);
-            """)
-        cursor.execute(
-            """
-            CREATE TABLE IF NOT EXISTS image_commands (
-            cmd TEXT PRIMARY KEY,
-            uid CHARACTER(18),
-            origin_sids CHARACTER(18)[]);
-            """)
-        cursor.execute(
-            """
-            CREATE TABLE IF NOT EXISTS images (
-            cmd TEXT REFERENCES image_commands(cmd),
-            image_key TEXT,
-            uid CHARACTER(18),
-            sid CHARACTER(18),
-            PRIMARY KEY (cmd, image_key));
+            CREATE SCHEMA IF NOT EXISTS pictures
+                CREATE TABLE images (
+                    cmd TEXT REFERENCES commands(cmd),
+                    image_key TEXT,
+                    uid CHARACTER(18),
+                    sid CHARACTER(18),
+                    PRIMARY KEY (cmd, image_key))
+                CREATE TABLE commands (
+                    cmd TEXT PRIMARY KEY,
+                    uid CHARACTER(18))
+                CREATE TABLE server_command_associations (
+                    sid CHARACTER(18),
+                    cmd TEXT REFERENCES commands(cmd))
+                CREATE TABLE aliases (
+                    alias TEXT PRIMARY KEY,
+                    real TEXT);
             """)
         self.bot.db_connection.commit()
 
         cursor = self.bot.db_connection.cursor(cursor_factory=RealDictCursor)
         cursor.execute(
             """
-            SELECT * FROM alias_pictures
+            SELECT * FROM media.aliases
             """
         )
         alias_pictures_results = cursor.fetchall()
