@@ -1,6 +1,5 @@
 import traceback
 import re
-from pathlib import Path
 import itertools
 import logging
 from datetime import datetime
@@ -8,15 +7,13 @@ import urllib
 import aiohttp
 import subprocess
 from psycopg2.extras import RealDictCursor
-try:
-    import boto3
-    import botocore
-    S3 = boto3.client("s3")
-except ImportError:
-    pass  # Might just be running locally
+import boto3
+import botocore
 import discord
 
 logger = logging.getLogger()
+
+S3 = boto3.client("s3")
 
 
 def improve_url(url):
@@ -179,18 +176,9 @@ def slugify(candidate_filename: str):
     return slugified
 
 
-def get_nonconflicting_filename(candidate_filename: str,
-                                directory: Path,
-                                existing_keys=None):
-    if existing_keys:
-        existing_keys = [
-            existing_key.split("/")[-1] for existing_key in existing_keys]
-
-    def candidate_filename_exists(candidate_filename):
-        if existing_keys:
-            return candidate_filename in existing_keys
-        return (directory / candidate_filename).is_file()
-    if not candidate_filename_exists(candidate_filename):
+def get_nonconflicting_filename(candidate_filename: str, existing_keys=None):
+    existing_keys = {key.split("/")[-1] for key in existing_keys}
+    if candidate_filename not in existing_keys:
         return candidate_filename
     try:
         filename_prefix, filename_suffix = candidate_filename.split(".", 1)
@@ -198,7 +186,7 @@ def get_nonconflicting_filename(candidate_filename: str,
         raise("Filename was not valid (needs prefix and suffix")
     for addition in itertools.count():
         candidate_filename = f"{filename_prefix}{addition}.{filename_suffix}"
-        if not candidate_filename_exists(candidate_filename):
+        if candidate_filename not in existing_keys:
             return candidate_filename
     raise AssertionError("Shouldn't ever get here")
 

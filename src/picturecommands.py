@@ -2,12 +2,10 @@ import discord
 from discord.ext import commands
 from discord.utils import escape_markdown
 import logging
-from pathlib import Path
 import os
 import random
 import aiohttp
 import asyncio
-import shutil
 import concurrent
 import subprocess
 import youtube_dl
@@ -16,21 +14,14 @@ from psycopg2.extras import RealDictCursor
 import hashlib
 from datetime import datetime
 import mimetypes
-try:
-    import boto3
-    S3 = boto3.client("s3")
-except ImportError:
-    pass  # Let the exception get raised later, they might be running locally
+import boto3
 from . import commandutil
-
-SCRIPT_DIR = Path(__file__).parent
-PARENT_DIR = SCRIPT_DIR.parent
-DATA_DIR = PARENT_DIR / "data"
-PICTURES_DIR = DATA_DIR / "pictures"
 
 logger = logging.getLogger()
 
 NO_EMOJI, YES_EMOJI = "❌", "✅"
+
+S3 = boto3.client("s3")
 
 
 class NotVideo(Exception):
@@ -38,30 +29,24 @@ class NotVideo(Exception):
 
 
 async def send_image_func(ctx):
-    if ctx.bot.s3_bucket:
-        reaction_cog = ctx.bot.get_cog("ReactionImages")
-        keys = reaction_cog.collection_keys[ctx.command.name]
-        chosen_key = random.choice(list(keys))
-        chosen_url = commandutil.url_from_s3_key(
-            ctx.bot.s3_bucket,
-            ctx.bot.s3_bucket_location,
-            chosen_key,
-            improve=True)
-        logging.info(f"Sending url in send_image func: {chosen_url}")
-        image_embed = await generate_image_embed(ctx, chosen_url)
-        sent_message = await ctx.send(embed=image_embed)
-        if not await commandutil.url_is_image(chosen_url):
-            new_url = commandutil.improve_url(
-                chosen_url)
-            logger.info(
-                "URL wasn't image, so turned to text URL. "
-                f"{chosen_url} -> {new_url}")
-            await sent_message.edit(embed=None, content=new_url)
-    else:
-        true_path = PICTURES_DIR / ctx.command.name
-        file_to_send = true_path / random.choice(os.listdir(true_path))
-        async with ctx.typing():
-            await ctx.channel.send(file=discord.File(file_to_send))
+    reaction_cog = ctx.bot.get_cog("ReactionImages")
+    keys = reaction_cog.collection_keys[ctx.command.name]
+    chosen_key = random.choice(list(keys))
+    chosen_url = commandutil.url_from_s3_key(
+        ctx.bot.s3_bucket,
+        ctx.bot.s3_bucket_location,
+        chosen_key,
+        improve=True)
+    logging.info(f"Sending url in send_image func: {chosen_url}")
+    image_embed = await generate_image_embed(ctx, chosen_url)
+    sent_message = await ctx.send(embed=image_embed)
+    if not await commandutil.url_is_image(chosen_url):
+        new_url = commandutil.improve_url(
+            chosen_url)
+        logger.info(
+            "URL wasn't image, so turned to text URL. "
+            f"{chosen_url} -> {new_url}")
+        await sent_message.edit(embed=None, content=new_url)
 
 
 def get_starting_keys_hashes(bucket):
@@ -224,21 +209,9 @@ class PictureAdder(discord.ext.commands.Cog):
                                          collection: str,
                                          image_bytes):
         image_hash = hashlib.md5(image_bytes).hexdigest()
-        if self.bot.s3_bucket:
-            reactions_cog = self.bot.get_cog("ReactionImages")
-            return image_hash in reactions_cog.collection_hashes.get(
-                collection, [])
-        else:
-            collection_dir = PICTURES_DIR / collection
-            if not collection_dir.exists():
-                return False
-            existing_files = (
-                collection_dir / picture_filename
-                for picture_filename in os.listdir(collection_dir))
-            existing_bytes = (file.read_bytes() for file in existing_files)
-            existing_checksums = (hashlib.md5(bytes).hexdigest()
-                                  for bytes in existing_bytes)
-            return image_hash in existing_checksums
+        reactions_cog = self.bot.get_cog("ReactionImages")
+        collection_hashes = reactions_cog.collection_hashes.get(collection, [])
+        return image_hash in collection_hashes
 
     async def get_approval(self, request_id, peek_count=3):
         assert request_id not in self.pending_approval_message_ids
@@ -272,14 +245,15 @@ class PictureAdder(discord.ext.commands.Cog):
 
     async def image_suggestion(self, image_collection, filename, requestor,
                                image_bytes=None, status_message=None):
-        image_dir = PICTURES_DIR / image_collection
         try:
             if image_bytes is None:
                 with open(self.temp_save_dir / filename, "rb") as f:
                     image_bytes = f.read()
             else:
+                existing_keys = {
+                    str(path) for path in self.temp_save_dir.iterdir()}
                 filename = commandutil.get_nonconflicting_filename(
-                    filename, self.temp_save_dir)
+                    filename, existing_keys=existing_keys)
                 with open(self.temp_save_dir / filename, "wb") as f:
                     f.write(image_bytes)
             if await self.collection_has_image_bytes(image_collection,
@@ -292,11 +266,8 @@ class PictureAdder(discord.ext.commands.Cog):
                 except discord.errors.NotFound:
                     pass
                 return
-            if self.bot.s3_bucket:
-                reaction_cog = self.bot.get_cog("ReactionImages")
-                is_new = image_collection not in reaction_cog.collection_keys
-            else:
-                is_new = not image_dir.exists()
+            reaction_cog = self.bot.get_cog("ReactionImages")
+            is_new = image_collection not in reaction_cog.collection_keys
             new_addition = "***NEW*** " if is_new else ""
             proposal = (f"Add image {filename} to {new_addition}"
                         f"{image_collection}? Requested by {requestor.name}")
@@ -378,50 +349,41 @@ class PictureAdder(discord.ext.commands.Cog):
                                    requestor,
                                    status_message,
                                    image_bytes):
-        image_dir = PICTURES_DIR / image_collection
         reaction_cog = self.bot.get_cog("ReactionImages")
-        if self.bot.s3_bucket:
-            new_filename = commandutil.get_nonconflicting_filename(
-                filename, image_dir,
-                existing_keys=reaction_cog.collection_keys.get(
-                    image_collection, [])
-            )
-            image_key = f"pictures/{image_collection}/{new_filename}"
+        existing_keys = reaction_cog.collection_keys.get(image_collection, [])
+        new_filename = commandutil.get_nonconflicting_filename(
+            filename, existing_keys=existing_keys)
+        image_key = f"pictures/{image_collection}/{new_filename}"
 
-            def upload_image_func():
-                local_path = self.temp_save_dir / filename
-                mimetype, _ = mimetypes.guess_type(local_path)
-                mimetype = mimetype or "binary/octet-steam"
-                return S3.upload_file(
-                    str(local_path),
-                    self.bot.s3_bucket,
-                    image_key,
-                    ExtraArgs={
-                        "ACL": "public-read",
-                        "ContentType": mimetype
-                    }
-                )
-            with concurrent.futures.ThreadPoolExecutor() as pool:
-                await asyncio.get_running_loop().run_in_executor(
-                    pool,
-                    upload_image_func
-                )
-            if image_collection not in reaction_cog.collection_keys:
-                reaction_cog.collection_keys[image_collection] = set()
-            if image_collection not in reaction_cog.collection_hashes:
-                reaction_cog.collection_hashes[image_collection] = set()
-            reaction_cog.collection_keys[image_collection].add(
-                image_key)
-            image_hash = hashlib.md5(image_bytes).hexdigest()
-            reaction_cog.collection_hashes[image_collection].add(
-                image_hash)
-            reaction_cog.add_pictures_dir(image_collection)
-        else:
-            image_dir.mkdir(parents=True, exist_ok=True)
-            new_filename = commandutil.get_nonconflicting_filename(
-                filename, image_dir)
-            shutil.move(self.temp_save_dir / filename,
-                        image_dir / new_filename)
+        def upload_image_func():
+            local_path = self.temp_save_dir / filename
+            mimetype, _ = mimetypes.guess_type(local_path)
+            mimetype = mimetype or "binary/octet-steam"
+            return S3.upload_file(
+                str(local_path),
+                self.bot.s3_bucket,
+                image_key,
+                ExtraArgs={
+                    "ACL": "public-read",
+                    "ContentType": mimetype
+                }
+            )
+        with concurrent.futures.ThreadPoolExecutor() as pool:
+            await asyncio.get_running_loop().run_in_executor(
+                pool,
+                upload_image_func
+            )
+        if image_collection not in reaction_cog.collection_keys:
+            reaction_cog.collection_keys[image_collection] = set()
+        if image_collection not in reaction_cog.collection_hashes:
+            reaction_cog.collection_hashes[image_collection] = set()
+        reaction_cog.collection_keys[image_collection].add(
+            image_key)
+        image_hash = hashlib.md5(image_bytes).hexdigest()
+        reaction_cog.collection_hashes[image_collection].add(
+            image_hash)
+        reaction_cog.add_pictures_dir(image_collection)
+
         reaction_cog = self.bot.get_cog("ReactionImages")
         reaction_cog.add_pictures_dir(image_collection)
 
@@ -601,46 +563,33 @@ class ReactionImages(discord.ext.commands.Cog):
             self.image_aliases[real_cmd] = (
                 self.image_aliases.get(real_cmd, []) + [alias_cmd])
 
-        if self.bot.s3_bucket:
-            self.collection_keys, self.collection_hashes = (
-                get_starting_keys_hashes(self.bot.s3_bucket)
-            )
-            toplevel_dirs = list(self.collection_keys.keys())
-            for folder_name in toplevel_dirs:
-                self.add_pictures_dir(folder_name)
-        else:
-            toplevel_dirs = os.listdir(PICTURES_DIR)
-            for folder_name in toplevel_dirs:
-                self.add_pictures_dir(folder_name)
+        self.collection_keys, self.collection_hashes = (
+            get_starting_keys_hashes(self.bot.s3_bucket)
+        )
+        toplevel_dirs = list(self.collection_keys.keys())
+        for folder_name in toplevel_dirs:
+            self.add_pictures_dir(folder_name)
 
     @commands.command(aliases=["randomimage", "yo", "hey", "makubot"])
     async def random_image(self, ctx):
         """For true shitposting."""
-        if self.bot.s3_bucket:
-            # Yes, I'm aware that the double randomness means it's not
-            # a truely random image of all my images
-            chosen_command_keys = list(random.choice(list(
-                self.collection_keys.values())))
-            chosen_key = random.choice(chosen_command_keys)
-            chosen_url = commandutil.url_from_s3_key(
-                self.bot.s3_bucket,
-                self.bot.s3_bucket_location,
-                chosen_key,
-                improve=True)
-            logging.info(f"Sending url in random_image func: {chosen_url}")
-            image_embed = await generate_image_embed(ctx,
-                                                     chosen_url,
-                                                     call_bot_name=True)
-            sent_message = await ctx.send(embed=image_embed)
-            if sent_message.embeds[0].image.url == discord.Embed.Empty:
-                new_url = commandutil.improve_url(chosen_url)
-                sent_message.edit(embed=None, content=new_url)
-        else:
-            files = [Path(dirpath) / Path(filename)
-                     for dirpath, dirnames, filenames in os.walk(PICTURES_DIR)
-                     for filename in filenames]
-            chosen_file = random.choice(files)
-            await ctx.send(file=discord.File(chosen_file))
+        # Yes, I'm aware that the double randomness means it's not
+        # a truely random image of all my images
+        chosen_command_keys = list(random.choice(list(
+            self.collection_keys.values())))
+        chosen_key = random.choice(chosen_command_keys)
+        chosen_url = commandutil.url_from_s3_key(
+            self.bot.s3_bucket,
+            self.bot.s3_bucket_location,
+            chosen_key,
+            improve=True)
+        logging.info(f"Sending url in random_image func: {chosen_url}")
+        image_embed = await generate_image_embed(
+            ctx, chosen_url, call_bot_name=True)
+        sent_message = await ctx.send(embed=image_embed)
+        if sent_message.embeds[0].image.url == discord.Embed.Empty:
+            new_url = commandutil.improve_url(chosen_url)
+            sent_message.edit(embed=None, content=new_url)
 
     def add_pictures_dir(self, folder_name: str):
         if folder_name in self.pictures_commands:

@@ -1,5 +1,4 @@
 import concurrent
-from pathlib import Path
 import discord
 from discord.ext import commands, tasks
 from datetime import datetime, timedelta
@@ -9,10 +8,6 @@ import re
 from psycopg2.extras import RealDictCursor
 from . import commandutil
 from dateutil.parser import parse as date_parse
-
-
-SCRIPT_DIR = Path(__file__).parent
-PARENT_DIR = SCRIPT_DIR.parent
 
 logger = logging.getLogger()
 
