@@ -88,7 +88,7 @@ class RoleGiver(discord.ext.commands.Cog):
                 asyncio.exceptions.CancelledError):
             return
         except Exception:
-            logger.error(exc_info=True)
+            logger.error("", exc_info=True)
 
     @cycle_rolegivers.before_loop
     async def before_cycling(self):

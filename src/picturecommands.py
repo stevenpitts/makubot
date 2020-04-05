@@ -128,7 +128,7 @@ def cmd_has_hash(db_connection, cmd, md5):
         WHERE cmd = %s
         AND md5 = %s
         """,
-        (cmd, md5)
+        (cmd, str(md5))
     )
     results = cursor.fetchall()
     return bool(results)
@@ -190,7 +190,7 @@ def add_server_command_association(db_connection, sid, cmd):
         cmd)
         VALUES (%s, %s);
         """,
-        (sid, cmd)
+        (str(sid).zfill(18), cmd)
     )
     db_connection.commit()
 
@@ -205,14 +205,15 @@ def get_user_sids(bot, uid):
 
 
 def get_user_origin_server_intersection(db_connection, user_sids, cmd):
+    user_sids = [str(sid).zfill(18) for sid in user_sids]
     cursor = db_connection.cursor(cursor_factory=RealDictCursor)
     cursor.execute(
         """
         SELECT * FROM media.server_command_associations
         WHERE cmd = %s
-        AND sid <@ %s;
+        AND sid = ANY(%s);
         """,
-        (cmd, list(user_sids))
+        (cmd, user_sids)
     )
     results = cursor.fetchall()
     intersecting_sids = [result["sid"] for result in results]
@@ -249,7 +250,7 @@ def set_img_sid(db_connection, cmd, image_key, sid):
         WHERE cmd = %s
         AND image_key = %s;
         """,
-        (sid, cmd, image_key)
+        (str(sid).zfill(18), cmd, image_key)
     )
     db_connection.commit()
 
@@ -260,9 +261,9 @@ def get_appropriate_images(db_connection, cmd, uid, sid=None, user_servers=[]):
         """
         SELECT * FROM media.images
         WHERE cmd = %s
-        AND (uid IS NULL OR uid = %s OR sid = %s OR sid @< %s);
+        AND (uid IS NULL OR uid = %s OR sid = %s OR sid = ANY(%s));
         """,
-        (cmd, uid, sid, list(user_servers))
+        (cmd, str(uid).zfill(18), str(sid).zfill(18), list(user_servers))
     )
     results = cursor.fetchall()
     if results:
@@ -872,7 +873,7 @@ class ReactionImages(discord.ext.commands.Cog):
             md5)
             VALUES (%s, %s, %s, %s, %s);
             """,
-            (cmd, image_key, uid, sid, md5)
+            (cmd, image_key, str(uid).zfill(18), str(sid).zfill(18), md5)
         )
 
     def command_exists_in_db(self, cmd):
@@ -896,7 +897,7 @@ class ReactionImages(discord.ext.commands.Cog):
             uid)
             VALUES (%s, %s);
             """,
-            (cmd, invoking_uid)
+            (cmd, str(invoking_uid).zfill(18))
         )
         cursor.execute(
             """
@@ -905,7 +906,7 @@ class ReactionImages(discord.ext.commands.Cog):
             sid)
             VALUES (%s, %s);
             """,
-            (cmd, invoking_sid)
+            (cmd, str(invoking_sid).zfill(18))
         )
 
     @commands.command(hidden=True)

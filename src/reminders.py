@@ -276,7 +276,7 @@ class ReminderCommands(discord.ext.commands.Cog):
         except concurrent.futures._base.CancelledError:
             return
         except Exception:
-            logger.error(exc_info=True)
+            logger.error("", exc_info=True)
 
     @cycle_reminders.before_loop
     async def before_cycling(self):
