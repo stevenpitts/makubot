@@ -28,6 +28,20 @@ class NotVideo(Exception):
     pass
 
 
+def image_exists_in_cmd(db_connection, image_key, cmd):
+    cursor = db_connection.cursor(cursor_factory=RealDictCursor)
+    cursor.execute(
+        """
+        SELECT * FROM media.images
+        WHERE cmd = %s
+        AND image_key = %s
+        """,
+        (cmd, image_key)
+    )
+    results = cursor.fetchall()
+    return bool(results)
+
+
 def delete_image_from_db(db_connection, cmd, image_key):
     logging.info(f"Deleting {cmd}/{image_key} from DB")
     cursor = db_connection.cursor(cursor_factory=RealDictCursor)
@@ -622,7 +636,7 @@ class PictureAdder(discord.ext.commands.Cog):
         except (discord.errors.NotFound, AttributeError):
             sid = None
 
-        if not self.image_exists_in_cmd(image_key, cmd):
+        if not image_exists_in_cmd(self.bot.db_connection, image_key, cmd):
             self.add_image_to_db(
                 image_key, cmd,
                 uid=requestor.id, sid=sid, md5=image_hash)
@@ -812,7 +826,7 @@ class ReactionImages(discord.ext.commands.Cog):
                     == len(collection_hashes[cmd]))
             key_hash_pairs = zip(collection_keys[cmd], collection_hashes[cmd])
             for image_key, image_hash in key_hash_pairs:
-                if self.image_exists_in_cmd(image_key, cmd):
+                if image_exists_in_cmd(self.bot.db_connection, image_key, cmd):
                     continue
                 logger.info(f"DB didn't have {image_key} in {cmd}, adding "
                             f"with {image_hash=}.")
@@ -848,19 +862,6 @@ class ReactionImages(discord.ext.commands.Cog):
         if sent_message.embeds[0].image.url == discord.Embed.Empty:
             new_url = commandutil.improve_url(chosen_url)
             sent_message.edit(embed=None, content=new_url)
-
-    def image_exists_in_cmd(self, image_key, cmd):
-        cursor = self.bot.db_connection.cursor(cursor_factory=RealDictCursor)
-        cursor.execute(
-            """
-            SELECT * FROM media.images
-            WHERE cmd = %s
-            AND image_key = %s
-            """,
-            (cmd, image_key)
-        )
-        results = cursor.fetchall()
-        return bool(results)
 
     def add_image_to_db(self, image_key, cmd, uid=None, sid=None, md5=None):
         cursor = self.bot.db_connection.cursor()
