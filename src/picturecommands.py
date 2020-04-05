@@ -14,7 +14,6 @@ from psycopg2.extras import RealDictCursor
 import hashlib
 from datetime import datetime
 import mimetypes
-import itertools
 import boto3
 from . import commandutil
 
@@ -800,9 +799,7 @@ class ReactionImages(discord.ext.commands.Cog):
                 self.add_cmd_to_db(cmd, invoking_uid=None, invoking_sid=None)
             assert (len(collection_keys[cmd])
                     == len(collection_hashes[cmd]))
-            key_hash_pairs = itertools.zip(collection_keys[cmd],
-                                           collection_hashes[cmd]
-                                           )
+            key_hash_pairs = zip(collection_keys[cmd], collection_hashes[cmd])
             for image_key, image_hash in key_hash_pairs:
                 if self.image_exists_in_cmd(image_key, cmd):
                     continue
