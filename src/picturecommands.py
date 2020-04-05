@@ -42,6 +42,58 @@ def image_exists_in_cmd(db_connection, image_key, cmd):
     return bool(results)
 
 
+def add_image_to_db(
+        db_connection, image_key, cmd, uid=None, sid=None, md5=None):
+    cursor = db_connection.cursor()
+    cursor.execute(
+        """
+        INSERT INTO media.images (
+        cmd,
+        image_key,
+        uid,
+        sid,
+        md5)
+        VALUES (%s, %s, %s, %s, %s);
+        """,
+        (cmd, image_key, str(uid).zfill(18), str(sid).zfill(18), md5)
+    )
+
+
+def command_exists_in_db(db_connection, cmd):
+    cursor = db_connection.cursor(cursor_factory=RealDictCursor)
+    cursor.execute(
+        """
+        SELECT * FROM media.commands
+        WHERE cmd = %s;
+        """,
+        (cmd,)
+    )
+    results = cursor.fetchall()
+    return bool(results)
+
+
+def add_cmd_to_db(db_connection, cmd, invoking_uid=None, invoking_sid=None):
+    cursor = db_connection.cursor()
+    cursor.execute(
+        """
+        INSERT INTO media.commands (
+        cmd,
+        uid)
+        VALUES (%s, %s);
+        """,
+        (cmd, str(invoking_uid).zfill(18))
+    )
+    cursor.execute(
+        """
+        INSERT INTO media.server_command_associations (
+        cmd,
+        sid)
+        VALUES (%s, %s);
+        """,
+        (cmd, str(invoking_sid).zfill(18))
+    )
+
+
 def delete_image_from_db(db_connection, cmd, image_key):
     logging.info(f"Deleting {cmd}/{image_key} from DB")
     cursor = db_connection.cursor(cursor_factory=RealDictCursor)
@@ -285,7 +337,7 @@ def get_appropriate_images(db_connection, cmd, uid, sid=None, user_sids=[]):
         return [result["image_key"] for result in results]
     logger.info(
         f"Couldn't get any appropriate images for {cmd=} {uid=} {sid=} "
-        f"{user_servers=}, so pulling from the entire collection")
+        f"{user_sids=}, so pulling from the entire collection")
     cursor.execute(
         """
         SELECT * FROM media.images
@@ -637,8 +689,8 @@ class PictureAdder(discord.ext.commands.Cog):
             sid = None
 
         if not image_exists_in_cmd(self.bot.db_connection, image_key, cmd):
-            self.add_image_to_db(
-                image_key, cmd,
+            add_image_to_db(
+                self.bot.db_connection, image_key, cmd,
                 uid=requestor.id, sid=sid, md5=image_hash)
 
         response = f"Your image {new_filename} was approved!"
@@ -816,9 +868,11 @@ class ReactionImages(discord.ext.commands.Cog):
 
     def sync_s3_db(self, collection_keys, collection_hashes):
         for cmd in collection_keys:
-            if not self.command_exists_in_db(cmd):
+            if not command_exists_in_db(self.bot.db_connection, cmd):
                 logger.info(f"DB didn't have {cmd=}, adding")
-                self.add_cmd_to_db(cmd, invoking_uid=None, invoking_sid=None)
+                add_cmd_to_db(
+                    self.bot.db_connection, cmd, invoking_uid=None,
+                    invoking_sid=None)
             assert (len(collection_keys[cmd])
                     == len(collection_hashes[cmd]))
             key_hash_pairs = zip(collection_keys[cmd], collection_hashes[cmd])
@@ -827,8 +881,9 @@ class ReactionImages(discord.ext.commands.Cog):
                     continue
                 logger.info(f"DB didn't have {image_key} in {cmd}, adding "
                             f"with {image_hash=}.")
-                self.add_image_to_db(
-                    image_key, cmd, uid=None, sid=None, md5=image_hash)
+                add_image_to_db(
+                    self.bot.db_connection, image_key, cmd, uid=None,
+                    sid=None, md5=image_hash)
 
         for cmd in get_all_true_image_commands_from_db(self.bot.db_connection):
             if cmd not in collection_keys:
@@ -859,54 +914,6 @@ class ReactionImages(discord.ext.commands.Cog):
         if sent_message.embeds[0].image.url == discord.Embed.Empty:
             new_url = commandutil.improve_url(chosen_url)
             sent_message.edit(embed=None, content=new_url)
-
-    def add_image_to_db(self, image_key, cmd, uid=None, sid=None, md5=None):
-        cursor = self.bot.db_connection.cursor()
-        cursor.execute(
-            """
-            INSERT INTO media.images (
-            cmd,
-            image_key,
-            uid,
-            sid,
-            md5)
-            VALUES (%s, %s, %s, %s, %s);
-            """,
-            (cmd, image_key, str(uid).zfill(18), str(sid).zfill(18), md5)
-        )
-
-    def command_exists_in_db(self, cmd):
-        cursor = self.bot.db_connection.cursor(cursor_factory=RealDictCursor)
-        cursor.execute(
-            """
-            SELECT * FROM media.commands
-            WHERE cmd = %s;
-            """,
-            (cmd,)
-        )
-        results = cursor.fetchall()
-        return bool(results)
-
-    def add_cmd_to_db(self, cmd, invoking_uid=None, invoking_sid=None):
-        cursor = self.bot.db_connection.cursor()
-        cursor.execute(
-            """
-            INSERT INTO media.commands (
-            cmd,
-            uid)
-            VALUES (%s, %s);
-            """,
-            (cmd, str(invoking_uid).zfill(18))
-        )
-        cursor.execute(
-            """
-            INSERT INTO media.server_command_associations (
-            cmd,
-            sid)
-            VALUES (%s, %s);
-            """,
-            (cmd, str(invoking_sid).zfill(18))
-        )
 
     @commands.command(hidden=True)
     async def send_image_func(self, ctx):
