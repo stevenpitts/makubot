@@ -28,6 +28,20 @@ class NotVideo(Exception):
     pass
 
 
+def add_new_alias_to_db(db_connection, alias, real):
+    cursor = db_connection.cursor()
+    cursor.execute(
+        """
+            INSERT INTO media.aliases (
+            alias,
+            real)
+            VALUES (%s, %s);
+            """,
+        (alias, real)
+    )
+    db_connection.commit()
+
+
 def image_exists_in_cmd(db_connection, image_key, cmd):
     cursor = db_connection.cursor(cursor_factory=RealDictCursor)
     cursor.execute(
@@ -714,33 +728,22 @@ class PictureAdder(discord.ext.commands.Cog):
 
     @commands.command(hidden=True, aliases=["aliasimage", "aliaspicture"])
     @commands.is_owner()
-    async def add_picture_alias(self, ctx, ref_invocation, true_invocation):
+    async def add_picture_alias(self, ctx, alias, real):
         send_image_cmd = self.bot.get_command("send_image_func")
-        if not ref_invocation.isalnum() or not true_invocation.isalnum():
+        if not alias.isalnum() or not real.isalnum():
             await ctx.send("Please only include letters and numbers.")
             return
-        elif self.bot.get_command(ref_invocation):
-            await ctx.send(f"{ref_invocation} is already a command :<")
+        elif self.bot.get_command(alias):
+            await ctx.send(f"{alias} is already a command :<")
             return
-        elif true_invocation not in send_image_cmd.aliases:
+        elif real not in send_image_cmd.aliases:
             await ctx.send(
-                f"{true_invocation} isn't an image command, though :<")
+                f"{real} isn't an image command, though :<")
             return
-        true_invocation = get_cmd_from_alias(self.bot.db_connection,
-                                             true_invocation)
-
-        cursor = self.bot.db_connection.cursor()
-        cursor.execute(
-            """
-            INSERT INTO media.aliases (
-            alias,
-            real)
-            VALUES (%s, %s);
-            """,
-            (ref_invocation, true_invocation)
-        )
-        self.bot.db_connection.commit()
-        send_image_cmd.aliases.append(ref_invocation)
+        real = get_cmd_from_alias(self.bot.db_connection, real)
+        add_new_alias_to_db(self.bot.db_connection, alias, real)
+        send_image_cmd.aliases.append(alias)
+        self.bot.all_commands[alias] = self.bot.all_commands["send_image_func"]
         await ctx.send("Added!")
 
     @commands.command(aliases=["addimage", "addimageraw"])
@@ -966,10 +969,22 @@ class ReactionImages(discord.ext.commands.Cog):
         for text_block in text_blocks:
             await ctx.send(f"```{escape_markdown(text_block)}```")
 
+    @commands.command(aliases=["realinvocation"])
+    async def real_invocation(self, ctx, alias):
+        real_cmd = get_cmd_from_alias(
+            self.bot.db_connection, alias, none_if_not_exist=True)
+        if real_cmd:
+            await ctx.send(f"{alias} is an alias for {real_cmd}!")
+        else:
+            await ctx.send(f"Hmm, I don't think {alias} is an alias...")
+
     @commands.command(aliases=["howbig"])
     async def how_big(self, ctx, cmd):
+        real_cmd = get_cmd_from_alias(
+            self.bot.db_connection, cmd, none_if_not_exist=True)
         try:
-            command_size = get_single_cmd_size(self.bot.db_connection, cmd)
+            command_size = get_single_cmd_size(
+                self.bot.db_connection, real_cmd)
         except KeyError:
             await ctx.send("That's not an image command :o")
             return
