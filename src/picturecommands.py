@@ -140,13 +140,12 @@ def get_appropriate_images(db_connection, cmd, uid, sid=None, user_servers={}):
         """
         SELECT * FROM media.images
         WHERE cmd = %s
-        AND (uid = %s OR sid = %s OR sid @< %s);
+        AND (uid IS NULL OR uid = %s OR sid = %s OR sid @< %s);
         """,
         (cmd, uid, sid, user_servers)
     )
     results = cursor.fetchall()
-    assert len(results) == 1
-    return results[0]["uid"]
+    return [result["image_key"] for result in results]
 
 
 async def send_image_func(ctx):
