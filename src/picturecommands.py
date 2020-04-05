@@ -200,7 +200,7 @@ def get_user_sids(bot, uid):
     # TODO improve this
     shared_servers = {bot_server for bot_server in bot.guilds
                       if bot_server.get_member(uid)}
-    shared_sids = {shared_server[id] for shared_server in shared_servers}
+    shared_sids = {shared_server.id for shared_server in shared_servers}
     return shared_sids
 
 
