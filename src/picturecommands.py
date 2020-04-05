@@ -162,7 +162,9 @@ def get_cmd_from_alias(db_connection, alias_cmd, none_if_not_exist=False):
             return None
         return alias_cmd
     assert len(results) == 1
-    return results[0]["real"]
+    true_invocation = results[0]["real"]
+    logger.info(f"Resolved alias {alias_cmd} -> {true_invocation}")
+    return true_invocation
 
 
 def get_cmd_uid(db_connection, cmd):
@@ -175,7 +177,7 @@ def get_cmd_uid(db_connection, cmd):
         (cmd,)
     )
     results = cursor.fetchall()
-    assert len(results) == 1
+    assert len(results) == 1, f"{cmd=}, {len(results) =}"
     return results[0]["uid"]
 
 
@@ -908,7 +910,7 @@ class ReactionImages(discord.ext.commands.Cog):
 
     @commands.command(hidden=True)
     async def send_image_func(self, ctx):
-        cmd = get_cmd_from_alias(ctx.bot.db_connection, ctx.command.name)
+        cmd = get_cmd_from_alias(ctx.bot.db_connection, ctx.invoked_with)
         uid = ctx.author.id
         try:
             sid = ctx.guild.id
