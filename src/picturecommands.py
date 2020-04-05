@@ -145,6 +145,19 @@ def get_appropriate_images(db_connection, cmd, uid, sid=None, user_servers={}):
         (cmd, uid, sid, user_servers)
     )
     results = cursor.fetchall()
+    if results:
+        return [result["image_key"] for result in results]
+    logger.info(
+        f"Couldn't get any appropriate images for {cmd=} {uid=} {sid=} "
+        f"{user_servers=}, so pulling from the entire collection")
+    cursor.execute(
+        """
+        SELECT * FROM media.images
+        WHERE cmd = %s;
+        """,
+        (cmd)
+    )
+    results = cursor.fetchall()
     return [result["image_key"] for result in results]
 
 
