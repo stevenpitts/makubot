@@ -748,7 +748,7 @@ class PictureAdder(discord.ext.commands.Cog):
 
         add_cmd_to_db(self.bot.db_connection, cmd, uid=uid, sid=sid)
         self.bot.get_command("send_image_func").aliases.append(cmd)
-        self.bot.all_commands["cmd"] = self.bot.all_commands["send_image_func"]
+        self.bot.all_commands[cmd] = self.bot.all_commands["send_image_func"]
 
         if not image_exists_in_cmd(self.bot.db_connection, image_key, cmd):
             add_image_to_db(
