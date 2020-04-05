@@ -896,10 +896,10 @@ class ReactionImages(discord.ext.commands.Cog):
             """
             INSERT INTO media.server_command_associations (
             cmd,
-            uid)
+            sid)
             VALUES (%s, %s);
             """,
-            (invoking_sid, cmd)
+            (cmd, invoking_sid)
         )
 
     @commands.command(hidden=True)
