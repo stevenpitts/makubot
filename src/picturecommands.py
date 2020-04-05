@@ -29,6 +29,20 @@ class NotVideo(Exception):
     pass
 
 
+def cmd_has_hash(db_connection, cmd, md5):
+    cursor = db_connection.cursor(cursor_factory=RealDictCursor)
+    cursor.execute(
+        """
+        SELECT * FROM media.images
+        WHERE cmd = %s
+        AND md5 = %s
+        """,
+        (cmd, md5)
+    )
+    results = cursor.fetchall()
+    return bool(results)
+
+
 def get_cmd_from_alias(db_connection, alias_cmd, none_if_not_exist=False):
     cursor = db_connection.cursor(cursor_factory=RealDictCursor)
     cursor.execute(
@@ -360,9 +374,7 @@ class PictureAdder(discord.ext.commands.Cog):
                                          collection: str,
                                          image_bytes):
         image_hash = hashlib.md5(image_bytes).hexdigest()
-        reactions_cog = self.bot.get_cog("ReactionImages")
-        collection_hashes = reactions_cog.collection_hashes.get(collection, [])
-        return image_hash in collection_hashes
+        return cmd_has_hash(self.bot.db_connection, collection, image_hash)
 
     async def get_approval(self, request_id, peek_count=3):
         assert request_id not in self.pending_approval_message_ids
@@ -526,13 +538,9 @@ class PictureAdder(discord.ext.commands.Cog):
             )
         if image_collection not in reaction_cog.collection_keys:
             reaction_cog.collection_keys[image_collection] = set()
-        if image_collection not in reaction_cog.collection_hashes:
-            reaction_cog.collection_hashes[image_collection] = set()
         reaction_cog.collection_keys[image_collection].add(
             image_key)
         image_hash = hashlib.md5(image_bytes).hexdigest()
-        reaction_cog.collection_hashes[image_collection].add(
-            image_hash)
         reaction_cog.add_pictures_dir(image_collection)
 
         try:
@@ -724,23 +732,23 @@ class ReactionImages(discord.ext.commands.Cog):
             self.image_aliases[real_cmd] = (
                 self.image_aliases.get(real_cmd, []) + [alias_cmd])
 
-        self.collection_keys, self.collection_hashes = (
+        self.collection_keys, collection_hashes = (
             get_starting_keys_hashes(self.bot.s3_bucket)
         )
         toplevel_dirs = list(self.collection_keys.keys())
-        self.sync_s3_db()
+        self.sync_s3_db(collection_hashes)
         for folder_name in toplevel_dirs:
             self.add_pictures_dir(folder_name)
 
-    def sync_s3_db(self):
+    def sync_s3_db(self, collection_hashes):
         for cmd in self.collection_keys:
             if not self.command_exists_in_db(cmd):
                 logger.info(f"DB didn't have {cmd=}, adding")
                 self.add_cmd_to_db(cmd, invoking_uid=None, invoking_sid=None)
             assert (len(self.collection_keys[cmd])
-                    == len(self.collection_hashes[cmd]))
+                    == len(collection_hashes[cmd]))
             key_hash_pairs = itertools.zip(self.collection_keys[cmd],
-                                           self.collection_hashes[cmd]
+                                           collection_hashes[cmd]
                                            )
             for image_key, image_hash in key_hash_pairs:
                 if self.image_exists_in_cmd(image_key, cmd):
