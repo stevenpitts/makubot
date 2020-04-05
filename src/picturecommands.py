@@ -29,10 +29,151 @@ class NotVideo(Exception):
     pass
 
 
+def get_cmd_from_alias(db_connection, alias_cmd, none_if_not_exist=False):
+    cursor = db_connection.cursor(cursor_factory=RealDictCursor)
+    cursor.execute(
+        """
+        SELECT * FROM media.aliases
+        WHERE alias = %s;
+        """,
+        (alias_cmd,)
+    )
+    results = cursor.fetchall()
+    if not results:
+        if none_if_not_exist:
+            return None
+        return alias_cmd
+    assert len(results) == 1
+    return results[0]["real"]
+
+
+def get_cmd_uid(db_connection, cmd):
+    cursor = db_connection.cursor(cursor_factory=RealDictCursor)
+    cursor.execute(
+        """
+        SELECT * FROM media.commands
+        WHERE cmd = %s;
+        """,
+        (cmd,)
+    )
+    results = cursor.fetchall()
+    assert len(results) == 1
+    return results[0]["uid"]
+
+
+def add_server_command_association(db_connection, sid, cmd):
+    cursor = db_connection.cursor()
+    cursor.execute(
+        """
+        INSERT INTO media.server_command_associations (
+        sid,
+        cmd)
+        VALUES (%s, %s);
+        """,
+        (sid, cmd)
+    )
+    db_connection.commit()
+
+
+def get_user_sids(bot, uid):
+    """Returns a set of servers that the user and the bot share"""
+    # TODO improve this
+    shared_servers = {bot_server for bot_server in bot.guilds
+                      if bot_server.get_member(uid)}
+    shared_sids = {shared_server[id] for shared_server in shared_servers}
+    return shared_sids
+
+
+def get_user_origin_server_intersection(db_connection, user_sids, cmd):
+    cursor = db_connection.cursor(cursor_factory=RealDictCursor)
+    cursor.execute(
+        """
+        SELECT * FROM media.server_command_associations
+        WHERE cmd = %s
+        AND sid <@ %s;
+        """,
+        (cmd, user_sids)
+    )
+    results = cursor.fetchall()
+    intersecting_sids = [result["sid"] for result in results]
+    return intersecting_sids
+
+
+def img_sid_should_be_set(db_connection, cmd, image_key, uid):
+    cursor = db_connection.cursor(cursor_factory=RealDictCursor)
+    cursor.execute(
+        """
+        SELECT * FROM media.images
+        WHERE cmd = %s
+        AND image_key = %s;
+        """,
+        (cmd, image_key)
+    )
+    results = cursor.fetchall()
+    assert len(results) == 1
+    result = results[0]
+    img_uid = result["uid"]
+    img_sid = result["sid"]
+    should_set = (img_uid == uid) and img_sid is None
+    logger.info(
+        f"For {cmd=} {image_key=}, got {img_uid=}, {img_sid=}, {should_set=}")
+    return should_set
+
+
+def set_img_sid(db_connection, cmd, image_key, sid):
+    cursor = db_connection.cursor(cursor_factory=RealDictCursor)
+    cursor.execute(
+        """
+        UPDATE media.images
+        SET sid = %s
+        WHERE cmd = %s
+        AND image_key = %s;
+        """,
+        (sid, cmd, image_key)
+    )
+    db_connection.commit()
+
+
+def get_appropriate_images(db_connection, cmd, uid, sid=None, user_servers={}):
+    cursor = db_connection.cursor(cursor_factory=RealDictCursor)
+    cursor.execute(
+        """
+        SELECT * FROM media.images
+        WHERE cmd = %s
+        AND (uid = %s OR sid = %s OR sid @< %s);
+        """,
+        (cmd, uid, sid, user_servers)
+    )
+    results = cursor.fetchall()
+    assert len(results) == 1
+    return results[0]["uid"]
+
+
 async def send_image_func(ctx):
-    reaction_cog = ctx.bot.get_cog("ReactionImages")
-    keys = reaction_cog.collection_keys[ctx.command.name]
-    chosen_key = random.choice(list(keys))
+    # reaction_cog = ctx.bot.get_cog("ReactionImages")
+    # keys = reaction_cog.collection_keys[ctx.command.name]
+    # chosen_key = random.choice(list(keys))
+    cmd = get_cmd_from_alias(ctx.bot.db_connection, ctx.command.name)
+    uid = ctx.author.id
+    try:
+        sid = ctx.guild.id
+    except AttributeError:
+        sid = None
+    cmd_uid = get_cmd_uid(ctx.bot.db_connection, cmd)
+    if cmd_uid == uid and sid:
+        add_server_command_association(ctx.bot.db_connection, sid, cmd)
+    user_sids = get_user_sids(ctx.bot, uid)
+    user_origin_server_intersection = get_user_origin_server_intersection(
+        ctx.bot.db_connection, user_sids, cmd)
+    candidate_images = get_appropriate_images(
+        ctx.bot.db_connection, cmd, uid, sid, user_origin_server_intersection)
+    logger.info(f"From {cmd=}, {uid=}, {sid=}, "
+                f"{user_origin_server_intersection=}, got "
+                f"{candidate_images=}")
+    chosen_key = random.choice(candidate_images)
+    if img_sid_should_be_set(ctx.bot.db_connection, cmd, chosen_key, uid):
+        logger.info(f"{cmd}'s sid will be set to {sid}")
+        set_img_sid(ctx.bot.db_connection, cmd, chosen_key, sid)
     chosen_url = commandutil.url_from_s3_key(
         ctx.bot.s3_bucket,
         ctx.bot.s3_bucket_location,
@@ -414,23 +555,6 @@ class PictureAdder(discord.ext.commands.Cog):
         results = cursor.fetchall()
         return [result["alias"] for result in results]
 
-    def get_cmd_from_alias(self, alias_cmd, none_if_not_exist=False):
-        cursor = self.bot.db_connection.cursor(cursor_factory=RealDictCursor)
-        cursor.execute(
-            """
-            SELECT * FROM media.aliases
-            WHERE alias = %s;
-            """,
-            (alias_cmd,)
-        )
-        results = cursor.fetchall()
-        if not results:
-            if none_if_not_exist:
-                return None
-            return alias_cmd
-        assert len(results) == 1
-        return results[0]["real"]
-
     @commands.command(hidden=True, aliases=["aliasimage", "aliaspicture"])
     @commands.is_owner()
     async def add_picture_alias(self, ctx, ref_invocation, true_invocation):
@@ -443,7 +567,8 @@ class PictureAdder(discord.ext.commands.Cog):
         elif not self.bot.get_command(true_invocation):
             await ctx.send(f"{true_invocation} isn't a command, though :<")
             return
-        true_invocation = self.get_cmd_from_alias(true_invocation)
+        true_invocation = get_cmd_from_alias(self.bot.db_connection,
+                                             true_invocation)
         true_command = self.bot.get_command(true_invocation)
         maps_to_image = (hasattr(true_command, "instance")
                          and isinstance(true_command.instance,
@@ -484,7 +609,8 @@ class PictureAdder(discord.ext.commands.Cog):
         if not image_collection.isalnum():
             await ctx.send("Please only include letters and numbers.")
             return
-        image_collection = self.get_cmd_from_alias(image_collection)
+        image_collection = get_cmd_from_alias(self.bot.db_connection,
+                                              image_collection)
         existing_command = self.bot.get_command(image_collection)
         command_taken = (existing_command is not None
                          and (not hasattr(existing_command, "instance")
