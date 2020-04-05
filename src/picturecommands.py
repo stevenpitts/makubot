@@ -255,7 +255,8 @@ def set_img_sid(db_connection, cmd, image_key, sid):
     db_connection.commit()
 
 
-def get_appropriate_images(db_connection, cmd, uid, sid=None, user_servers=[]):
+def get_appropriate_images(db_connection, cmd, uid, sid=None, user_sids=[]):
+    user_sids = [str(sid).zfill(18) for sid in user_sids]
     cursor = db_connection.cursor(cursor_factory=RealDictCursor)
     cursor.execute(
         """
@@ -263,7 +264,7 @@ def get_appropriate_images(db_connection, cmd, uid, sid=None, user_servers=[]):
         WHERE cmd = %s
         AND (uid IS NULL OR uid = %s OR sid = %s OR sid = ANY(%s));
         """,
-        (cmd, str(uid).zfill(18), str(sid).zfill(18), list(user_servers))
+        (cmd, str(uid).zfill(18), str(sid).zfill(18), user_sids)
     )
     results = cursor.fetchall()
     if results:
