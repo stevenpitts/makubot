@@ -611,6 +611,7 @@ class PictureAdder(discord.ext.commands.Cog):
             )
         image_hash = hashlib.md5(image_bytes).hexdigest()
         self.bot.get_command("send_image_func").aliases.append(cmd)
+        self.bot.all_commands["cmd"] = self.bot.all_commands["send_image_func"]
 
         try:
             sid = status_message.guild.id
@@ -986,6 +987,11 @@ def setup(bot):
     logger.info("picturecommands starting setup")
     bot.add_cog(ReactionImages(bot))
     bot.add_cog(PictureAdder(bot))
-    bot.get_command("send_image_func").aliases += list(
+    image_command_invocations = list(
         get_all_image_commands_aliases_from_db(bot.db_connection))
+
+    bot.get_command("send_image_func").aliases += image_command_invocations
+    for invocation in image_command_invocations:
+        bot.all_commands[invocation] = bot.all_commands["send_image_func"]
+
     logger.info("picturecommands ending setup")
