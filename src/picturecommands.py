@@ -150,9 +150,6 @@ def get_appropriate_images(db_connection, cmd, uid, sid=None, user_servers={}):
 
 
 async def send_image_func(ctx):
-    # reaction_cog = ctx.bot.get_cog("ReactionImages")
-    # keys = reaction_cog.collection_keys[ctx.command.name]
-    # chosen_key = random.choice(list(keys))
     cmd = get_cmd_from_alias(ctx.bot.db_connection, ctx.command.name)
     uid = ctx.author.id
     try:
