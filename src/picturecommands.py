@@ -751,6 +751,9 @@ class ReactionImages(discord.ext.commands.Cog):
                 RENAME TO aliases;
             ALTER TABLE IF EXISTS aliases
                 SET SCHEMA media;
+            CREATE TABLE IF NOT EXISTS media.commands (
+                cmd TEXT PRIMARY KEY,
+                uid CHARACTER(18));
             CREATE TABLE IF NOT EXISTS media.images (
                 cmd TEXT REFERENCES media.commands(cmd),
                 image_key TEXT,
@@ -758,9 +761,6 @@ class ReactionImages(discord.ext.commands.Cog):
                 sid CHARACTER(18),
                 md5 TEXT,
                 PRIMARY KEY (cmd, image_key));
-            CREATE TABLE IF NOT EXISTS media.commands (
-                cmd TEXT PRIMARY KEY,
-                uid CHARACTER(18));
             CREATE TABLE IF NOT EXISTS media.server_command_associations (
                 sid CHARACTER(18),
                 cmd TEXT REFERENCES commands(cmd));
