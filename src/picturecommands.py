@@ -685,23 +685,26 @@ class ReactionImages(discord.ext.commands.Cog):
         cursor = self.bot.db_connection.cursor()
         cursor.execute(
             """
-            CREATE SCHEMA IF NOT EXISTS pictures
-                CREATE TABLE images (
-                    cmd TEXT REFERENCES commands(cmd),
-                    image_key TEXT,
-                    uid CHARACTER(18),
-                    sid CHARACTER(18),
-                    md5 TEXT,
-                    PRIMARY KEY (cmd, image_key))
-                CREATE TABLE commands (
-                    cmd TEXT PRIMARY KEY,
-                    uid CHARACTER(18))
-                CREATE TABLE server_command_associations (
-                    sid CHARACTER(18),
-                    cmd TEXT REFERENCES commands(cmd))
-                CREATE TABLE aliases (
-                    alias TEXT PRIMARY KEY,
-                    real TEXT);
+            CREATE SCHEMA IF NOT EXISTS media;
+            ALTER TABLE IF EXISTS alias_images
+                SET SCHEMA media
+                RENAME TO aliases;
+            CREATE TABLE IF NOT EXISTS media.images (
+                cmd TEXT REFERENCES commands(cmd),
+                image_key TEXT,
+                uid CHARACTER(18),
+                sid CHARACTER(18),
+                md5 TEXT,
+                PRIMARY KEY (cmd, image_key));
+            CREATE TABLE IF NOT EXISTS media.commands (
+                cmd TEXT PRIMARY KEY,
+                uid CHARACTER(18));
+            CREATE TABLE IF NOT EXISTS media.server_command_associations (
+                sid CHARACTER(18),
+                cmd TEXT REFERENCES commands(cmd));
+            CREATE TABLE IF NOT EXISTS media.aliases (
+                alias TEXT PRIMARY KEY,
+                real TEXT);
             """
         )
         self.bot.db_connection.commit()
