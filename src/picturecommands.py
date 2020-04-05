@@ -287,11 +287,18 @@ def get_starting_keys_hashes(bucket):
     for collection in toplevel_dirs:
         matching_indeces = [i for i, key in enumerate(keys)
                             if key.split("/")[1] == collection]
-        collection_keys[collection] = set(
-            keys[i] for i in matching_indeces)
-        collection_hashes[collection] = set(
-            hashes[i] for i in matching_indeces)
-    assert len(collection_keys) == len(collection_hashes)
+        collection_keys[collection] = [
+            keys[i] for i in matching_indeces]
+        collection_hashes[collection] = [
+            hashes[i] for i in matching_indeces]
+
+    assert len(collection_keys) == len(collection_hashes), (
+        f"{len(collection_keys)=}, {len(collection_hashes)=}")
+    for cmd in collection_keys:
+        assert len(collection_keys[cmd]) == len(collection_hashes[cmd]), (
+            f"{cmd=}: {len(collection_keys[cmd])=}, "
+            f"{len(collection_hashes[cmd])=}")
+
     return collection_keys, collection_hashes
 
 
