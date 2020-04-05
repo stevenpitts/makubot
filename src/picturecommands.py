@@ -797,8 +797,6 @@ class ReactionImages(discord.ext.commands.Cog):
             get_starting_keys_hashes(self.bot.s3_bucket)
         )
         self.sync_s3_db(collection_keys, collection_hashes)
-        self.bot.get_command("send_image_func").aliases += list(
-            get_all_image_commands_aliases_from_db(self.bot.db_connection))
 
     def sync_s3_db(self, collection_keys, collection_hashes):
         for cmd in collection_keys:
@@ -988,4 +986,6 @@ def setup(bot):
     logger.info("picturecommands starting setup")
     bot.add_cog(ReactionImages(bot))
     bot.add_cog(PictureAdder(bot))
+    bot.get_command("send_image_func").aliases += list(
+        get_all_image_commands_aliases_from_db(bot.db_connection))
     logger.info("picturecommands ending setup")
