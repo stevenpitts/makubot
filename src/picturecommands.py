@@ -746,9 +746,11 @@ class PictureAdder(discord.ext.commands.Cog):
             sid = None
         uid = requestor.id
 
-        add_cmd_to_db(self.bot.db_connection, cmd, uid=uid, sid=sid)
-        self.bot.get_command("send_image_func").aliases.append(cmd)
-        self.bot.all_commands[cmd] = self.bot.all_commands["send_image_func"]
+        if not command_exists_in_db(self.bot.db_connection, cmd):
+            add_cmd_to_db(self.bot.db_connection, cmd, uid=uid, sid=sid)
+            self.bot.get_command("send_image_func").aliases.append(cmd)
+            self.bot.all_commands[cmd] = self.bot.all_commands[
+                "send_image_func"]
 
         if not image_exists_in_cmd(self.bot.db_connection, image_key, cmd):
             add_image_to_db(
@@ -1010,8 +1012,10 @@ class ReactionImages(discord.ext.commands.Cog):
     @commands.command(aliases=["listreactions"])
     async def list_reactions(self, ctx):
         """List all my reactions"""
-        pictures_desc = ", ".join(get_all_image_commands_aliases_from_db(
-            self.bot.db_connection))
+        all_invocations = get_all_image_commands_aliases_from_db(
+            self.bot.db_connection)
+        all_invocations_alphabetized = sorted(all_invocations)
+        pictures_desc = ", ".join(all_invocations_alphabetized)
         block_size = 1500
         text_blocks = [f"{pictures_desc[i:i+block_size]}"
                        for i in range(0, len(pictures_desc), block_size)]
