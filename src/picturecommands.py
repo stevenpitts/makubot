@@ -748,8 +748,9 @@ class ReactionImages(discord.ext.commands.Cog):
             """
             CREATE SCHEMA IF NOT EXISTS media;
             ALTER TABLE IF EXISTS alias_images
-                SET SCHEMA media
                 RENAME TO aliases;
+            ALTER TABLE IF EXISTS aliases
+                SET SCHEMA media;
             CREATE TABLE IF NOT EXISTS media.images (
                 cmd TEXT REFERENCES commands(cmd),
                 image_key TEXT,
