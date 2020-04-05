@@ -231,15 +231,28 @@ def get_cmd_from_alias(db_connection, alias_cmd, none_if_not_exist=False):
     cursor = db_connection.cursor(cursor_factory=RealDictCursor)
     cursor.execute(
         """
+        SELECT * FROM media.commands
+        WHERE cmd = %s
+        """,
+        (alias_cmd,)
+    )
+    results = cursor.fetchall()
+    if results:
+        assert len(results) == 1
+        return results[0]["cmd"]
+    cursor.execute(
+        """
         SELECT * FROM media.aliases
-        WHERE alias = %s;
+        WHERE alias = %s
         """,
         (alias_cmd,)
     )
     results = cursor.fetchall()
     if not results:
         if none_if_not_exist:
+            logger.info(f"{alias_cmd} wasn't an alias or real, returning None")
             return None
+        logger.info(f"{alias_cmd} wasn't an alias or real, returning itself")
         return alias_cmd
     assert len(results) == 1
     true_invocation = results[0]["real"]
@@ -982,11 +995,11 @@ class ReactionImages(discord.ext.commands.Cog):
     async def how_big(self, ctx, cmd):
         real_cmd = get_cmd_from_alias(
             self.bot.db_connection, cmd, none_if_not_exist=True)
+        cmd_sizes = get_cmd_sizes(self.bot.db_connection)
         try:
-            command_size = get_single_cmd_size(
-                self.bot.db_connection, real_cmd)
+            command_size = cmd_sizes[real_cmd]
         except KeyError:
-            await ctx.send("That's not an image command :o")
+            await ctx.send(f"{cmd} ({real_cmd}) isn't an image command :o")
             return
         image_plurality = "image" if command_size == 1 else "images"
         await ctx.send(f"{cmd} has {command_size} {image_plurality}!")
