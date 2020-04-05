@@ -212,7 +212,7 @@ def get_user_origin_server_intersection(db_connection, user_sids, cmd):
         WHERE cmd = %s
         AND sid <@ %s;
         """,
-        (cmd, user_sids)
+        (cmd, list(user_sids))
     )
     results = cursor.fetchall()
     intersecting_sids = [result["sid"] for result in results]
@@ -254,7 +254,7 @@ def set_img_sid(db_connection, cmd, image_key, sid):
     db_connection.commit()
 
 
-def get_appropriate_images(db_connection, cmd, uid, sid=None, user_servers={}):
+def get_appropriate_images(db_connection, cmd, uid, sid=None, user_servers=[]):
     cursor = db_connection.cursor(cursor_factory=RealDictCursor)
     cursor.execute(
         """
@@ -262,7 +262,7 @@ def get_appropriate_images(db_connection, cmd, uid, sid=None, user_servers={}):
         WHERE cmd = %s
         AND (uid IS NULL OR uid = %s OR sid = %s OR sid @< %s);
         """,
-        (cmd, uid, sid, user_servers)
+        (cmd, uid, sid, list(user_servers))
     )
     results = cursor.fetchall()
     if results:
