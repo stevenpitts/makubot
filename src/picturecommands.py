@@ -58,6 +58,10 @@ def image_exists_in_cmd(db_connection, image_key, cmd):
 
 def add_image_to_db(
         db_connection, image_key, cmd, uid=None, sid=None, md5=None):
+    if uid:
+        uid = str(uid).zfill(18)
+    if sid:
+        sid = str(sid).zfill(18)
     cursor = db_connection.cursor()
     cursor.execute(
         """
@@ -69,7 +73,7 @@ def add_image_to_db(
         md5)
         VALUES (%s, %s, %s, %s, %s);
         """,
-        (cmd, image_key, str(uid).zfill(18), str(sid).zfill(18), md5)
+        (cmd, image_key, uid, sid, md5)
     )
 
 
@@ -86,7 +90,11 @@ def command_exists_in_db(db_connection, cmd):
     return bool(results)
 
 
-def add_cmd_to_db(db_connection, cmd, invoking_uid=None, invoking_sid=None):
+def add_cmd_to_db(db_connection, cmd, uid=None, sid=None):
+    if uid:
+        uid = str(uid).zfill(18)
+    if sid:
+        sid = str(sid).zfill(18)
     cursor = db_connection.cursor()
     cursor.execute(
         """
@@ -95,7 +103,7 @@ def add_cmd_to_db(db_connection, cmd, invoking_uid=None, invoking_sid=None):
         uid)
         VALUES (%s, %s);
         """,
-        (cmd, str(invoking_uid).zfill(18))
+        (cmd, uid)
     )
     cursor.execute(
         """
@@ -104,7 +112,7 @@ def add_cmd_to_db(db_connection, cmd, invoking_uid=None, invoking_sid=None):
         sid)
         VALUES (%s, %s);
         """,
-        (cmd, str(invoking_sid).zfill(18))
+        (cmd, sid)
     )
 
 
@@ -119,6 +127,22 @@ def delete_image_from_db(db_connection, cmd, image_key):
         """,
         (cmd, image_key)
     )
+
+
+def cascade_deleted_referenced_aliases(db_connection):
+    cursor = db_connection.cursor()
+    cursor.execute(
+        """
+        DELETE FROM media.aliases
+        WHERE real NOT IN (
+            SELECT image_key
+            FROM media.images
+        )
+        RETURNING *
+        """
+    )
+    results = cursor.fetchall()
+    logger.info(f"Deleted old aliases: {results}")
 
 
 def delete_cmd_and_all_images(db_connection, cmd):
@@ -275,6 +299,8 @@ def get_cmd_uid(db_connection, cmd):
 
 
 def add_server_command_association(db_connection, sid, cmd):
+    if sid:
+        sid = str(sid).zfill(18)
     cursor = db_connection.cursor()
     cursor.execute(
         """
@@ -283,7 +309,7 @@ def add_server_command_association(db_connection, sid, cmd):
         cmd)
         VALUES (%s, %s);
         """,
-        (str(sid).zfill(18), cmd)
+        (sid, cmd)
     )
     db_connection.commit()
 
@@ -335,6 +361,8 @@ def img_sid_should_be_set(db_connection, cmd, image_key, uid):
 
 
 def set_img_sid(db_connection, cmd, image_key, sid):
+    if sid:
+        sid = str(sid).zfill(18)
     cursor = db_connection.cursor(cursor_factory=RealDictCursor)
     cursor.execute(
         """
@@ -343,12 +371,16 @@ def set_img_sid(db_connection, cmd, image_key, sid):
         WHERE cmd = %s
         AND image_key = %s;
         """,
-        (str(sid).zfill(18), cmd, image_key)
+        (sid, cmd, image_key)
     )
     db_connection.commit()
 
 
 def get_appropriate_images(db_connection, cmd, uid, sid=None, user_sids=[]):
+    if uid:
+        uid = str(uid).zfill(18)
+    if sid:
+        sid = str(sid).zfill(18)
     user_sids = [str(sid).zfill(18) for sid in user_sids]
     cursor = db_connection.cursor(cursor_factory=RealDictCursor)
     cursor.execute(
@@ -357,7 +389,7 @@ def get_appropriate_images(db_connection, cmd, uid, sid=None, user_sids=[]):
         WHERE cmd = %s
         AND (uid IS NULL OR uid = %s OR sid = %s OR sid = ANY(%s));
         """,
-        (cmd, str(uid).zfill(18), str(sid).zfill(18), user_sids)
+        (cmd, uid, sid, user_sids)
     )
     results = cursor.fetchall()
     if results:
@@ -707,18 +739,21 @@ class PictureAdder(discord.ext.commands.Cog):
                 upload_image_func
             )
         image_hash = hashlib.md5(image_bytes).hexdigest()
-        self.bot.get_command("send_image_func").aliases.append(cmd)
-        self.bot.all_commands["cmd"] = self.bot.all_commands["send_image_func"]
 
         try:
             sid = status_message.guild.id
         except (discord.errors.NotFound, AttributeError):
             sid = None
+        uid = requestor.id
+
+        add_cmd_to_db(self.bot.db_connection, cmd, uid=uid, sid=sid)
+        self.bot.get_command("send_image_func").aliases.append(cmd)
+        self.bot.all_commands["cmd"] = self.bot.all_commands["send_image_func"]
 
         if not image_exists_in_cmd(self.bot.db_connection, image_key, cmd):
             add_image_to_db(
                 self.bot.db_connection, image_key, cmd,
-                uid=requestor.id, sid=sid, md5=image_hash)
+                uid=uid, sid=sid, md5=image_hash)
 
         response = f"Your image {new_filename} was approved!"
         await requestor.send(response)
@@ -846,7 +881,7 @@ class ReactionImages(discord.ext.commands.Cog):
                 cmd TEXT PRIMARY KEY,
                 uid CHARACTER(18));
             CREATE TABLE IF NOT EXISTS media.images (
-                cmd TEXT REFERENCES media.commands(cmd),
+                cmd TEXT REFERENCES media.commands(cmd) ON DELETE CASCADE,
                 image_key TEXT,
                 uid CHARACTER(18),
                 sid CHARACTER(18),
@@ -854,13 +889,15 @@ class ReactionImages(discord.ext.commands.Cog):
                 PRIMARY KEY (cmd, image_key));
             CREATE TABLE IF NOT EXISTS media.server_command_associations (
                 sid CHARACTER(18),
-                cmd TEXT REFERENCES media.commands(cmd));
+                cmd TEXT REFERENCES media.commands(cmd) ON DELETE CASCADE);
             CREATE TABLE IF NOT EXISTS media.aliases (
                 alias TEXT PRIMARY KEY,
                 real TEXT);
             """
         )
         self.bot.db_connection.commit()
+
+        cascade_deleted_referenced_aliases(self.bot.db_connection)
 
         cursor = self.bot.db_connection.cursor(cursor_factory=RealDictCursor)
         cursor.execute(
@@ -887,8 +924,7 @@ class ReactionImages(discord.ext.commands.Cog):
             if not command_exists_in_db(self.bot.db_connection, cmd):
                 logger.info(f"DB didn't have {cmd=}, adding")
                 add_cmd_to_db(
-                    self.bot.db_connection, cmd, invoking_uid=None,
-                    invoking_sid=None)
+                    self.bot.db_connection, cmd, uid=None, sid=None)
             assert (len(collection_keys[cmd])
                     == len(collection_hashes[cmd]))
             key_hash_pairs = zip(collection_keys[cmd], collection_hashes[cmd])
