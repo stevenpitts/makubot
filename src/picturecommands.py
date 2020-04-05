@@ -29,6 +29,38 @@ class NotVideo(Exception):
     pass
 
 
+def delete_image_from_db(db_connection, cmd, image_key):
+    logging.info(f"Deleting {cmd}/{image_key} from DB")
+    cursor = db_connection.cursor(cursor_factory=RealDictCursor)
+    cursor.execute(
+        """
+        DELETE FROM media.images
+        WHERE cmd = %s
+        AND image_key = %s
+        """,
+        (cmd, image_key)
+    )
+
+
+def delete_cmd_and_all_images(db_connection, cmd):
+    logging.info(f"Deleting {cmd} and all its images from DB")
+    cursor = db_connection.cursor(cursor_factory=RealDictCursor)
+    cursor.execute(
+        """
+        DELETE FROM media.images
+        WHERE cmd = %s
+        """,
+        (cmd)
+    )
+    cursor.execute(
+        """
+        DELETE FROM media.commands
+        WHERE cmd = %s
+        """,
+        (cmd)
+    )
+
+
 def get_random_image(db_connection):
     cursor = db_connection.cursor(cursor_factory=RealDictCursor)
     cursor.execute(
@@ -777,6 +809,19 @@ class ReactionImages(discord.ext.commands.Cog):
                             f"with {image_hash=}.")
                 self.add_image_to_db(
                     image_key, cmd, uid=None, sid=None, md5=image_hash)
+
+        for cmd in get_all_true_image_commands_from_db(self.bot.db_connection):
+            if cmd not in collection_keys:
+                logger.warning(f"{cmd} wasn't in S3, so it's being removed "
+                               f"from the database.")
+                delete_cmd_and_all_images(self.bot.db_connection, cmd)
+                continue
+            cmd_image_keys = (
+                get_all_command_images(self.bot.db_connection, cmd))
+            for image_key in cmd_image_keys:
+                if image_key not in collection_keys[cmd]:
+                    delete_image_from_db(
+                        self.bot.db_connection, cmd, image_key)
 
     @commands.command(aliases=["randomimage", "yo", "hey", "makubot"])
     async def random_image(self, ctx):
