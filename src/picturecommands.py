@@ -291,6 +291,7 @@ def get_starting_keys_hashes(bucket):
             keys[i] for i in matching_indeces)
         collection_hashes[collection] = set(
             hashes[i] for i in matching_indeces)
+    assert len(collection_keys) == len(collection_hashes)
     return collection_keys, collection_hashes
 
 
