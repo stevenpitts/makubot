@@ -470,7 +470,7 @@ class ReactionImages(discord.ext.commands.Cog):
     @commands.command(aliases=["realinvocation"])
     async def real_invocation(self, ctx, alias):
         real_cmd = get_cmd_from_alias(
-            self.bot.db_connection, alias, none_if_not_exist=True)
+            self.bot.db_connection, alias)
         if real_cmd:
             await ctx.send(f"{alias} is an alias for {real_cmd}!")
         else:
@@ -479,7 +479,7 @@ class ReactionImages(discord.ext.commands.Cog):
     @commands.command(aliases=["howbig"])
     async def how_big(self, ctx, cmd):
         real_cmd = get_cmd_from_alias(
-            self.bot.db_connection, cmd, none_if_not_exist=True)
+            self.bot.db_connection, cmd)
         cmd_sizes = get_cmd_sizes(self.bot.db_connection)
         try:
             command_size = cmd_sizes[real_cmd]
