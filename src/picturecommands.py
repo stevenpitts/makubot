@@ -1035,7 +1035,7 @@ class ReactionImages(discord.ext.commands.Cog):
         try:
             command_size = cmd_sizes[real_cmd]
         except KeyError:
-            await ctx.send(f"{cmd} ({real_cmd}) isn't an image command :o")
+            await ctx.send(f"{cmd} isn't an image command :o")
             return
         image_plurality = "image" if command_size == 1 else "images"
         await ctx.send(f"{cmd} has {command_size} {image_plurality}!")
