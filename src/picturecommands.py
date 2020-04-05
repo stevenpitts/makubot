@@ -49,14 +49,14 @@ def delete_cmd_and_all_images(db_connection, cmd):
         DELETE FROM media.images
         WHERE cmd = %s
         """,
-        (cmd)
+        (cmd,)
     )
     cursor.execute(
         """
         DELETE FROM media.commands
         WHERE cmd = %s
         """,
-        (cmd)
+        (cmd,)
     )
 
 
@@ -141,7 +141,7 @@ def get_all_command_images(db_connection, cmd):
         SELECT * FROM media.images
         WHERE cmd = %s
         """,
-        (cmd)
+        (cmd,)
     )
     results = cursor.fetchall()
     return [result["image_key"] for result in results]
@@ -273,7 +273,7 @@ def get_appropriate_images(db_connection, cmd, uid, sid=None, user_servers={}):
         SELECT * FROM media.images
         WHERE cmd = %s;
         """,
-        (cmd)
+        (cmd,)
     )
     results = cursor.fetchall()
     return [result["image_key"] for result in results]
@@ -636,7 +636,7 @@ class PictureAdder(discord.ext.commands.Cog):
             SELECT * FROM media.aliases
             WHERE real = %s;
             """,
-            (real_cmd)
+            (real_cmd,)
         )
         results = cursor.fetchall()
         return [result["alias"] for result in results]
