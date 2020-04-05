@@ -152,7 +152,7 @@ def get_cmd_sizes(db_connection):
 
 
 def get_single_cmd_size(db_connection, cmd):
-    return get_cmd_sizes()[cmd]
+    return get_cmd_sizes(db_connection)[cmd]
 
 
 def get_all_true_image_commands_from_db(db_connection):
