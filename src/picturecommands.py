@@ -517,7 +517,7 @@ class ReactionImages(discord.ext.commands.Cog):
         origin_sids = cmd_info_dict["origin_sids"]
         await ctx.send(f"{cmd} is at {real_cmd}. {uid=}, {origin_sids=}.")
 
-    @commands.command(aliases=["getimageinfo"])
+    @commands.command(aliases=["getimageinfo", "getimginfo"])
     async def get_image_info(self, ctx, cmd, image_key):
         real_cmd = get_cmd_from_alias(self.bot.db_connection, cmd)
         image_info_dict = image_info(
