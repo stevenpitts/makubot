@@ -543,6 +543,7 @@ class ReactionImages(discord.ext.commands.Cog):
             await ctx.send("That's not an image command :?")
             return
         set_cmd_images_owner_on_db(self.bot.db_connection, cmd, uid)
+        await ctx.send("Done!")
 
 
 def setup(bot):
