@@ -309,8 +309,9 @@ class PictureAdder(discord.ext.commands.Cog):
         if not image_collection.isalnum():
             await ctx.send("Please only include letters and numbers.")
             return
-        image_collection = get_cmd_from_alias(self.bot.db_connection,
-                                              image_collection)
+        image_collection = get_cmd_from_alias(
+            self.bot.db_connection, image_collection
+        ) or image_collection
         existing_command = (
             self.bot.all_commands.get(image_collection, None)
             if image_collection else None)
