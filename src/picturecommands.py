@@ -516,8 +516,11 @@ class ReactionImages(discord.ext.commands.Cog):
             return
         uid = cmd_info_dict["uid"]
         origin_sids = cmd_info_dict["origin_sids"]
+        uid_user = self.bot.get_user(uid)
+        origin_sid_servers = [self.bot.get_guild(sid) for sid in origin_sids]
         await ctx.send(
-            f"{cmd} is at pictures/{real_cmd}. {uid=}, {origin_sids=}.")
+            f"{cmd} is at pictures/{real_cmd}. {uid=}, {uid_user=}, "
+            f"{origin_sids=}, {origin_sid_servers=}.")
 
     @commands.command(aliases=["getimageinfo", "getimginfo"])
     async def get_image_info(self, ctx, cmd, image_key):
@@ -530,9 +533,11 @@ class ReactionImages(discord.ext.commands.Cog):
         uid = image_info_dict["uid"]
         sid = image_info_dict["sid"]
         md5 = image_info_dict["md5"]
+        uid_user = self.bot.get_user(uid)
+        sid_server = self.bot.get_guild(sid)
         await ctx.send(
             f"{cmd}/{image_key} is at pictures/{real_cmd}/{image_key}. "
-            f"{uid=}, {sid=}, {md5=}.")
+            f"{uid=}, {uid_user=}, {sid=}, {sid_server=}, {md5=}.")
 
     @commands.is_owner()
     @commands.command(hidden=True, aliases=["setcmdowner"])
