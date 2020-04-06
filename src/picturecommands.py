@@ -516,7 +516,7 @@ class ReactionImages(discord.ext.commands.Cog):
             return
         uid = cmd_info_dict["uid"]
         origin_sids = cmd_info_dict["origin_sids"]
-        uid_user = self.bot.get_user(int(uid))
+        uid_user = self.bot.get_user(int(uid)) if uid else None
         uid_user_str = (
             f"{uid_user.name}#{uid_user.discriminator}"
             if uid_user else f"Unknown ({uid})")
@@ -541,11 +541,11 @@ class ReactionImages(discord.ext.commands.Cog):
         uid = image_info_dict["uid"]
         sid = image_info_dict["sid"]
         md5 = image_info_dict["md5"]
-        uid_user = self.bot.get_user(int(uid))
+        uid_user = self.bot.get_user(int(uid)) if uid else None
         uid_user_str = (
             f"{uid_user.name}#{uid_user.discriminator}"
             if uid_user else f"Unknown ({uid})")
-        sid_server = self.bot.get_guild(int(sid))
+        sid_server = self.bot.get_guild(int(sid)) if sid else None
         sid_server_str = sid_server.name if sid_server else f"Unknown ({sid})"
         await ctx.send(
             f"{cmd}/{image_key} is at pictures/{real_cmd}/{image_key}. "
