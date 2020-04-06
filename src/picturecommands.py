@@ -536,7 +536,7 @@ class ReactionImages(discord.ext.commands.Cog):
 
     @commands.is_owner()
     @commands.command(hidden=True, aliases=["setcmdowner"])
-    async def set_cmd_images_owner(self, ctx, cmd, user):
+    async def set_cmd_images_owner(self, ctx, cmd, user: discord.User):
         uid = user.id
         cmd = get_cmd_from_alias(self.bot.db_connection, cmd)
         if not cmd:
