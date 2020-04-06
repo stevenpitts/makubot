@@ -42,6 +42,7 @@ from .picturecommands_utils import (
     get_cmd_sizes,
     cmd_info,
     image_info,
+    set_cmd_images_owner_on_db,
 )
 
 logger = logging.getLogger()
@@ -530,6 +531,16 @@ class ReactionImages(discord.ext.commands.Cog):
         await ctx.send(
             f"{cmd}/{image_key} is at {real_cmd}/{image_key}. "
             f"{uid=}, {sid=}, {md5=}.")
+
+    @commands.is_owner()
+    @commands.command(hidden=True, aliases=["setcmdowner"])
+    async def set_cmd_images_owner(self, ctx, cmd, user):
+        uid = user.id
+        cmd = get_cmd_from_alias(self.bot.db_connection, cmd)
+        if not cmd:
+            await ctx.send("That's not an image command :?")
+            return
+        set_cmd_images_owner_on_db(self.bot.db_connection, cmd, uid)
 
 
 def setup(bot):

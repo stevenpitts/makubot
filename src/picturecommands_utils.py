@@ -22,6 +22,29 @@ class NotVideo(Exception):
     pass
 
 
+def set_cmd_images_owner_on_db(db_connection, cmd, uid):
+    cmd = get_cmd_from_alias(db_connection, cmd)
+    uid = str(uid).zfill(18)
+    cursor = db_connection.cursor(cursor_factory=RealDictCursor)
+    cursor.execute(
+        """
+        UPDATE media.images
+        SET uid = %s
+        WHERE cmd = %s
+        """,
+        (uid, cmd)
+    )
+    cursor.execute(
+        """
+        UPDATE media.commands
+        SET uid = %s
+        WHERE cmd = %s
+        """,
+        (uid, cmd)
+    )
+    db_connection.commit()
+
+
 def add_alias_to_db(db_connection, alias, real):
     cursor = db_connection.cursor()
     cursor.execute(
