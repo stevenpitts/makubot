@@ -39,7 +39,9 @@ from .picturecommands_utils import (
     img_sid_should_be_set,
     set_img_sid,
     get_all_cmds_aliases_from_db,
-    get_cmd_sizes
+    get_cmd_sizes,
+    cmd_info,
+    image_info,
 )
 
 logger = logging.getLogger()
@@ -478,8 +480,7 @@ class ReactionImages(discord.ext.commands.Cog):
 
     @commands.command(aliases=["howbig"])
     async def how_big(self, ctx, cmd):
-        real_cmd = get_cmd_from_alias(
-            self.bot.db_connection, cmd)
+        real_cmd = get_cmd_from_alias(self.bot.db_connection, cmd)
         cmd_sizes = get_cmd_sizes(self.bot.db_connection)
         try:
             command_size = cmd_sizes[real_cmd]
@@ -503,6 +504,32 @@ class ReactionImages(discord.ext.commands.Cog):
             f"{command}: {command_sizes[command]}"
             for command in top_ten_commands])
         await ctx.send(message)
+
+    @commands.command(aliases=["getcmdinfo"])
+    async def get_cmd_info(self, ctx, cmd):
+        real_cmd = get_cmd_from_alias(self.bot.db_connection, cmd)
+        cmd_info_dict = cmd_info(self.bot.db_connection, real_cmd)
+        if not cmd_info:
+            await ctx.send("I can't find that command :?")
+            return
+        uid = cmd_info_dict["uid"]
+        origin_sids = cmd_info_dict["origin_sids"]
+        await ctx.send(f"{cmd} is at {real_cmd}. {uid=}, {origin_sids=}.")
+
+    @commands.command(aliases=["getimageinfo"])
+    async def get_image_info(self, ctx, cmd, image_key):
+        real_cmd = get_cmd_from_alias(self.bot.db_connection, cmd)
+        image_info_dict = image_info(
+            self.bot.db_connection, real_cmd, image_key)
+        if not image_info_dict:
+            await ctx.send("I can't find that image :?")
+            return
+        uid = image_info_dict["uid"]
+        sid = image_info_dict["sid"]
+        md5 = image_info_dict["md5"]
+        await ctx.send(
+            f"{cmd}/{image_key} is at {real_cmd}/{image_key}. "
+            f"{uid=}, {sid=}, {md5=}.")
 
 
 def setup(bot):
