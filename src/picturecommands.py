@@ -392,7 +392,8 @@ class ReactionImages(discord.ext.commands.Cog):
                 PRIMARY KEY (cmd, image_key));
             CREATE TABLE IF NOT EXISTS media.server_command_associations (
                 sid CHARACTER(18),
-                cmd TEXT REFERENCES media.commands(cmd) ON DELETE CASCADE);
+                cmd TEXT REFERENCES media.commands(cmd) ON DELETE CASCADE,
+                PRIMARY KEY (sid, cmd));
             CREATE TABLE IF NOT EXISTS media.aliases (
                 alias TEXT PRIMARY KEY,
                 real TEXT);

@@ -367,7 +367,8 @@ def add_server_command_association(db_connection, sid, cmd):
         INSERT INTO media.server_command_associations (
         sid,
         cmd)
-        VALUES (%s, %s);
+        VALUES (%s, %s)
+        ON CONFLICT DO NOTHING;
         """,
         (sid, cmd)
     )
