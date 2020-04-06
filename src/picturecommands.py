@@ -429,7 +429,8 @@ class ReactionImages(discord.ext.commands.Cog):
             sid = ctx.guild.id
         except AttributeError:
             sid = None
-        cmd_uid = int(get_cmd_uid(ctx.bot.db_connection, cmd))
+        cmd_uid = get_cmd_uid(ctx.bot.db_connection, cmd)
+        cmd_uid = int(cmd_uid) if cmd_uid else None
         if cmd_uid == uid and sid:
             add_server_command_association(ctx.bot.db_connection, sid, cmd)
         user_sids = get_user_sids(ctx.bot, uid)
