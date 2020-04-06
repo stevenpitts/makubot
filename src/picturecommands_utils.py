@@ -235,7 +235,9 @@ def get_random_image(db_connection):
         """
     )
     result = cursor.fetchone()
-    return result["image_key"]
+    result_cmd = result["cmd"]
+    result_image_key = result["image_key"]
+    return f"pictures/{result_cmd}/{result_image_key}"
 
 
 def get_cmd_sizes(db_connection):
@@ -475,7 +477,7 @@ def get_starting_keys_hashes(bucket):
         matching_indeces = [i for i, key in enumerate(keys)
                             if key.split("/")[1] == collection]
         collection_keys[collection] = [
-            keys[i] for i in matching_indeces]
+            keys[i].split("/")[-1] for i in matching_indeces]
         collection_hashes[collection] = [
             hashes[i] for i in matching_indeces]
 

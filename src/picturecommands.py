@@ -228,9 +228,9 @@ class PictureAdder(discord.ext.commands.Cog):
     async def apply_image_approved(
             self, filename, cmd, requestor, status_message, image_bytes):
         existing_keys = get_all_cmd_images_from_db(self.bot.db_connection, cmd)
-        new_filename = commandutil.get_nonconflicting_filename(
+        image_key = commandutil.get_nonconflicting_filename(
             filename, existing_keys=existing_keys)
-        image_key = f"pictures/{cmd}/{new_filename}"
+        full_image_key = f"pictures/{cmd}/{image_key}"
 
         def upload_image_func():
             local_path = self.temp_save_dir / filename
@@ -239,7 +239,7 @@ class PictureAdder(discord.ext.commands.Cog):
             return S3.upload_file(
                 str(local_path),
                 self.bot.s3_bucket,
-                image_key,
+                full_image_key,
                 ExtraArgs={
                     "ACL": "public-read",
                     "ContentType": mimetype
@@ -267,7 +267,7 @@ class PictureAdder(discord.ext.commands.Cog):
                 self.bot.db_connection, image_key, cmd,
                 uid=uid, sid=sid, md5=md5)
 
-        response = f"Your image {new_filename} was approved!"
+        response = f"Your image {image_key} was approved!"
         await requestor.send(response)
         try:
             await status_message.edit(content=response)
@@ -407,11 +407,11 @@ class ReactionImages(discord.ext.commands.Cog):
     @commands.command(aliases=["randomimage", "yo", "hey", "makubot"])
     async def random_image(self, ctx):
         """For true shitposting."""
-        chosen_key = get_random_image(self.bot.db_connection)
+        chosen_path = get_random_image(self.bot.db_connection)
         chosen_url = commandutil.url_from_s3_key(
             self.bot.s3_bucket,
             self.bot.s3_bucket_location,
-            chosen_key,
+            chosen_path,
             improve=True)
         logging.info(f"Sending url in random_image func: {chosen_url}")
         image_embed = await generate_image_embed(
@@ -445,8 +445,9 @@ class ReactionImages(discord.ext.commands.Cog):
         if img_sid_should_be_set(ctx.bot.db_connection, cmd, chosen_key, uid):
             logger.info(f"{cmd}'s sid will be set to {sid}")
             set_img_sid(ctx.bot.db_connection, cmd, chosen_key, sid)
+        chosen_path = f"pictures/{cmd}/{chosen_key}"
         chosen_url = commandutil.url_from_s3_key(
-            ctx.bot.s3_bucket, ctx.bot.s3_bucket_location, chosen_key,
+            ctx.bot.s3_bucket, ctx.bot.s3_bucket_location, chosen_path,
             improve=True)
         logging.info(f"Sending url in send_image func: {chosen_url}")
         image_embed = await generate_image_embed(ctx, chosen_url)
@@ -515,7 +516,8 @@ class ReactionImages(discord.ext.commands.Cog):
             return
         uid = cmd_info_dict["uid"]
         origin_sids = cmd_info_dict["origin_sids"]
-        await ctx.send(f"{cmd} is at {real_cmd}. {uid=}, {origin_sids=}.")
+        await ctx.send(
+            f"{cmd} is at pictures/{real_cmd}. {uid=}, {origin_sids=}.")
 
     @commands.command(aliases=["getimageinfo", "getimginfo"])
     async def get_image_info(self, ctx, cmd, image_key):
@@ -529,7 +531,7 @@ class ReactionImages(discord.ext.commands.Cog):
         sid = image_info_dict["sid"]
         md5 = image_info_dict["md5"]
         await ctx.send(
-            f"{cmd}/{image_key} is at {real_cmd}/{image_key}. "
+            f"{cmd}/{image_key} is at pictures/{real_cmd}/{image_key}. "
             f"{uid=}, {sid=}, {md5=}.")
 
     @commands.is_owner()
