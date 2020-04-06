@@ -516,8 +516,9 @@ class ReactionImages(discord.ext.commands.Cog):
             return
         uid = cmd_info_dict["uid"]
         origin_sids = cmd_info_dict["origin_sids"]
-        uid_user = self.bot.get_user(uid)
-        origin_sid_servers = [self.bot.get_guild(sid) for sid in origin_sids]
+        uid_user = self.bot.get_user(int(uid))
+        origin_sid_servers = [
+            self.bot.get_guild(int(sid)) for sid in origin_sids]
         await ctx.send(
             f"{cmd} is at pictures/{real_cmd}. {uid=}, {uid_user=}, "
             f"{origin_sids=}, {origin_sid_servers=}.")
@@ -533,8 +534,8 @@ class ReactionImages(discord.ext.commands.Cog):
         uid = image_info_dict["uid"]
         sid = image_info_dict["sid"]
         md5 = image_info_dict["md5"]
-        uid_user = self.bot.get_user(uid)
-        sid_server = self.bot.get_guild(sid)
+        uid_user = self.bot.get_user(int(uid))
+        sid_server = self.bot.get_guild(int(sid))
         await ctx.send(
             f"{cmd}/{image_key} is at pictures/{real_cmd}/{image_key}. "
             f"{uid=}, {uid_user=}, {sid=}, {sid_server=}, {md5=}.")
