@@ -517,11 +517,18 @@ class ReactionImages(discord.ext.commands.Cog):
         uid = cmd_info_dict["uid"]
         origin_sids = cmd_info_dict["origin_sids"]
         uid_user = self.bot.get_user(int(uid))
+        uid_user_str = (
+            f"{uid_user.name}#{uid_user.discriminator}"
+            if uid_user else f"Unknown ({uid})")
         origin_sid_servers = [
             self.bot.get_guild(int(sid)) for sid in origin_sids]
+        origin_sid_server_strs = [
+            origin_sid_servers[i].name if origin_sid_servers[i]
+            else f"Unknown ({origin_sids[i]})"
+            for i in range(len(origin_sid_servers))]
         await ctx.send(
-            f"{cmd} is at pictures/{real_cmd}. {uid=}, {uid_user=}, "
-            f"{origin_sids=}, {origin_sid_servers=}.")
+            f"{cmd} is at pictures/{real_cmd}. {uid_user_str=}, "
+            f"{origin_sid_server_strs=}.")
 
     @commands.command(aliases=["getimageinfo", "getimginfo"])
     async def get_image_info(self, ctx, cmd, image_key):
@@ -535,10 +542,14 @@ class ReactionImages(discord.ext.commands.Cog):
         sid = image_info_dict["sid"]
         md5 = image_info_dict["md5"]
         uid_user = self.bot.get_user(int(uid))
+        uid_user_str = (
+            f"{uid_user.name}#{uid_user.discriminator}"
+            if uid_user else f"Unknown ({uid})")
         sid_server = self.bot.get_guild(int(sid))
+        sid_server_str = sid_server.name if sid_server else f"Unknown ({sid})"
         await ctx.send(
             f"{cmd}/{image_key} is at pictures/{real_cmd}/{image_key}. "
-            f"{uid=}, {uid_user=}, {sid=}, {sid_server=}, {md5=}.")
+            f"{uid_user_str=}, {sid_server_str=}, {md5=}.")
 
     @commands.is_owner()
     @commands.command(hidden=True, aliases=["setcmdowner"])
