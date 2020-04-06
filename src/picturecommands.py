@@ -137,7 +137,7 @@ class PictureAdder(discord.ext.commands.Cog):
                     filename, existing_keys=existing_keys)
                 with open(self.temp_save_dir / filename, "wb") as f:
                     f.write(image_bytes)
-            if self.collection_has_image_bytes(
+            if collection_has_image_bytes(
                     self.bot.db_connection, image_collection, image_bytes,):
                 response = (
                     f"The image {filename} appears already in the collection!")
