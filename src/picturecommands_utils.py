@@ -23,7 +23,6 @@ class NotVideo(Exception):
 
 
 def set_cmd_images_owner_on_db(db_connection, cmd, uid):
-    cmd = get_cmd_from_alias(db_connection, cmd)
     uid = str(uid).zfill(18)
     cursor = db_connection.cursor(cursor_factory=RealDictCursor)
     cursor.execute(
