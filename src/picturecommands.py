@@ -311,7 +311,9 @@ class PictureAdder(discord.ext.commands.Cog):
             return
         image_collection = get_cmd_from_alias(self.bot.db_connection,
                                               image_collection)
-        existing_command = self.bot.all_commands.get(image_collection, None)
+        existing_command = (
+            self.bot.all_commands.get(image_collection, None)
+            if image_collection else None)
         send_image_command = self.bot.all_commands["send_image_func"]
         if existing_command and (existing_command != send_image_command):
             await ctx.send("That is already a non-image command name.")
