@@ -483,6 +483,8 @@ class ReactionImages(discord.ext.commands.Cog):
     async def real_invocation(self, ctx, alias):
         real_cmd = get_cmd_from_alias(
             self.bot.db_connection, alias)
+        if real_cmd == alias:
+            await ctx.send(f"{real_cmd} is the actual function!")
         if real_cmd:
             await ctx.send(f"{alias} is an alias for {real_cmd}!")
         else:
