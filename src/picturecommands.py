@@ -58,10 +58,14 @@ def sync_s3_db(db_connection, collection_keys, collection_hashes):
                 db_connection, cmd, uid=None, sid=None)
         assert (len(collection_keys[cmd])
                 == len(collection_hashes[cmd]))
-        key_hash_pairs = zip(collection_keys[cmd], collection_hashes[cmd])
-        for image_key, image_hash in key_hash_pairs:
-            if image_exists_in_cmd(db_connection, image_key, cmd):
-                continue
+        # key_hash_pairs = zip(collection_keys[cmd], collection_hashes[cmd])
+        missing_key_hash_pairs = [
+            (image_key, image_hash)
+            for (image_key, image_hash)
+            in zip(collection_keys[cmd], collection_hashes[cmd])
+            if not image_exists_in_cmd(db_connection, image_key, cmd)
+        ]
+        for image_key, image_hash in missing_key_hash_pairs:
             logger.info(f"DB didn't have {image_key} in {cmd}, adding "
                         f"with {image_hash=}.")
             add_image_to_db(
