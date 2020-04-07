@@ -520,12 +520,9 @@ class ReactionImages(discord.ext.commands.Cog):
     async def get_cmd_info(self, ctx, cmd):
         real_cmd = get_cmd_from_alias(self.bot.db_connection, cmd)
         if not real_cmd:
-            await ctx.send("That's not a command :?")
+            await ctx.send("That's not an image command :?")
             return
         cmd_info_dict = cmd_info(self.bot.db_connection, real_cmd)
-        if not cmd_info:
-            await ctx.send("I can't find that command :?")
-            return
         uid = cmd_info_dict["uid"]
         origin_sids = cmd_info_dict["origin_sids"]
         uid_user = self.bot.get_user(int(uid)) if uid else None
@@ -546,7 +543,7 @@ class ReactionImages(discord.ext.commands.Cog):
     async def get_image_info(self, ctx, cmd, image_key):
         real_cmd = get_cmd_from_alias(self.bot.db_connection, cmd)
         if not real_cmd:
-            await ctx.send("That isn't a real command :?")
+            await ctx.send("That isn't an image command :?")
             return
         image_info_dict = image_info(
             self.bot.db_connection, real_cmd, image_key)
