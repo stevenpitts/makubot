@@ -29,7 +29,7 @@ def as_text(value):
     """
     if isinstance(value, str):
         return value
-    if isinstance(value, int) and value > 1e10:
+    if isinstance(value, int) and value > 1e15:
         return str(value).zfill(18)
     if isinstance(value, dict) or isinstance(value, RealDictCursor):
         return {key: as_text(val) for key, val in value.items()}
