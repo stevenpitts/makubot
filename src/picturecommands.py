@@ -545,6 +545,9 @@ class ReactionImages(discord.ext.commands.Cog):
     @commands.command(aliases=["getimageinfo", "getimginfo"])
     async def get_image_info(self, ctx, cmd, image_key):
         real_cmd = get_cmd_from_alias(self.bot.db_connection, cmd)
+        if not real_cmd:
+            await ctx.send("That isn't a real command :?")
+            return
         image_info_dict = image_info(
             self.bot.db_connection, real_cmd, image_key)
         if not image_info_dict:
