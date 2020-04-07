@@ -493,12 +493,11 @@ class ReactionImages(discord.ext.commands.Cog):
     @commands.command(aliases=["howbig"])
     async def how_big(self, ctx, cmd):
         real_cmd = get_cmd_from_alias(self.bot.db_connection, cmd)
-        cmd_sizes = get_cmd_sizes(self.bot.db_connection)
-        try:
-            command_size = cmd_sizes[real_cmd]
-        except KeyError:
+        if not real_cmd:
             await ctx.send(f"{cmd} isn't an image command :o")
             return
+        cmd_sizes = get_cmd_sizes(self.bot.db_connection)
+        command_size = cmd_sizes[real_cmd]
         image_plurality = "image" if command_size == 1 else "images"
         await ctx.send(f"{cmd} has {command_size} {image_plurality}!")
 
