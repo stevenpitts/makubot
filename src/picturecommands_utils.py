@@ -22,8 +22,43 @@ class NotVideo(Exception):
     pass
 
 
+def as_text(value):
+    """
+    Tries to turn a value which might have come as a string (IDs and such)
+    into a string (for the database)
+    """
+    if isinstance(value, str):
+        return value
+    if isinstance(value, int) and value > 1e10:
+        return str(value).zfill(18)
+    if isinstance(value, dict) or isinstance(value, RealDictCursor):
+        return {key: as_text(val) for key, val in value.items()}
+    if value is None:
+        return value
+    return [as_text(element) for element in value]
+
+
+def as_ids(value):
+    """
+    Tries to turn a value which might have come from the database
+    into an int (for IDs and such)
+    """
+    if isinstance(value, str) and len(value) == 18:
+        try:
+            return int(value)
+        except ValueError:
+            return value
+    if isinstance(value, int):
+        return value
+    if isinstance(value, dict) or isinstance(value, RealDictCursor):
+        return {key: as_ids(val) for key, val in value.items()}
+    if value is None:
+        return value
+    return [as_ids(element) for element in value]
+
+
 def set_cmd_images_owner_on_db(db_connection, cmd, uid):
-    uid = str(uid).zfill(18)
+    uid = as_text(uid)
     cursor = db_connection.cursor(cursor_factory=RealDictCursor)
     cursor.execute(
         """
@@ -80,8 +115,9 @@ def cmd_info(db_connection, cmd):
         (cmd,)
     )
     results = cursor.fetchall()
-    sids = [result["sid"] for result in results]
+    sids = [int(result["sid"]) for result in results]
     basic_cmd_info["origin_sids"] = sids
+    basic_cmd_info["uid"] = as_ids(basic_cmd_info["uid"])
     return basic_cmd_info
 
 
@@ -99,7 +135,7 @@ def image_info(db_connection, cmd, image_key):
     if not results:
         return None
     assert len(results) == 1
-    return results[0]
+    return as_ids(results[0])
 
 
 def image_exists_in_cmd(db_connection, image_key, cmd):
@@ -118,10 +154,9 @@ def image_exists_in_cmd(db_connection, image_key, cmd):
 
 def add_image_to_db(
         db_connection, image_key, cmd, uid=None, sid=None, md5=None):
-    if uid:
-        uid = str(uid).zfill(18)
-    if sid:
-        sid = str(sid).zfill(18)
+    uid = as_text(uid)
+    sid = as_text(sid)
+    md5 = as_text(md5)
     cursor = db_connection.cursor()
     cursor.execute(
         """
@@ -135,6 +170,7 @@ def add_image_to_db(
         """,
         (cmd, image_key, uid, sid, md5)
     )
+    db_connection.commit()
 
 
 def command_exists_in_db(db_connection, cmd):
@@ -151,10 +187,8 @@ def command_exists_in_db(db_connection, cmd):
 
 
 def add_cmd_to_db(db_connection, cmd, uid=None, sid=None):
-    if uid:
-        uid = str(uid).zfill(18)
-    if sid:
-        sid = str(sid).zfill(18)
+    uid = as_text(uid)
+    sid = as_text(sid)
     cursor = db_connection.cursor()
     cursor.execute(
         """
@@ -175,10 +209,11 @@ def add_cmd_to_db(db_connection, cmd, uid=None, sid=None):
             """,
             (cmd, sid)
         )
+    db_connection.commit()
 
 
 def delete_image_from_db(db_connection, cmd, image_key):
-    logging.info(f"Deleting {cmd}/{image_key} from DB")
+    logger.info(f"Deleting {cmd}/{image_key} from DB")
     cursor = db_connection.cursor(cursor_factory=RealDictCursor)
     cursor.execute(
         """
@@ -188,6 +223,7 @@ def delete_image_from_db(db_connection, cmd, image_key):
         """,
         (cmd, image_key)
     )
+    db_connection.commit()
 
 
 def cascade_deleted_referenced_aliases(db_connection):
@@ -203,16 +239,19 @@ def cascade_deleted_referenced_aliases(db_connection):
         """
     )
     results = cursor.fetchall()
-    logger.info(f"Deleted old aliases: {results}")
+    formatted_results = as_ids(results)
+    logger.info(f"Deleted old aliases: {formatted_results}")
+    db_connection.commit()
 
 
 def delete_cmd_and_all_images(db_connection, cmd):
-    logging.info(f"Deleting {cmd} and all its images from DB")
+    logger.info(f"Deleting {cmd} and all its images from DB")
     cursor = db_connection.cursor(cursor_factory=RealDictCursor)
     cursor.execute(
         """
         DELETE FROM media.images
         WHERE cmd = %s
+        RETURNING *
         """,
         (cmd,)
     )
@@ -220,9 +259,14 @@ def delete_cmd_and_all_images(db_connection, cmd):
         """
         DELETE FROM media.commands
         WHERE cmd = %s
+        RETURNING *
         """,
         (cmd,)
     )
+    results = cursor.fetchall()
+    formatted_results = as_ids(results)
+    logger.info(f"Deleted cmd and images: {formatted_results}")
+    db_connection.commit()
 
 
 def get_random_image(db_connection):
@@ -250,10 +294,6 @@ def get_cmd_sizes(db_connection):
     )
     results = cursor.fetchall()
     return {result["cmd"]: result["cmd_size"] for result in results}
-
-
-def get_single_cmd_size(db_connection, cmd):
-    return get_cmd_sizes(db_connection)[cmd]
 
 
 def get_all_true_cmds_from_db(db_connection):
@@ -288,6 +328,7 @@ def get_all_cmds_aliases_from_db(db_connection):
 
 
 def cmd_has_hash(db_connection, cmd, md5):
+    md5 = as_text(md5)
     cursor = db_connection.cursor(cursor_factory=RealDictCursor)
     cursor.execute(
         """
@@ -355,12 +396,12 @@ def get_cmd_uid(db_connection, cmd):
     )
     results = cursor.fetchall()
     assert len(results) == 1, f"{cmd=}, {len(results) =}"
-    return results[0]["uid"]
+    result_uid = results[0]["uid"]
+    return as_ids(result_uid)
 
 
 def add_server_command_association(db_connection, sid, cmd):
-    if sid:
-        sid = str(sid).zfill(18)
+    sid = as_text(sid)
     cursor = db_connection.cursor()
     cursor.execute(
         """
@@ -377,7 +418,6 @@ def add_server_command_association(db_connection, sid, cmd):
 
 def get_user_sids(bot, uid):
     """Returns a set of servers that the user and the bot share"""
-    # TODO improve this
     shared_servers = {bot_server for bot_server in bot.guilds
                       if bot_server.get_member(uid)}
     shared_sids = {shared_server.id for shared_server in shared_servers}
@@ -385,7 +425,7 @@ def get_user_sids(bot, uid):
 
 
 def get_user_origin_server_intersection(db_connection, user_sids, cmd):
-    user_sids = [str(sid).zfill(18) for sid in user_sids]
+    user_sids = as_text(user_sids)
     cursor = db_connection.cursor(cursor_factory=RealDictCursor)
     cursor.execute(
         """
@@ -396,11 +436,12 @@ def get_user_origin_server_intersection(db_connection, user_sids, cmd):
         (cmd, user_sids)
     )
     results = cursor.fetchall()
-    intersecting_sids = [result["sid"] for result in results]
+    intersecting_sids = as_ids([result["sid"] for result in results])
     return intersecting_sids
 
 
 def img_sid_should_be_set(db_connection, cmd, image_key, uid):
+    uid = as_text(uid)
     cursor = db_connection.cursor(cursor_factory=RealDictCursor)
     cursor.execute(
         """
@@ -413,8 +454,8 @@ def img_sid_should_be_set(db_connection, cmd, image_key, uid):
     results = cursor.fetchall()
     assert len(results) == 1
     result = results[0]
-    img_uid = result["uid"]
-    img_sid = result["sid"]
+    img_uid = as_ids(result["uid"])
+    img_sid = as_ids(result["sid"])
     should_set = (img_uid == uid) and img_sid is None
     logger.info(
         f"For {cmd=} {image_key=}, got {img_uid=}, {img_sid=}, {should_set=}")
@@ -422,8 +463,7 @@ def img_sid_should_be_set(db_connection, cmd, image_key, uid):
 
 
 def set_img_sid(db_connection, cmd, image_key, sid):
-    if sid:
-        sid = str(sid).zfill(18)
+    sid = as_text(sid)
     cursor = db_connection.cursor(cursor_factory=RealDictCursor)
     cursor.execute(
         """
@@ -438,11 +478,9 @@ def set_img_sid(db_connection, cmd, image_key, sid):
 
 
 def get_appropriate_images(db_connection, cmd, uid, sid=None, user_sids=[]):
-    if uid:
-        uid = str(uid).zfill(18)
-    if sid:
-        sid = str(sid).zfill(18)
-    user_sids = [str(sid).zfill(18) for sid in user_sids]
+    uid = as_text(uid)
+    sid = as_text(sid)
+    user_sids = as_text(user_sids)
     cursor = db_connection.cursor(cursor_factory=RealDictCursor)
     cursor.execute(
         """
@@ -492,14 +530,10 @@ def get_starting_keys_hashes(bucket):
     return collection_keys, collection_hashes
 
 
-async def generate_image_embed(ctx,
-                               url,
-                               call_bot_name=False):
+async def generate_image_embed(
+        ctx, url, call_bot_name=False):
     url = commandutil.improve_url(url)
-    if getattr(ctx.me, "nick", None):
-        bot_nick = ctx.me.nick
-    else:
-        bot_nick = ctx.me.name
+    bot_nick = ctx.me.nick if getattr(ctx.me, "nick", None) else ctx.me.name
     invocation = f"{ctx.prefix}{ctx.invoked_with}"
     content_without_invocation = ctx.message.content[len(invocation):]
     has_content = bool(content_without_invocation.strip())
@@ -524,8 +558,8 @@ async def generate_image_embed(ctx,
     return image_embed
 
 
-async def get_media_bytes_and_name(url, status_message=None, do_raw=False,
-                                   loading_emoji=""):
+async def get_media_bytes_and_name(
+        url, status_message=None, do_raw=False, loading_emoji=""):
     with tempfile.TemporaryDirectory() as temp_dir:
         quality_format = "best" if do_raw else "best[filesize<8M]/worst"
         ydl_options = {
@@ -610,7 +644,6 @@ async def convert_video(video_input, video_output, log=False):
     cmds = ["ffmpeg",
             "-y",
             "-i", video_input,
-            # "-vf", "scale=300:200",
             "-b:v", str(video_bitrate),
             "-b:a", str(audio_bitrate),
             video_output
