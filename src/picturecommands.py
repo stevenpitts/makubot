@@ -427,6 +427,9 @@ class ReactionImages(discord.ext.commands.Cog):
 
     @commands.command(hidden=True)
     async def send_image_func(self, ctx):
+        if ctx.invoked_with == "send_image_func":
+            await ctx.send("Nice try, fucker")
+            return
         cmd = get_cmd_from_alias(ctx.bot.db_connection, ctx.invoked_with)
         uid = ctx.author.id
         try:
