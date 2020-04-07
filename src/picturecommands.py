@@ -437,7 +437,6 @@ class ReactionImages(discord.ext.commands.Cog):
         except AttributeError:
             sid = None
         cmd_uid = get_cmd_uid(ctx.bot.db_connection, cmd)
-        cmd_uid = int(cmd_uid) if cmd_uid else None
         if cmd_uid == uid and sid:
             add_server_command_association(ctx.bot.db_connection, sid, cmd)
         user_sids = get_user_sids(ctx.bot, uid)
@@ -525,12 +524,11 @@ class ReactionImages(discord.ext.commands.Cog):
         cmd_info_dict = cmd_info(self.bot.db_connection, real_cmd)
         uid = cmd_info_dict["uid"]
         origin_sids = cmd_info_dict["origin_sids"]
-        uid_user = self.bot.get_user(int(uid)) if uid else None
+        uid_user = self.bot.get_user(uid)
         uid_user_str = (
             f"{uid_user.name}#{uid_user.discriminator}"
             if uid_user else f"Unknown ({uid})")
-        origin_sid_servers = [
-            self.bot.get_guild(int(sid)) for sid in origin_sids]
+        origin_sid_servers = [self.bot.get_guild(sid) for sid in origin_sids]
         origin_sid_server_strs = [
             origin_sid_servers[i].name if origin_sid_servers[i]
             else f"Unknown ({origin_sids[i]})"
@@ -553,11 +551,11 @@ class ReactionImages(discord.ext.commands.Cog):
         uid = image_info_dict["uid"]
         sid = image_info_dict["sid"]
         md5 = image_info_dict["md5"]
-        uid_user = self.bot.get_user(int(uid)) if uid else None
+        uid_user = self.bot.get_user(uid) if uid else None
         uid_user_str = (
             f"{uid_user.name}#{uid_user.discriminator}"
             if uid_user else f"Unknown ({uid})")
-        sid_server = self.bot.get_guild(int(sid)) if sid else None
+        sid_server = self.bot.get_guild(sid) if sid else None
         sid_server_str = sid_server.name if sid_server else f"Unknown ({sid})"
         await ctx.send(
             f"{cmd}/{image_key} is at pictures/{real_cmd}/{image_key}. "
