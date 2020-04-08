@@ -47,7 +47,24 @@ class RoleGiver(discord.ext.commands.Cog):
         add_roles_tasks = [
             member.add_roles(role, reason="Added reaction")
             for member in members_to_add_role_to]
-        await asyncio.gather(*remove_role_tasks, *add_roles_tasks)
+        try:
+            await asyncio.gather(*remove_role_tasks, *add_roles_tasks)
+        except discord.errors.Forbidden:
+            logger.info(
+                f"Lost rolegiver permissions for {channel_id=}, "
+                f"{message_id=}, {role_id=}, {emoji_id=}")
+            self.remove_rolegiver_ids(message_id)
+
+    def remove_rolegiver_ids(self, message_id):
+        cursor = self.bot.db_connection.cursor(cursor_factory=RealDictCursor)
+        cursor.execute(
+            """
+            DELETE FROM rolegivers
+            WHERE message_id = %s
+            """,
+            (str(message_id), )
+        )
+        self.bot.db_connection.commit()
 
     def get_rolegiver_ids(self):
         cursor = self.bot.db_connection.cursor(cursor_factory=RealDictCursor)
@@ -88,7 +105,7 @@ class RoleGiver(discord.ext.commands.Cog):
                 asyncio.exceptions.CancelledError):
             return
         except Exception:
-            logger.error(exc_info=True)
+            logger.error("", exc_info=True)
 
     @cycle_rolegivers.before_loop
     async def before_cycling(self):

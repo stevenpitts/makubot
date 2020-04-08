@@ -13,11 +13,7 @@ from pathlib import Path
 import time
 import psycopg2
 from . import commandutil
-try:
-    import boto3
-    S3 = boto3.client("s3")
-except ImportError:
-    pass  # Let the exception get raised later, they might be running locally
+import boto3
 
 LOGGING_FORMAT = ("%(asctime)-15s %(levelname)s in %(funcName)s "
                   "at %(pathname)s:%(lineno)d: %(message)s")
@@ -29,6 +25,8 @@ logger = logging.getLogger()
 logger.info("\n\nEntering makubot.py\n\n")
 
 DATABASE_CONNECT_MAX_RETRIES = 10
+
+S3 = boto3.client("s3")
 
 
 class MakuBot(commands.Bot):
