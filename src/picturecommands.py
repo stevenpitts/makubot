@@ -51,23 +51,25 @@ S3 = boto3.client("s3")
 
 
 def sync_s3_db(db_connection, collection_keys, collection_hashes):
+    missing_cmds = [
+        cmd for cmd in collection_keys
+        if not command_exists_in_db(db_connection, cmd)]
+    if missing_cmds:
+        logger.info(f"DB didn't have cmds, adding: {missing_cmds=}")
+    for cmd in missing_cmds:
+        add_cmd_to_db(db_connection, cmd, uid=None, sid=None)
     for cmd in collection_keys:
-        if not command_exists_in_db(db_connection, cmd):
-            logger.info(f"DB didn't have {cmd=}, adding")
-            add_cmd_to_db(
-                db_connection, cmd, uid=None, sid=None)
         assert (len(collection_keys[cmd])
                 == len(collection_hashes[cmd]))
-        # key_hash_pairs = zip(collection_keys[cmd], collection_hashes[cmd])
         missing_key_hash_pairs = [
             (image_key, image_hash)
             for (image_key, image_hash)
             in zip(collection_keys[cmd], collection_hashes[cmd])
             if not image_exists_in_cmd(db_connection, image_key, cmd)
         ]
+        if missing_key_hash_pairs:
+            logger.info(f"Adding to DB {missing_key_hash_pairs=}")
         for image_key, image_hash in missing_key_hash_pairs:
-            logger.info(f"DB didn't have {image_key} in {cmd}, adding "
-                        f"with {image_hash=}.")
             add_image_to_db(
                 db_connection, image_key, cmd, uid=None,
                 sid=None, md5=image_hash)
@@ -380,7 +382,7 @@ class ReactionImages(discord.ext.commands.Cog):
         cursor.execute(
             """
             CREATE SCHEMA IF NOT EXISTS media;
-            ALTER TABLE IF EXISTS alias_images
+            ALTER TABLE IF EXISTS alias_pictures
                 RENAME TO aliases;
             ALTER TABLE IF EXISTS aliases
                 SET SCHEMA media;
@@ -405,12 +407,12 @@ class ReactionImages(discord.ext.commands.Cog):
         )
         self.bot.db_connection.commit()
 
-        cascade_deleted_referenced_aliases(self.bot.db_connection)
-
         collection_keys, collection_hashes = (
             get_starting_keys_hashes(self.bot.s3_bucket)
         )
         sync_s3_db(self.bot.db_connection, collection_keys, collection_hashes)
+
+        cascade_deleted_referenced_aliases(self.bot.db_connection)
 
     @commands.command(aliases=["randomimage", "yo", "hey", "makubot"])
     async def random_image(self, ctx):
