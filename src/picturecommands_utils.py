@@ -399,7 +399,7 @@ def get_cmd_uid(db_connection, cmd):
         (cmd,)
     )
     results = cursor.fetchall()
-    assert len(results) == 1, f"{cmd=}, {len(results) =}"
+    assert len(results) == 1, f"{cmd=}, {len(results)=}"
     result_uid = results[0]["uid"]
     return as_ids(result_uid)
 

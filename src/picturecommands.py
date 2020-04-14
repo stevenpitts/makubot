@@ -436,7 +436,8 @@ class ReactionImages(discord.ext.commands.Cog):
         if ctx.invoked_with == "send_image_func":
             await ctx.send("Nice try, fucker")
             return
-        cmd = get_cmd_from_alias(ctx.bot.db_connection, ctx.invoked_with)
+        invoked_command = ctx.invoked_with.lower()
+        cmd = get_cmd_from_alias(ctx.bot.db_connection, invoked_command)
         uid = ctx.author.id
         try:
             sid = ctx.guild.id
