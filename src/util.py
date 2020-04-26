@@ -49,7 +49,6 @@ def fnlog(func):
     return inner
 
 
-@fnlog
 def url_from_s3_key(s3_bucket,
                     s3_bucket_location,
                     s3_key,
