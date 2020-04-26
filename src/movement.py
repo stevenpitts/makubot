@@ -3,7 +3,7 @@ from discord.ext import commands
 import logging
 import re
 import asyncio
-from . import commandutil
+from . import util
 
 MOVE_EMOTE = "\U0001f232"
 
@@ -84,7 +84,7 @@ class Movement(discord.ext.commands.Cog):
                 pin_embed = message.embeds[0].copy()
             else:
                 pin_embed_dict = {
-                    "description": await commandutil.clean(
+                    "description": await util.clean(
                         ctx, message.content),
                     "footer": {"text": f"In {message.channel.name}"},
                     "author": {"name": message.author.name,

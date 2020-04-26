@@ -11,7 +11,7 @@ import hashlib
 from datetime import datetime
 import mimetypes
 import boto3
-from . import commandutil
+from . import util
 from .picturecommands_utils import (
     YES_EMOJI,
     NO_EMOJI,
@@ -139,7 +139,7 @@ class PictureAdder(discord.ext.commands.Cog):
             else:
                 existing_keys = {
                     str(path) for path in self.temp_save_dir.iterdir()}
-                filename = commandutil.get_nonconflicting_filename(
+                filename = util.get_nonconflicting_filename(
                     filename, existing_keys=existing_keys)
                 with open(self.temp_save_dir / filename, "wb") as f:
                     f.write(image_bytes)
@@ -219,7 +219,7 @@ class PictureAdder(discord.ext.commands.Cog):
                 asyncio.exceptions.CancelledError):
             logger.error(f"Cancelled error on {filename}")
         except BaseException as e:
-            formatted_tb = commandutil.get_formatted_traceback(e)
+            formatted_tb = util.get_formatted_traceback(e)
             logger.error(formatted_tb)
             response = f"Something went wrong with {filename}, sorry!"
             await requestor.send(response)
@@ -234,7 +234,7 @@ class PictureAdder(discord.ext.commands.Cog):
     async def apply_image_approved(
             self, filename, cmd, requestor, status_message, image_bytes):
         existing_keys = get_all_cmd_images_from_db(self.bot.db_connection, cmd)
-        image_key = commandutil.get_nonconflicting_filename(
+        image_key = util.get_nonconflicting_filename(
             filename, existing_keys=existing_keys)
         full_image_key = f"pictures/{cmd}/{image_key}"
 
@@ -345,7 +345,7 @@ class PictureAdder(discord.ext.commands.Cog):
                    aiohttp.client_exceptions.InvalidURL,
                    discord.errors.HTTPException,
                    FileNotFoundError) as e:
-                traceback = commandutil.get_formatted_traceback(e)
+                traceback = util.get_formatted_traceback(e)
                 logger.warning(f"Couldn't download image: {traceback}")
                 await asyncio.sleep(1)  # TODO fix race condition, added to
                 # counter status message update from separate thread
@@ -356,7 +356,7 @@ class PictureAdder(discord.ext.commands.Cog):
                     content="Sorry, the download messed up; please try again!")
                 return
             except BaseException as e:
-                formatted_tb = commandutil.get_formatted_traceback(e)
+                formatted_tb = util.get_formatted_traceback(e)
                 await status_message.edit(content="Something went wrong ;a;")
                 await self.bot.makusu.send(
                     f"Something went wrong in add_image\n```{formatted_tb}```")
@@ -418,7 +418,7 @@ class ReactionImages(discord.ext.commands.Cog):
     async def random_image(self, ctx):
         """For true shitposting."""
         chosen_path = get_random_image(self.bot.db_connection)
-        chosen_url = commandutil.url_from_s3_key(
+        chosen_url = util.url_from_s3_key(
             self.bot.s3_bucket,
             self.bot.s3_bucket_location,
             chosen_path,
@@ -428,7 +428,7 @@ class ReactionImages(discord.ext.commands.Cog):
             ctx, chosen_url, call_bot_name=True)
         sent_message = await ctx.send(embed=image_embed)
         if sent_message.embeds[0].image.url == discord.Embed.Empty:
-            new_url = commandutil.improve_url(chosen_url)
+            new_url = util.improve_url(chosen_url)
             sent_message.edit(embed=None, content=new_url)
 
     @commands.command(hidden=True)
@@ -460,14 +460,14 @@ class ReactionImages(discord.ext.commands.Cog):
             logger.info(f"{cmd}'s sid will be set to {sid}")
             set_img_sid(ctx.bot.db_connection, cmd, chosen_key, sid)
         chosen_path = f"pictures/{cmd}/{chosen_key}"
-        chosen_url = commandutil.url_from_s3_key(
+        chosen_url = util.url_from_s3_key(
             ctx.bot.s3_bucket, ctx.bot.s3_bucket_location, chosen_path,
             improve=True)
         logging.info(f"Sending url in send_image func: {chosen_url}")
         image_embed = await generate_image_embed(ctx, chosen_url)
         sent_message = await ctx.send(embed=image_embed)
-        if not await commandutil.url_is_image(chosen_url):
-            new_url = commandutil.improve_url(chosen_url)
+        if not await util.url_is_image(chosen_url):
+            new_url = util.improve_url(chosen_url)
             logger.info(
                 "URL wasn't image, so turned to text URL. "
                 f"{chosen_url} -> {new_url}")

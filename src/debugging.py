@@ -8,7 +8,7 @@ import asyncio
 import concurrent
 import sys
 import os
-from . import commandutil
+from . import util
 
 logger = logging.getLogger()
 
@@ -40,7 +40,7 @@ class Debugging(discord.ext.commands.Cog):
         try:
             eval_result = eval(to_eval) or ""
         except Exception as e:
-            eval_err = commandutil.get_formatted_traceback(e)
+            eval_err = util.get_formatted_traceback(e)
         eval_output = sys.stdout.getvalue() or ""
         sys.stdout = sys.__stdout__
         if eval_result or eval_output or eval_err:
@@ -125,7 +125,7 @@ class Debugging(discord.ext.commands.Cog):
     async def restore_db(self, ctx, backup_key):
         with concurrent.futures.ThreadPoolExecutor() as pool:
             await asyncio.get_running_loop().run_in_executor(
-                pool, commandutil.restore_db, self.bot.s3_bucket, backup_key)
+                pool, util.restore_db, self.bot.s3_bucket, backup_key)
         await ctx.send("Done!")
 
     @commands.command(hidden=True, aliases=["backupdatabase", "backupdb"])
@@ -133,14 +133,14 @@ class Debugging(discord.ext.commands.Cog):
     async def backup_db(self, ctx):
         with concurrent.futures.ThreadPoolExecutor() as pool:
             await asyncio.get_running_loop().run_in_executor(
-                pool, commandutil.backup_db, self.bot.s3_bucket)
+                pool, util.backup_db, self.bot.s3_bucket)
         await ctx.send("Done!")
 
     @tasks.loop(hours=BACKUP_TIME_DELTA_HOURS)
     async def regular_db_backups(self):
         with concurrent.futures.ThreadPoolExecutor() as pool:
             await asyncio.get_running_loop().run_in_executor(
-                pool, commandutil.backup_db, self.bot.s3_bucket)
+                pool, util.backup_db, self.bot.s3_bucket)
 
     @regular_db_backups.before_loop
     async def before_regular_db_backups(self):

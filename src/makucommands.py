@@ -7,7 +7,7 @@ import logging
 import itertools
 import discord
 from discord.ext import commands
-from . import commandutil
+from . import util
 from psycopg2.extras import RealDictCursor
 from discord.utils import escape_markdown
 
@@ -42,15 +42,15 @@ class MakuCommands(discord.ext.commands.Cog):
         """
         Reloads my command cogs. Works even in fatal situations. Sometimes.
         """
-        logger.info("---Reloading makucommands and commandutil---")
-        importlib.reload(commandutil)
+        logger.info("---Reloading makucommands and util---")
+        importlib.reload(util)
         reload_response = ""
         for to_reload in self.bot.shared["default_extensions"]:
             try:
                 ctx.bot.reload_extension(f"src.{to_reload}")
             except Exception as e:
                 reload_response += f"Failed to reload {to_reload}\n"
-                fail_tb = commandutil.get_formatted_traceback(e)
+                fail_tb = util.get_formatted_traceback(e)
                 fail_message = f"Error reloading {to_reload}: \n{fail_tb}\n\n"
                 logger.error(fail_message)
                 logger.info(fail_message)
@@ -72,7 +72,7 @@ class MakuCommands(discord.ext.commands.Cog):
     @commands.is_owner()
     async def perish(self, ctx):
         """Murders me :( """
-        commandutil.backup_db(self.bot.s3_bucket)
+        util.backup_db(self.bot.s3_bucket)
         await self.bot.close()
 
     def get_free_guild_ids(self):

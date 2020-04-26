@@ -1,7 +1,7 @@
 """
 Main module for makubot.
 This module should never have to be reloaded.
-All reloading should take place in makucommands and commandutil.
+All reloading should take place in makucommands and util.
 """
 import logging
 import discord
@@ -12,7 +12,7 @@ from discord.ext import commands
 from pathlib import Path
 import time
 import psycopg2
-from . import commandutil
+from . import util
 import boto3
 
 LOGGING_FORMAT = ("%(asctime)-15s %(levelname)s in %(funcName)s "
@@ -89,8 +89,8 @@ class MakuBot(commands.Bot):
                 break
         else:
             raise psycopg2.OperationalError("Couldn't connect after retries")
-        commandutil.backup_and_drop_all(self.db_connection, self.s3_bucket)
-        commandutil.restore_db(self.s3_bucket)
+        util.backup_and_drop_all(self.db_connection, self.s3_bucket)
+        util.restore_db(self.s3_bucket)
 
         for extension in self.shared["default_extensions"]:
             self.load_extension(f"src.{extension}")

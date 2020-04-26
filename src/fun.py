@@ -5,7 +5,7 @@ import random
 import asyncio
 import itertools
 import re
-from . import commandutil
+from . import util
 
 logger = logging.getLogger()
 
@@ -149,7 +149,7 @@ class Fun(discord.ext.commands.Cog):
         to limit the poll.
         Example: `mb.poll timeout=30 "Favorite state?" RI MA`
         """
-        args = [await commandutil.clean(ctx, arg) for arg in args]
+        args = [await util.clean(ctx, arg) for arg in args]
         if not args:
             await ctx.send(f"You gotta give a question and options!")
             return
