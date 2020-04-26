@@ -9,6 +9,7 @@ import subprocess
 from psycopg2.extras import RealDictCursor
 import boto3
 import botocore
+import time
 import discord
 
 logger = logging.getLogger()
@@ -20,6 +21,35 @@ def improve_url(url):
     return url.replace(" ", "+")
 
 
+def fnlog(func):
+    # Logger that logs inputs, outputs, and time.
+    def inner(*args, **kwargs):
+        name_part = func.__name__
+        args_reprd = ", ".join([repr(arg) for arg in args])
+        kwargs_reprd = ", ".join([
+            f"{kwarg}={repr(val)}" for kwarg, val in kwargs.items()])
+        parts = [args_reprd, kwargs_reprd]
+        joined_parts = ", ".join([part for part in parts if part])
+        arg_part = f"({joined_parts})"
+        start_time = time.time()
+        try:
+            result = func(*args, **kwargs)
+        except Exception:
+            end_time = time.time()
+            time_part = f"{end_time-start_time:.4f} seconds"
+            logger.exception(
+                f"{name_part}{arg_part} raised exception (took {time_part})")
+            raise
+        else:
+            end_time = time.time()
+            time_part = f"{end_time-start_time:.4f} seconds"
+            logger.info(
+                f"{name_part}{arg_part} -> {result} (took {time_part})")
+            return result
+    return inner
+
+
+@fnlog
 def url_from_s3_key(s3_bucket,
                     s3_bucket_location,
                     s3_key,
