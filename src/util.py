@@ -206,6 +206,7 @@ def slugify(candidate_filename: str):
     return slugified
 
 
+@fnlog
 def get_nonconflicting_filename(candidate_filename: str, existing_keys=None):
     existing_keys = {key.split("/")[-1] for key in existing_keys}
     if candidate_filename not in existing_keys:
