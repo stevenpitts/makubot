@@ -19,10 +19,11 @@ class MakuCommands(discord.ext.commands.Cog):
         self.bot = bot
         version_formatted = ".".join(map(str, sys.version_info[:3]))
         self.bot.description = f"""
-        Hey there! I'm Makubot!
-        I'm a dumb bot made by a person who codes stuff.
+        Hey there! I'm Nao!
+        I know a lot of commands. Test my vast knowledge!
+        You can use mb.help <command> for detailed help!
         I'm currently running Python {version_formatted}.
-        Also you can just ask Makusu2#2222. They love making new friends <333
+        Also, you can join the support server at support.naobot.net! ^_^
         """
         prefix_combinations = itertools.product('mM', 'bB', '.!', [' ', ''])
         prefixes = [''.join(r) for r in prefix_combinations]
@@ -68,7 +69,7 @@ class MakuCommands(discord.ext.commands.Cog):
         await ctx.send("Yes, I am free." if is_free else
                        "This is not a free reign guild.")
 
-    @commands.command()
+    @commands.command(hidden=True)
     @commands.is_owner()
     async def perish(self, ctx):
         """Murders me :( """

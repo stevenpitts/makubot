@@ -301,7 +301,7 @@ class PictureAdder(discord.ext.commands.Cog):
         await ctx.send("Added!")
 
     @commands.command(aliases=["addimage", "addimageraw"])
-    async def add_image(self, ctx, image_collection: str, *, urls: str = ""):
+    async def addimage(self, ctx, image_collection: str, *, urls: str = ""):
         """Requests an image be added.
         mb.addimage nao http://static.zerochan.net/Tomori.Nao.full.1901643.jpg
         Then, it'll be sent to maku for approval!"""
@@ -359,7 +359,7 @@ class PictureAdder(discord.ext.commands.Cog):
                 formatted_tb = util.get_formatted_traceback(e)
                 await status_message.edit(content="Something went wrong ;a;")
                 await self.bot.makusu.send(
-                    f"Something went wrong in add_image\n```{formatted_tb}```")
+                    f"Something went wrong in addimage\n```{formatted_tb}```")
                 raise
             else:
                 await status_message.edit(content="Sent to Maku for approval!")
@@ -370,7 +370,7 @@ class PictureAdder(discord.ext.commands.Cog):
         try:
             await all_suggestion_coros
         except BaseException:
-            logger.error("Got exception in add_image: ", exc_info=True)
+            logger.error("Got exception in addimage: ", exc_info=True)
             all_suggestion_coros.cancel()
 
 
@@ -416,7 +416,7 @@ class ReactionImages(discord.ext.commands.Cog):
 
     @commands.command(aliases=["randomimage", "yo", "hey", "makubot"])
     async def random_image(self, ctx):
-        """For true shitposting."""
+        """Get a totally random image!"""
         chosen_path = get_random_image(self.bot.db_connection)
         chosen_url = util.url_from_s3_key(
             self.bot.s3_bucket,
@@ -498,6 +498,7 @@ class ReactionImages(discord.ext.commands.Cog):
 
     @commands.command(aliases=["howbig"])
     async def how_big(self, ctx, cmd):
+        """Tells you how many images are in a command"""
         real_cmd = get_cmd_from_alias(self.bot.db_connection, cmd)
         if not real_cmd:
             await ctx.send(f"{cmd} isn't an image command :o")
@@ -522,7 +523,7 @@ class ReactionImages(discord.ext.commands.Cog):
             for command in top_ten_commands])
         await ctx.send(message)
 
-    @commands.command(aliases=["getcmdinfo"])
+    @commands.command(hidden=True, aliases=["getcmdinfo"])
     async def get_cmd_info(self, ctx, cmd):
         real_cmd = get_cmd_from_alias(self.bot.db_connection, cmd)
         if not real_cmd:
@@ -544,7 +545,7 @@ class ReactionImages(discord.ext.commands.Cog):
             f"{cmd} is at pictures/{real_cmd}. {uid_user_str=}, "
             f"{origin_sid_server_strs=}.")
 
-    @commands.command(aliases=["getimageinfo", "getimginfo"])
+    @commands.command(hidden=True, aliases=["getimageinfo", "getimginfo"])
     async def get_image_info(self, ctx, cmd, image_key):
         real_cmd = get_cmd_from_alias(self.bot.db_connection, cmd)
         if not real_cmd:

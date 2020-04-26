@@ -34,9 +34,9 @@ class Fun(discord.ext.commands.Cog):
     def __init__(self, bot):
         self.bot = bot
 
-    @commands.command(aliases=["is gay"])
+    @commands.command(hidden=True, aliases=["is gay"])
     async def isgay(self, ctx):
-        """Tells me I'm gay (CAUTION: May mirror attack at sender)"""
+        """Tells me I'm gay :("""
         await ctx.send("No u")
 
     @commands.command()
