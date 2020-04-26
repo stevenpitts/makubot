@@ -300,7 +300,7 @@ class PictureAdder(discord.ext.commands.Cog):
         self.bot.all_commands[alias] = self.bot.all_commands["send_image_func"]
         await ctx.send("Added!")
 
-    @commands.command(aliases=["addimage", "addimageraw"])
+    @commands.command(aliases=["addimageraw"])
     async def addimage(self, ctx, image_collection: str, *, urls: str = ""):
         """Requests an image be added.
         mb.addimage nao http://static.zerochan.net/Tomori.Nao.full.1901643.jpg
@@ -414,8 +414,8 @@ class ReactionImages(discord.ext.commands.Cog):
 
         cascade_deleted_referenced_aliases(self.bot.db_connection)
 
-    @commands.command(aliases=["randomimage", "yo", "hey", "makubot"])
-    async def random_image(self, ctx):
+    @commands.command(aliases=["yo", "hey", "makubot"])
+    async def randomimage(self, ctx):
         """Get a totally random image!"""
         chosen_path = get_random_image(self.bot.db_connection)
         chosen_url = util.url_from_s3_key(
@@ -423,7 +423,7 @@ class ReactionImages(discord.ext.commands.Cog):
             self.bot.s3_bucket_location,
             chosen_path,
             improve=True)
-        logging.info(f"Sending url in random_image func: {chosen_url}")
+        logging.info(f"Sending url in randomimage func: {chosen_url}")
         image_embed = await generate_image_embed(
             ctx, chosen_url, call_bot_name=True)
         sent_message = await ctx.send(embed=image_embed)
@@ -473,8 +473,8 @@ class ReactionImages(discord.ext.commands.Cog):
                 f"{chosen_url} -> {new_url}")
             await sent_message.edit(embed=None, content=new_url)
 
-    @commands.command(aliases=["listreactions"])
-    async def list_reactions(self, ctx):
+    @commands.command()
+    async def listreactions(self, ctx):
         """List all my reactions"""
         all_invocations = get_all_cmds_aliases_from_db(self.bot.db_connection)
         all_invocations_alphabetized = sorted(all_invocations)
@@ -485,7 +485,7 @@ class ReactionImages(discord.ext.commands.Cog):
         for text_block in text_blocks:
             await ctx.send(f"```{escape_markdown(text_block)}```")
 
-    @commands.command(aliases=["realinvocation"])
+    @commands.command(hidden=True, aliases=["realinvocation"])
     async def real_invocation(self, ctx, alias):
         real_cmd = get_cmd_from_alias(
             self.bot.db_connection, alias)
@@ -496,8 +496,8 @@ class ReactionImages(discord.ext.commands.Cog):
         else:
             await ctx.send(f"Hmm, I don't think {alias} is an alias...")
 
-    @commands.command(aliases=["howbig"])
-    async def how_big(self, ctx, cmd):
+    @commands.command()
+    async def howbig(self, ctx, cmd):
         """Tells you how many images are in a command"""
         real_cmd = get_cmd_from_alias(self.bot.db_connection, cmd)
         if not real_cmd:
@@ -508,8 +508,8 @@ class ReactionImages(discord.ext.commands.Cog):
         image_plurality = "image" if command_size == 1 else "images"
         await ctx.send(f"{cmd} has {command_size} {image_plurality}!")
 
-    @commands.command(aliases=["bigten"])
-    async def big_ten(self, ctx):
+    @commands.command(aliases=["topten"])
+    async def bigten(self, ctx):
         """List ten biggest image commands!"""
         command_sizes = get_cmd_sizes(self.bot.db_connection)
         commands_sorted = sorted(
