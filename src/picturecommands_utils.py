@@ -460,7 +460,7 @@ def img_sid_should_be_set(db_connection, cmd, image_key, uid):
     result = results[0]
     img_uid = as_ids(result["uid"])
     img_sid = as_ids(result["sid"])
-    should_set = (img_uid == uid) and img_sid is None
+    should_set = (img_uid == as_ids(uid)) and img_sid is None
     logger.info(
         f"For {cmd=} {image_key=}, got {img_uid=}, {img_sid=}, {should_set=}")
     return should_set

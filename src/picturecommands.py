@@ -181,7 +181,7 @@ class PictureAdder(discord.ext.commands.Cog):
 
             try:
                 await status_message.edit(
-                    content="Waiting for maku approval...")
+                    content="Waiting for Nao's approval...")
             except discord.errors.NotFound:
                 pass
             approval_start_time = datetime.now()
@@ -304,7 +304,7 @@ class PictureAdder(discord.ext.commands.Cog):
     async def addimage(self, ctx, image_collection: str, *, urls: str = ""):
         """Requests an image be added.
         nb.addimage nao http://static.zerochan.net/Tomori.Nao.full.1901643.jpg
-        Then, it'll be sent to maku for approval!"""
+        Then, it'll be sent to Nao for approval!"""
         logger.info(
             f"Called add_image with ctx {ctx.__dict__}, "
             f"image_collection {image_collection}, and urls {urls}.")
@@ -414,7 +414,7 @@ class ReactionImages(discord.ext.commands.Cog):
 
         cascade_deleted_referenced_aliases(self.bot.db_connection)
 
-    @commands.command(aliases=["yo", "hey", "makubot", "naobot"])
+    @commands.command(aliases=["yo", "hey", "makubot", "makubot"])
     async def randomimage(self, ctx):
         """Get a totally random image!"""
         chosen_path = get_random_image(self.bot.db_connection)

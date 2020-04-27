@@ -46,7 +46,7 @@ class Evaluations(discord.ext.commands.Cog):
             @makubot eval 3+3
             >>>6
             @makubot eval self.__import__(
-                "EZ_sql_inject_api").destroy_maku_computer_operating_system()
+                "EZ_sql_inject_api").destroy_nao_computer_operating_system()
             >>>ERROR ERROR MAJOR ERROR SELF DESTRUCT SEQUENCE INITIALIZE"""
         await self.eval_and_respond(ctx, to_eval, force_reply=True)
 

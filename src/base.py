@@ -19,12 +19,13 @@ class Base(discord.ext.commands.Cog):
         self.bot = bot
         version_formatted = ".".join(map(str, sys.version_info[:3]))
         self.bot.description = f"""
-        Hey there! I'm Nao!
+        Hey there! I'm Makubot!
         I know a lot of commands. Test my vast knowledge!
         You can use nb.help <command> for detailed help!
         I'm currently running Python {version_formatted}.
-        Also, you can join the support server at support.naobot.net! ^_^
-        If there is a legal issue with an image, please join support.naobot.net
+        Also, you can join the support server at support.makubotbot.net! ^_^
+        If there are legal issues with an image, please join:
+            support.makubot.net
         """
         prefix_combinations = itertools.product('mMnN', 'bB', '.!', [' ', ''])
         prefixes = [''.join(r) for r in prefix_combinations]

@@ -24,7 +24,7 @@ class Listeners(discord.ext.commands.Cog):
         (because Maku does) <3"""
         guild_is_free = (
             str(member.guild.id)
-            in self.bot.get_cog("MakuCommands").get_free_guild_ids()
+            in self.bot.get_cog("Base").get_free_guild_ids()
         )
         if not guild_is_free:
             return
@@ -73,7 +73,7 @@ class Listeners(discord.ext.commands.Cog):
             return
         guild_is_free = (
             str(message.guild.id)
-            in self.bot.get_cog("MakuCommands").get_free_guild_ids()
+            in self.bot.get_cog("Base").get_free_guild_ids()
         )
         if ("+hug" in message.content.lower()
                 and str(self.bot.user.id) in message.content):
