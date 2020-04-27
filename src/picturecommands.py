@@ -43,6 +43,7 @@ from .picturecommands_utils import (
     cmd_info,
     image_info,
     set_cmd_images_owner_on_db,
+    set_cmd_images_server_on_db,
 )
 
 logger = logging.getLogger()
@@ -414,7 +415,7 @@ class ReactionImages(discord.ext.commands.Cog):
 
         cascade_deleted_referenced_aliases(self.bot.db_connection)
 
-    @commands.command(aliases=["yo", "hey", "makubot", "makubot"])
+    @commands.command(aliases=["yo", "hey", "makubot"])
     async def randomimage(self, ctx):
         """Get a totally random image!"""
         chosen_path = get_random_image(self.bot.db_connection)
@@ -578,6 +579,17 @@ class ReactionImages(discord.ext.commands.Cog):
             await ctx.send("That's not an image command :?")
             return
         set_cmd_images_owner_on_db(self.bot.db_connection, cmd, uid)
+        await ctx.send("Done!")
+
+    @commands.is_owner()
+    @commands.command(hidden=True, aliases=["setcmdserver"])
+    async def set_cmd_images_server(self, ctx, cmd, sid):
+        assert len(sid) == 18
+        cmd = get_cmd_from_alias(self.bot.db_connection, cmd)
+        if not cmd:
+            await ctx.send("That's not an image command :?")
+            return
+        set_cmd_images_server_on_db(self.bot.db_connection, cmd, sid)
         await ctx.send("Done!")
 
 
