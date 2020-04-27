@@ -26,7 +26,7 @@ class MakuCommands(discord.ext.commands.Cog):
         Also, you can join the support server at support.naobot.net! ^_^
         If there is a legal issue with an image, please join support.naobot.net
         """
-        prefix_combinations = itertools.product('mM', 'bB', '.!', [' ', ''])
+        prefix_combinations = itertools.product('mMnN', 'bB', '.!', [' ', ''])
         prefixes = [''.join(r) for r in prefix_combinations]
         self.bot.command_prefix = commands.when_mentioned_or(*prefixes)
         cursor = self.bot.db_connection.cursor(cursor_factory=RealDictCursor)
