@@ -9,7 +9,7 @@ import tempfile
 from psycopg2.extras import RealDictCursor
 from datetime import datetime
 import boto3
-from . import commandutil
+from . import util
 
 logger = logging.getLogger()
 
@@ -512,7 +512,7 @@ def get_appropriate_images(db_connection, cmd, uid, sid=None, user_sids=[]):
 
 
 def get_starting_keys_hashes(bucket):
-    keys, hashes = commandutil.s3_keys_hashes(bucket, prefix="pictures/")
+    keys, hashes = util.s3_keys_hashes(bucket, prefix="pictures/")
     toplevel_dirs = set(key.split("/")[1] for key in keys)
     collection_keys = {}
     collection_hashes = {}
@@ -536,13 +536,13 @@ def get_starting_keys_hashes(bucket):
 
 async def generate_image_embed(
         ctx, url, call_bot_name=False):
-    url = commandutil.improve_url(url)
+    url = util.improve_url(url)
     bot_nick = ctx.me.nick if getattr(ctx.me, "nick", None) else ctx.me.name
     invocation = f"{ctx.prefix}{ctx.invoked_with}"
     content_without_invocation = ctx.message.content[len(invocation):]
     has_content = bool(content_without_invocation.strip())
     query = f"{content_without_invocation}"
-    cleaned_query = await commandutil.clean(ctx, query)
+    cleaned_query = await util.clean(ctx, query)
     call_beginning = ("" if not has_content else
                       f"{bot_nick}, " if call_bot_name else
                       f"{ctx.invoked_with}, "

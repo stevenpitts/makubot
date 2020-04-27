@@ -9,7 +9,7 @@ from discord.ext.commands.errors import (CommandError, CommandNotFound,
                                          BadUnionArgument,
                                          MissingRequiredArgument,
                                          BadArgument)
-from . import commandutil
+from . import util
 
 logger = logging.getLogger()
 
@@ -56,7 +56,7 @@ class Listeners(discord.ext.commands.Cog):
                                            BadArgument)):
             await ctx.send(str(caught_exception))
         else:
-            formatted_tb = commandutil.get_formatted_traceback(
+            formatted_tb = util.get_formatted_traceback(
                 caught_exception)
             logger.error(formatted_tb)
             await ctx.send("Something went wrong, sorry!")
@@ -65,7 +65,7 @@ class Listeners(discord.ext.commands.Cog):
 
     @commands.Cog.listener()
     async def on_error(self, ctx, caught_exception):
-        logger.error(commandutil.get_formatted_traceback(caught_exception))
+        logger.error(util.get_formatted_traceback(caught_exception))
 
     @commands.Cog.listener()
     async def on_message(self, message: discord.Message):

@@ -3,7 +3,7 @@ from discord.ext import commands
 import logging
 import re
 import asyncio
-from . import commandutil
+from . import util
 
 MOVE_EMOTE = "\U0001f232"
 
@@ -60,8 +60,8 @@ class Movement(discord.ext.commands.Cog):
     async def save_pins(self, ctx, pins_channel: discord.TextChannel):
         """
         Send all the pins in the current channel to a dedicated pins channel!
-        I currently don't support attachments.
-        Remember to use mb.deleteallpins after this!
+        I currently don't support multiple attachments.
+        Remember to use nb.deleteallpins after this!
         """
         bot_as_member = ctx.guild.get_member(self.bot.user.id)
         member_can_move_messages = pins_channel.permissions_for(
@@ -84,7 +84,7 @@ class Movement(discord.ext.commands.Cog):
                 pin_embed = message.embeds[0].copy()
             else:
                 pin_embed_dict = {
-                    "description": await commandutil.clean(
+                    "description": await util.clean(
                         ctx, message.content),
                     "footer": {"text": f"In {message.channel.name}"},
                     "author": {"name": message.author.name,

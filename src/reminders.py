@@ -6,7 +6,7 @@ import logging
 import asyncio
 import re
 from psycopg2.extras import RealDictCursor
-from . import commandutil
+from . import util
 from dateutil.parser import parse as date_parse
 
 logger = logging.getLogger()
@@ -180,7 +180,7 @@ class ReminderCommands(discord.ext.commands.Cog):
         """
         total_seconds, reminder_message = parse_remind_me(
             time_and_reminder)
-        reminder_message = await commandutil.clean(ctx, reminder_message)
+        reminder_message = await util.clean(ctx, reminder_message)
         total_seconds = total_seconds and int(total_seconds)
         if total_seconds is None or reminder_message is None:
             await ctx.send(
@@ -189,7 +189,7 @@ class ReminderCommands(discord.ext.commands.Cog):
         elif total_seconds < 0:
             await ctx.send("That's a time in the past :?")
             return
-        reminder_cleaned = await commandutil.clean(ctx, reminder_message)
+        reminder_cleaned = await util.clean(ctx, reminder_message)
         remind_set_time = datetime.utcnow()
         remind_time = remind_set_time + timedelta(seconds=total_seconds)
         user_id = str(ctx.message.author.id)

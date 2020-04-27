@@ -5,7 +5,7 @@ import random
 import asyncio
 import itertools
 import re
-from . import commandutil
+from . import util
 
 logger = logging.getLogger()
 
@@ -34,9 +34,9 @@ class Fun(discord.ext.commands.Cog):
     def __init__(self, bot):
         self.bot = bot
 
-    @commands.command(aliases=["is gay"])
+    @commands.command(hidden=True, aliases=["is gay"])
     async def isgay(self, ctx):
-        """Tells me I'm gay (CAUTION: May mirror attack at sender)"""
+        """Tells me I'm gay :("""
         await ctx.send("No u")
 
     @commands.command()
@@ -130,7 +130,7 @@ class Fun(discord.ext.commands.Cog):
         Returns a random choice from the choices you provide!
         Separated  by spaces, but you can put options in quotes
         to allow spaces in a single option.
-        For example: `mb.choose "North Carolina" Maine "Rhode Island"`
+        For example: `nb.choose "North Carolina" Maine "Rhode Island"`
         """
         if not args:
             await ctx.send(f"You gotta give options!\n{ctx.command.help}")
@@ -144,12 +144,12 @@ class Fun(discord.ext.commands.Cog):
         The first argument should be the question, followed by choices.
         Arguments are separated by spaces.
         You can put options in quotes to allow spaces in a single option.
-        Example: `mb.poll "Favorite state?" "North Carolina" Maine Iowa`
+        Example: `nb.poll "Favorite state?" "North Carolina" Maine Iowa`
         You can also add "timeout=SECONDS" after the question
         to limit the poll.
-        Example: `mb.poll timeout=30 "Favorite state?" RI MA`
+        Example: `nb.poll timeout=30 "Favorite state?" RI MA`
         """
-        args = [await commandutil.clean(ctx, arg) for arg in args]
+        args = [await util.clean(ctx, arg) for arg in args]
         if not args:
             await ctx.send(f"You gotta give a question and options!")
             return

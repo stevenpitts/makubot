@@ -11,7 +11,7 @@ import hashlib
 from datetime import datetime
 import mimetypes
 import boto3
-from . import commandutil
+from . import util
 from .picturecommands_utils import (
     YES_EMOJI,
     NO_EMOJI,
@@ -139,7 +139,7 @@ class PictureAdder(discord.ext.commands.Cog):
             else:
                 existing_keys = {
                     str(path) for path in self.temp_save_dir.iterdir()}
-                filename = commandutil.get_nonconflicting_filename(
+                filename = util.get_nonconflicting_filename(
                     filename, existing_keys=existing_keys)
                 with open(self.temp_save_dir / filename, "wb") as f:
                     f.write(image_bytes)
@@ -219,7 +219,7 @@ class PictureAdder(discord.ext.commands.Cog):
                 asyncio.exceptions.CancelledError):
             logger.error(f"Cancelled error on {filename}")
         except BaseException as e:
-            formatted_tb = commandutil.get_formatted_traceback(e)
+            formatted_tb = util.get_formatted_traceback(e)
             logger.error(formatted_tb)
             response = f"Something went wrong with {filename}, sorry!"
             await requestor.send(response)
@@ -234,7 +234,7 @@ class PictureAdder(discord.ext.commands.Cog):
     async def apply_image_approved(
             self, filename, cmd, requestor, status_message, image_bytes):
         existing_keys = get_all_cmd_images_from_db(self.bot.db_connection, cmd)
-        image_key = commandutil.get_nonconflicting_filename(
+        image_key = util.get_nonconflicting_filename(
             filename, existing_keys=existing_keys)
         full_image_key = f"pictures/{cmd}/{image_key}"
 
@@ -300,10 +300,10 @@ class PictureAdder(discord.ext.commands.Cog):
         self.bot.all_commands[alias] = self.bot.all_commands["send_image_func"]
         await ctx.send("Added!")
 
-    @commands.command(aliases=["addimage", "addimageraw"])
-    async def add_image(self, ctx, image_collection: str, *, urls: str = ""):
+    @commands.command(aliases=["addimageraw"])
+    async def addimage(self, ctx, image_collection: str, *, urls: str = ""):
         """Requests an image be added.
-        mb.addimage nao http://static.zerochan.net/Tomori.Nao.full.1901643.jpg
+        nb.addimage nao http://static.zerochan.net/Tomori.Nao.full.1901643.jpg
         Then, it'll be sent to maku for approval!"""
         logger.info(
             f"Called add_image with ctx {ctx.__dict__}, "
@@ -345,7 +345,7 @@ class PictureAdder(discord.ext.commands.Cog):
                    aiohttp.client_exceptions.InvalidURL,
                    discord.errors.HTTPException,
                    FileNotFoundError) as e:
-                traceback = commandutil.get_formatted_traceback(e)
+                traceback = util.get_formatted_traceback(e)
                 logger.warning(f"Couldn't download image: {traceback}")
                 await asyncio.sleep(1)  # TODO fix race condition, added to
                 # counter status message update from separate thread
@@ -356,10 +356,10 @@ class PictureAdder(discord.ext.commands.Cog):
                     content="Sorry, the download messed up; please try again!")
                 return
             except BaseException as e:
-                formatted_tb = commandutil.get_formatted_traceback(e)
+                formatted_tb = util.get_formatted_traceback(e)
                 await status_message.edit(content="Something went wrong ;a;")
                 await self.bot.makusu.send(
-                    f"Something went wrong in add_image\n```{formatted_tb}```")
+                    f"Something went wrong in addimage\n```{formatted_tb}```")
                 raise
             else:
                 await status_message.edit(content="Sent to Maku for approval!")
@@ -370,7 +370,7 @@ class PictureAdder(discord.ext.commands.Cog):
         try:
             await all_suggestion_coros
         except BaseException:
-            logger.error("Got exception in add_image: ", exc_info=True)
+            logger.error("Got exception in addimage: ", exc_info=True)
             all_suggestion_coros.cancel()
 
 
@@ -414,21 +414,21 @@ class ReactionImages(discord.ext.commands.Cog):
 
         cascade_deleted_referenced_aliases(self.bot.db_connection)
 
-    @commands.command(aliases=["randomimage", "yo", "hey", "makubot"])
-    async def random_image(self, ctx):
-        """For true shitposting."""
+    @commands.command(aliases=["yo", "hey", "makubot", "naobot"])
+    async def randomimage(self, ctx):
+        """Get a totally random image!"""
         chosen_path = get_random_image(self.bot.db_connection)
-        chosen_url = commandutil.url_from_s3_key(
+        chosen_url = util.url_from_s3_key(
             self.bot.s3_bucket,
             self.bot.s3_bucket_location,
             chosen_path,
             improve=True)
-        logging.info(f"Sending url in random_image func: {chosen_url}")
+        logging.info(f"Sending url in randomimage func: {chosen_url}")
         image_embed = await generate_image_embed(
             ctx, chosen_url, call_bot_name=True)
         sent_message = await ctx.send(embed=image_embed)
         if sent_message.embeds[0].image.url == discord.Embed.Empty:
-            new_url = commandutil.improve_url(chosen_url)
+            new_url = util.improve_url(chosen_url)
             sent_message.edit(embed=None, content=new_url)
 
     @commands.command(hidden=True)
@@ -460,21 +460,21 @@ class ReactionImages(discord.ext.commands.Cog):
             logger.info(f"{cmd}'s sid will be set to {sid}")
             set_img_sid(ctx.bot.db_connection, cmd, chosen_key, sid)
         chosen_path = f"pictures/{cmd}/{chosen_key}"
-        chosen_url = commandutil.url_from_s3_key(
+        chosen_url = util.url_from_s3_key(
             ctx.bot.s3_bucket, ctx.bot.s3_bucket_location, chosen_path,
             improve=True)
         logging.info(f"Sending url in send_image func: {chosen_url}")
         image_embed = await generate_image_embed(ctx, chosen_url)
         sent_message = await ctx.send(embed=image_embed)
-        if not await commandutil.url_is_image(chosen_url):
-            new_url = commandutil.improve_url(chosen_url)
+        if not await util.url_is_image(chosen_url):
+            new_url = util.improve_url(chosen_url)
             logger.info(
                 "URL wasn't image, so turned to text URL. "
                 f"{chosen_url} -> {new_url}")
             await sent_message.edit(embed=None, content=new_url)
 
-    @commands.command(aliases=["listreactions"])
-    async def list_reactions(self, ctx):
+    @commands.command()
+    async def listreactions(self, ctx):
         """List all my reactions"""
         all_invocations = get_all_cmds_aliases_from_db(self.bot.db_connection)
         all_invocations_alphabetized = sorted(all_invocations)
@@ -485,7 +485,7 @@ class ReactionImages(discord.ext.commands.Cog):
         for text_block in text_blocks:
             await ctx.send(f"```{escape_markdown(text_block)}```")
 
-    @commands.command(aliases=["realinvocation"])
+    @commands.command(hidden=True, aliases=["realinvocation"])
     async def real_invocation(self, ctx, alias):
         real_cmd = get_cmd_from_alias(
             self.bot.db_connection, alias)
@@ -496,8 +496,9 @@ class ReactionImages(discord.ext.commands.Cog):
         else:
             await ctx.send(f"Hmm, I don't think {alias} is an alias...")
 
-    @commands.command(aliases=["howbig"])
-    async def how_big(self, ctx, cmd):
+    @commands.command()
+    async def howbig(self, ctx, cmd):
+        """Tells you how many images are in a command"""
         real_cmd = get_cmd_from_alias(self.bot.db_connection, cmd)
         if not real_cmd:
             await ctx.send(f"{cmd} isn't an image command :o")
@@ -507,8 +508,8 @@ class ReactionImages(discord.ext.commands.Cog):
         image_plurality = "image" if command_size == 1 else "images"
         await ctx.send(f"{cmd} has {command_size} {image_plurality}!")
 
-    @commands.command(aliases=["bigten"])
-    async def big_ten(self, ctx):
+    @commands.command(aliases=["topten"])
+    async def bigten(self, ctx):
         """List ten biggest image commands!"""
         command_sizes = get_cmd_sizes(self.bot.db_connection)
         commands_sorted = sorted(
@@ -522,7 +523,7 @@ class ReactionImages(discord.ext.commands.Cog):
             for command in top_ten_commands])
         await ctx.send(message)
 
-    @commands.command(aliases=["getcmdinfo"])
+    @commands.command(hidden=True, aliases=["getcmdinfo"])
     async def get_cmd_info(self, ctx, cmd):
         real_cmd = get_cmd_from_alias(self.bot.db_connection, cmd)
         if not real_cmd:
@@ -544,7 +545,7 @@ class ReactionImages(discord.ext.commands.Cog):
             f"{cmd} is at pictures/{real_cmd}. {uid_user_str=}, "
             f"{origin_sid_server_strs=}.")
 
-    @commands.command(aliases=["getimageinfo", "getimginfo"])
+    @commands.command(hidden=True, aliases=["getimageinfo", "getimginfo"])
     async def get_image_info(self, ctx, cmd, image_key):
         real_cmd = get_cmd_from_alias(self.bot.db_connection, cmd)
         if not real_cmd:

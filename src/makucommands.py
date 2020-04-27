@@ -7,7 +7,7 @@ import logging
 import itertools
 import discord
 from discord.ext import commands
-from . import commandutil
+from . import util
 from psycopg2.extras import RealDictCursor
 from discord.utils import escape_markdown
 
@@ -19,12 +19,14 @@ class MakuCommands(discord.ext.commands.Cog):
         self.bot = bot
         version_formatted = ".".join(map(str, sys.version_info[:3]))
         self.bot.description = f"""
-        Hey there! I'm Makubot!
-        I'm a dumb bot made by a person who codes stuff.
+        Hey there! I'm Nao!
+        I know a lot of commands. Test my vast knowledge!
+        You can use nb.help <command> for detailed help!
         I'm currently running Python {version_formatted}.
-        Also you can just ask Makusu2#2222. They love making new friends <333
+        Also, you can join the support server at support.naobot.net! ^_^
+        If there is a legal issue with an image, please join support.naobot.net
         """
-        prefix_combinations = itertools.product('mM', 'bB', '.!', [' ', ''])
+        prefix_combinations = itertools.product('mMnN', 'bB', '.!', [' ', ''])
         prefixes = [''.join(r) for r in prefix_combinations]
         self.bot.command_prefix = commands.when_mentioned_or(*prefixes)
         cursor = self.bot.db_connection.cursor(cursor_factory=RealDictCursor)
@@ -42,15 +44,15 @@ class MakuCommands(discord.ext.commands.Cog):
         """
         Reloads my command cogs. Works even in fatal situations. Sometimes.
         """
-        logger.info("---Reloading makucommands and commandutil---")
-        importlib.reload(commandutil)
+        logger.info("---Reloading makucommands and util---")
+        importlib.reload(util)
         reload_response = ""
         for to_reload in self.bot.shared["default_extensions"]:
             try:
                 ctx.bot.reload_extension(f"src.{to_reload}")
             except Exception as e:
                 reload_response += f"Failed to reload {to_reload}\n"
-                fail_tb = commandutil.get_formatted_traceback(e)
+                fail_tb = util.get_formatted_traceback(e)
                 fail_message = f"Error reloading {to_reload}: \n{fail_tb}\n\n"
                 logger.error(fail_message)
                 logger.info(fail_message)
@@ -68,11 +70,11 @@ class MakuCommands(discord.ext.commands.Cog):
         await ctx.send("Yes, I am free." if is_free else
                        "This is not a free reign guild.")
 
-    @commands.command()
+    @commands.command(hidden=True)
     @commands.is_owner()
     async def perish(self, ctx):
         """Murders me :( """
-        commandutil.backup_db(self.bot.s3_bucket)
+        util.backup_db(self.bot.s3_bucket)
         await self.bot.close()
 
     def get_free_guild_ids(self):
