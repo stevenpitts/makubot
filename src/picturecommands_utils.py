@@ -326,6 +326,22 @@ def get_all_true_cmds_from_db(db_connection):
     return normal_commands
 
 
+def get_all_user_images(db_connection, uid):
+    uid = as_text(uid)
+    cursor = db_connection.cursor(cursor_factory=RealDictCursor)
+    cursor.execute(
+        """
+        SELECT * FROM media.images
+        WHERE uid = %s
+        """,
+        (uid,)
+    )
+    results = cursor.fetchall()
+    image_strs = {
+        f"{result['cmd']}/{result['image_key']}" for result in results}
+    return image_strs
+
+
 def get_all_user_cmds(db_connection, uid):
     uid = as_text(uid)
     cursor = db_connection.cursor(cursor_factory=RealDictCursor)
