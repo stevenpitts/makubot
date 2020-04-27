@@ -326,6 +326,34 @@ def get_all_true_cmds_from_db(db_connection):
     return normal_commands
 
 
+def get_all_user_cmds(db_connection, uid):
+    uid = as_text(uid)
+    cursor = db_connection.cursor(cursor_factory=RealDictCursor)
+    cursor.execute(
+        """
+        SELECT * FROM media.commands
+        WHERE uid = %s
+        """,
+        (uid,)
+    )
+    results = cursor.fetchall()
+    normal_commands = {result["cmd"] for result in results}
+    cursor.execute(
+        """
+        SELECT * FROM media.aliases
+        WHERE real IN (
+            SELECT cmd
+            FROM media.commands
+            WHERE uid = %s
+        )
+        """,
+        (uid,)
+    )
+    results = cursor.fetchall()
+    alias_commands = {result["alias"] for result in results}
+    return normal_commands | alias_commands
+
+
 def get_all_cmds_aliases_from_db(db_connection):
     cursor = db_connection.cursor(cursor_factory=RealDictCursor)
     cursor.execute(

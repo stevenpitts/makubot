@@ -44,6 +44,7 @@ from .picturecommands_utils import (
     image_info,
     set_cmd_images_owner_on_db,
     set_cmd_images_server_on_db,
+    get_all_user_cmds,
 )
 
 logger = logging.getLogger()
@@ -300,6 +301,16 @@ class PictureAdder(discord.ext.commands.Cog):
         send_image_cmd.aliases.append(alias)
         self.bot.all_commands[alias] = self.bot.all_commands["send_image_func"]
         await ctx.send("Added!")
+
+    @commands.command(aliases=["mycmds"])
+    async def mycommands(self, ctx):
+        """Shows you all your commands!"""
+        all_cmds = get_all_user_cmds(self.bot.db_connection, ctx.author.id)
+        all_cmds_str = ", ".join(all_cmds)
+        if all_cmds:
+            await ctx.send(f"All your commands: {all_cmds_str}")
+        else:
+            await ctx.send("You don't have any owned commands!")
 
     @commands.command(aliases=["addimageraw"])
     async def addimage(self, ctx, image_collection: str, *, urls: str = ""):
