@@ -12,6 +12,7 @@ services:
         privileged: true
         init: true
         ipc: none
+        hostname: snekbox
         networks:
             - net
 

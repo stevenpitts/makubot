@@ -15,7 +15,7 @@ class Evaluations(discord.ext.commands.Cog):
         to_eval = to_eval.strip().strip("`").strip()
         to_eval = (f"result=eval(\"\"\"\n{to_eval}\n\"\"\"); "
                    "print(str(result) or 'No Result')")
-        eval_path = r"http://localhost:8060/eval"
+        eval_path = r"http://snekbox:8060/eval"
         eval_data = {"input": to_eval}
         try:
             async with aiohttp.ClientSession() as session:
