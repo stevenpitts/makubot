@@ -83,6 +83,20 @@ def set_cmd_images_owner_on_db(db_connection, cmd, uid):
     db_connection.commit()
 
 
+def set_cmd_images_server_on_db(db_connection, cmd, sid):
+    sid = as_text(sid)
+    cursor = db_connection.cursor(cursor_factory=RealDictCursor)
+    cursor.execute(
+        """
+        UPDATE media.images
+        SET sid = %s
+        WHERE cmd = %s
+        """,
+        (sid, cmd)
+    )
+    db_connection.commit()
+
+
 def add_alias_to_db(db_connection, alias, real):
     cursor = db_connection.cursor()
     cursor.execute(
@@ -460,7 +474,7 @@ def img_sid_should_be_set(db_connection, cmd, image_key, uid):
     result = results[0]
     img_uid = as_ids(result["uid"])
     img_sid = as_ids(result["sid"])
-    should_set = (img_uid == uid) and img_sid is None
+    should_set = (img_uid == as_ids(uid)) and img_sid is None
     logger.info(
         f"For {cmd=} {image_key=}, got {img_uid=}, {img_sid=}, {should_set=}")
     return should_set

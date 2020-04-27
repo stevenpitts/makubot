@@ -1,7 +1,7 @@
 """
 Main module for makubot.
 This module should never have to be reloaded.
-All reloading should take place in makucommands and util.
+All reloading should take place in base and util.
 """
 import logging
 import discord
@@ -47,7 +47,7 @@ class MakuBot(commands.Bot):
         self.shared = {}
         self.temp_dir_pointer = tempfile.TemporaryDirectory()
         self.shared["temp_dir"] = Path(self.temp_dir_pointer.name)
-        self.shared["default_extensions"] = ["makucommands",
+        self.shared["default_extensions"] = ["base",
                                              "reminders",
                                              "picturecommands",
                                              "serverlogging",

@@ -14,17 +14,18 @@ from discord.utils import escape_markdown
 logger = logging.getLogger()
 
 
-class MakuCommands(discord.ext.commands.Cog):
+class Base(discord.ext.commands.Cog):
     def __init__(self, bot):
         self.bot = bot
         version_formatted = ".".join(map(str, sys.version_info[:3]))
         self.bot.description = f"""
-        Hey there! I'm Nao!
+        Hey there! I'm Makubot!
         I know a lot of commands. Test my vast knowledge!
         You can use nb.help <command> for detailed help!
         I'm currently running Python {version_formatted}.
-        Also, you can join the support server at support.naobot.net! ^_^
-        If there is a legal issue with an image, please join support.naobot.net
+        Also, you can join the support server at support.makubotbot.net! ^_^
+        If there are legal issues with an image, please join:
+            support.makubot.net
         """
         prefix_combinations = itertools.product('mMnN', 'bB', '.!', [' ', ''])
         prefixes = [''.join(r) for r in prefix_combinations]
@@ -44,7 +45,7 @@ class MakuCommands(discord.ext.commands.Cog):
         """
         Reloads my command cogs. Works even in fatal situations. Sometimes.
         """
-        logger.info("---Reloading makucommands and util---")
+        logger.info("---Reloading base and util---")
         importlib.reload(util)
         reload_response = ""
         for to_reload in self.bot.shared["default_extensions"]:
@@ -160,6 +161,6 @@ class MakuCommands(discord.ext.commands.Cog):
 
 
 def setup(bot):
-    logger.info("makucommands starting setup")
-    bot.add_cog(MakuCommands(bot))
-    logger.info("makucommands ending setup")
+    logger.info("base starting setup")
+    bot.add_cog(Base(bot))
+    logger.info("base ending setup")

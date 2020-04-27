@@ -1,4 +1,4 @@
-from . import makubot
+from . import runbot
 import sys
 import os
 import asyncio
@@ -30,7 +30,7 @@ def main():
     db_port = os.environ["PGPORT"]
     db_user = os.environ["PGUSER"]
 
-    makubot_bot = makubot.MakuBot(
+    makubot_bot = runbot.MakuBot(
         s3_bucket=s3_bucket,
         google_api_key=google_api_key,
         db_host=db_host,
