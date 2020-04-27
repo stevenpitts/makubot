@@ -24,6 +24,7 @@ class MakuCommands(discord.ext.commands.Cog):
         You can use mb.help <command> for detailed help!
         I'm currently running Python {version_formatted}.
         Also, you can join the support server at support.naobot.net! ^_^
+        If there is a legal issue with an image, please join support.naobot.net
         """
         prefix_combinations = itertools.product('mM', 'bB', '.!', [' ', ''])
         prefixes = [''.join(r) for r in prefix_combinations]
