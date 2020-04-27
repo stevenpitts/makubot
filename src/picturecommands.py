@@ -44,6 +44,8 @@ from .picturecommands_utils import (
     image_info,
     set_cmd_images_owner_on_db,
     set_cmd_images_server_on_db,
+    get_all_user_cmds,
+    get_all_user_images,
 )
 
 logger = logging.getLogger()
@@ -301,6 +303,22 @@ class PictureAdder(discord.ext.commands.Cog):
         self.bot.all_commands[alias] = self.bot.all_commands["send_image_func"]
         await ctx.send("Added!")
 
+    @commands.command(aliases=["mycmds"])
+    async def mycommands(self, ctx):
+        """Shows you all your commands!"""
+        all_cmds = get_all_user_cmds(self.bot.db_connection, ctx.author.id)
+        all_cmds_str = ", ".join(all_cmds)
+        if all_cmds:
+            await ctx.send(f"All your commands: {all_cmds_str}")
+        else:
+            await ctx.send("You don't have any owned commands!")
+
+    @commands.command()
+    async def myimagecount(self, ctx):
+        """Shows you how many images you've added!"""
+        all_images = get_all_user_images(self.bot.db_connection, ctx.author.id)
+        await ctx.send(f"You have {len(all_images)} owned images!")
+
     @commands.command(aliases=["addimageraw"])
     async def addimage(self, ctx, image_collection: str, *, urls: str = ""):
         """Requests an image be added.
@@ -313,8 +331,8 @@ class PictureAdder(discord.ext.commands.Cog):
         if " " in image_collection:
             await ctx.send("Spaces replaced with underscores")
         image_collection = image_collection.strip().lower().replace(" ", "_")
-        if not image_collection.isalnum():
-            await ctx.send("Please only include letters and numbers.")
+        if not image_collection.isalnum() or not image_collection.isascii():
+            await ctx.send("Please only include ascii letters and numbers.")
             return
         image_collection = get_cmd_from_alias(
             self.bot.db_connection, image_collection
