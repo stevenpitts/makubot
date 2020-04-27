@@ -414,7 +414,7 @@ class ReactionImages(discord.ext.commands.Cog):
 
         cascade_deleted_referenced_aliases(self.bot.db_connection)
 
-    @commands.command(aliases=["yo", "hey", "makubot"])
+    @commands.command(aliases=["yo", "hey", "makubot", "naobot"])
     async def randomimage(self, ctx):
         """Get a totally random image!"""
         chosen_path = get_random_image(self.bot.db_connection)
