@@ -14,7 +14,7 @@ from discord.utils import escape_markdown
 logger = logging.getLogger()
 
 
-class MakuCommands(discord.ext.commands.Cog):
+class Base(discord.ext.commands.Cog):
     def __init__(self, bot):
         self.bot = bot
         version_formatted = ".".join(map(str, sys.version_info[:3]))
@@ -44,7 +44,7 @@ class MakuCommands(discord.ext.commands.Cog):
         """
         Reloads my command cogs. Works even in fatal situations. Sometimes.
         """
-        logger.info("---Reloading makucommands and util---")
+        logger.info("---Reloading base and util---")
         importlib.reload(util)
         reload_response = ""
         for to_reload in self.bot.shared["default_extensions"]:
@@ -160,6 +160,6 @@ class MakuCommands(discord.ext.commands.Cog):
 
 
 def setup(bot):
-    logger.info("makucommands starting setup")
-    bot.add_cog(MakuCommands(bot))
-    logger.info("makucommands ending setup")
+    logger.info("base starting setup")
+    bot.add_cog(Base(bot))
+    logger.info("base ending setup")
