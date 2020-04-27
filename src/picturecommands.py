@@ -313,8 +313,8 @@ class PictureAdder(discord.ext.commands.Cog):
         if " " in image_collection:
             await ctx.send("Spaces replaced with underscores")
         image_collection = image_collection.strip().lower().replace(" ", "_")
-        if not image_collection.isalnum():
-            await ctx.send("Please only include letters and numbers.")
+        if not image_collection.isalnum() or not image_collection.isascii():
+            await ctx.send("Please only include ascii letters and numbers.")
             return
         image_collection = get_cmd_from_alias(
             self.bot.db_connection, image_collection
