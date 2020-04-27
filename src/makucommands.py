@@ -21,7 +21,7 @@ class MakuCommands(discord.ext.commands.Cog):
         self.bot.description = f"""
         Hey there! I'm Nao!
         I know a lot of commands. Test my vast knowledge!
-        You can use mb.help <command> for detailed help!
+        You can use nb.help <command> for detailed help!
         I'm currently running Python {version_formatted}.
         Also, you can join the support server at support.naobot.net! ^_^
         If there is a legal issue with an image, please join support.naobot.net
