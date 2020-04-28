@@ -448,6 +448,7 @@ class ReactionImages(discord.ext.commands.Cog):
         sent_message = await ctx.send(embed=image_embed)
         sent_message_check = await sent_message.channel.fetch_message(
             sent_message.id)
+        await asyncio.sleep(1)  # There's some race condition here
         if sent_message_check.embeds[0].image.url == discord.Embed.Empty:
             new_url = util.improve_url(chosen_url)
             sent_message.edit(embed=None, content=new_url)
