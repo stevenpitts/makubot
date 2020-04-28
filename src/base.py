@@ -29,6 +29,7 @@ class Base(discord.ext.commands.Cog):
         """
         prefix_combinations = itertools.product('mMnN', 'bB', '.!', [' ', ''])
         prefixes = [''.join(r) for r in prefix_combinations]
+        prefixes += ["nao.", "Nao."]
         self.bot.command_prefix = commands.when_mentioned_or(*prefixes)
         cursor = self.bot.db_connection.cursor(cursor_factory=RealDictCursor)
         cursor.execute(
