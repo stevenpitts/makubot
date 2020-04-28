@@ -446,7 +446,9 @@ class ReactionImages(discord.ext.commands.Cog):
         image_embed = await generate_image_embed(
             ctx, chosen_url, call_bot_name=True)
         sent_message = await ctx.send(embed=image_embed)
-        if sent_message.embeds[0].image.url == discord.Embed.Empty:
+        sent_message_check = await sent_message.channel.fetch_message(
+            sent_message.id)
+        if sent_message_check.embeds[0].image.url == discord.Embed.Empty:
             new_url = util.improve_url(chosen_url)
             sent_message.edit(embed=None, content=new_url)
 
