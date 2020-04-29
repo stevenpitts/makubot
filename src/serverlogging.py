@@ -143,11 +143,17 @@ class ServerLogging(discord.ext.commands.Cog):
     async def on_message_edit(self, before, after):
         if after.author.bot:
             return
-        if after.content == before.content:
-            return
         guild_description = getattr(before.guild, "name", "DMs")
         log_to_channels = await self.get_log_channels(
             before.guild, before.channel)
+
+        if before.embeds != after.embeds:
+            for log_to_channel in log_to_channels:
+                await log_to_channel.send(
+                    f"Embeds were changed on {after.jump_url}")
+        if after.content == before.content:
+            return
+
         embed = discord.Embed(
             title="Edited message",
             description=(f"{datetime.now()}: A message from "
