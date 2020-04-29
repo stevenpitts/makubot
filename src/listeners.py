@@ -2,13 +2,11 @@ import random
 import discord
 import logging
 from discord.ext import commands
-from discord.ext.commands.errors import (CommandError, CommandNotFound,
-                                         CommandOnCooldown, NotOwner,
-                                         MissingPermissions,
-                                         BotMissingPermissions,
-                                         BadUnionArgument,
-                                         MissingRequiredArgument,
-                                         BadArgument, PrivateMessageOnly)
+from discord.ext.commands.errors import (
+    CommandError, CommandNotFound, CommandOnCooldown, NotOwner,
+    MissingPermissions, BotMissingPermissions, BadUnionArgument,
+    MissingRequiredArgument, BadArgument, PrivateMessageOnly, NoPrivateMessage,
+)
 from . import util
 
 logger = logging.getLogger()
@@ -49,12 +47,15 @@ class Listeners(discord.ext.commands.Cog):
         elif isinstance(caught_exception, CommandOnCooldown):
             await ctx.send("Slow down! You\"re going too fast for me ;a;\
                             I\"m sorry :(")
-        elif isinstance(caught_exception, (MissingPermissions,
-                                           BotMissingPermissions,
-                                           BadUnionArgument,
-                                           MissingRequiredArgument,
-                                           BadArgument,
-                                           PrivateMessageOnly)):
+        elif isinstance(caught_exception, (
+                MissingPermissions,
+                BotMissingPermissions,
+                BadUnionArgument,
+                MissingRequiredArgument,
+                BadArgument,
+                PrivateMessageOnly,
+                NoPrivateMessage,
+        )):
             await ctx.send(str(caught_exception))
         else:
             formatted_tb = util.get_formatted_traceback(

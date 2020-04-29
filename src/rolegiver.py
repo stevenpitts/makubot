@@ -94,7 +94,7 @@ class RoleGiver(discord.ext.commands.Cog):
         )
         self.bot.db_connection.commit()
 
-    @tasks.loop(seconds=5)  # TODO change to 60 after confirmed working
+    @tasks.loop(seconds=10)
     async def cycle_rolegivers(self):
         try:
             rolegiver_tasks = [
@@ -111,13 +111,25 @@ class RoleGiver(discord.ext.commands.Cog):
     async def before_cycling(self):
         await self.bot.wait_until_ready()
 
-    @commands.command()
+    @commands.command(hidden=True)
     @commands.is_owner()
+    @commands.guild_only()
+    @commands.has_guild_permissions(administrator=True)
     @commands.bot_has_permissions(manage_roles=True)
     async def rolegiver(self, ctx, message: discord.Message,
                         role: discord.Role, emoji: discord.Emoji):
         """Have a message give whoever reacts to it with a given emoji
         a role. The emoji MUST be a custom emoji."""
+        if message.guild != ctx.message.guild:
+            await ctx.send(
+                "You can only specify a message in the same server :(")
+            return
+        bot_member = message.guild.get_member(self.bot.user.id)
+        bot_top_role = bot_member.top_role
+        bot_top_role_higher = bot_top_role > role
+        if not bot_top_role_higher:
+            await ctx.send("My role isn't high enough in permissions :(")
+            return
         rolegiver_ids = [message.channel.id, message.id, role.id, emoji.id]
         existing_message_ids = [ids[1] for ids in self.get_rolegiver_ids()]
         if message.id in existing_message_ids:
