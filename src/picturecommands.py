@@ -184,7 +184,7 @@ class PictureAdder(discord.ext.commands.Cog):
 
             try:
                 await status_message.edit(
-                    content="Waiting for Nao's approval...")
+                    content="Waiting for Maku's approval...")
             except discord.errors.NotFound:
                 pass
             approval_start_time = datetime.now()
