@@ -8,7 +8,7 @@ from discord.ext.commands.errors import (CommandError, CommandNotFound,
                                          BotMissingPermissions,
                                          BadUnionArgument,
                                          MissingRequiredArgument,
-                                         BadArgument)
+                                         BadArgument, PrivateMessageOnly)
 from . import util
 
 logger = logging.getLogger()
@@ -53,7 +53,8 @@ class Listeners(discord.ext.commands.Cog):
                                            BotMissingPermissions,
                                            BadUnionArgument,
                                            MissingRequiredArgument,
-                                           BadArgument)):
+                                           BadArgument,
+                                           PrivateMessageOnly)):
             await ctx.send(str(caught_exception))
         else:
             formatted_tb = util.get_formatted_traceback(
