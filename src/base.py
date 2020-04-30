@@ -85,7 +85,8 @@ class Base(discord.ext.commands.Cog):
     async def support(self, ctx):
         """I'll send you a link to my support server!"""
         support_server = self.bot.get_guild(SUPPORT_SERVER_ID)
-        invite = await support_server.system_channel.create_invite(max_age=1)
+        invite = await support_server.system_channel.create_invite(
+            max_age=600)
         await ctx.send(invite.url)
 
     def get_free_guild_ids(self):
