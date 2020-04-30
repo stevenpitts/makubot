@@ -132,6 +132,13 @@ class RoleGiver(discord.ext.commands.Cog):
         if not bot_top_role_higher:
             await ctx.send("My role isn't high enough in permissions :(")
             return
+        author_top_role = ctx.message.author.top_role
+        author_top_role_higher = author_top_role > role
+        author_is_owner = ctx.message.guild.owner == ctx.message.author
+        if not author_top_role_higher and not author_is_owner:
+            await ctx.send("Your role isn't high enough in permissions :(")
+            return
+
         rolegiver_ids = [message.channel.id, message.id, role.id, emoji.id]
         existing_message_ids = [ids[1] for ids in self.get_rolegiver_ids()]
         if message.id in existing_message_ids:
@@ -164,8 +171,6 @@ class RoleGiver(discord.ext.commands.Cog):
 
         await ctx.send("All done! ^_^")
 
-
-# TODO add top role of author logic to rolegiver
 
 def setup(bot):
     logger.info("rolegiver starting setup")
