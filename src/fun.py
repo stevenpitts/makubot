@@ -3,7 +3,9 @@ from discord.ext import commands
 import logging
 import random
 import asyncio
+import time
 import itertools
+import collections
 import re
 from . import util
 
@@ -149,8 +151,13 @@ class Fun(discord.ext.commands.Cog):
         You can also add "timeout=SECONDS" after the question
         to limit the poll.
         Example: `nb.poll timeout=30 "Favorite state?" RI MA`
+        Put "ONLYONEVOTE" anywhere in your command to limit people to one vote.
+        Example: `mb.poll ONLYONEVOTE timeout=30 "Favorite state?" RI MA`
         """
-        args = [await util.clean(ctx, arg) for arg in args]
+        only_one_vote = "ONLYONEVOTE" in args
+        args = [
+            await util.clean(ctx, arg) for arg in args
+            if arg != "ONLYONEVOTE"]
         if not args:
             await ctx.send(f"You gotta give a question and options!")
             return
@@ -171,6 +178,12 @@ class Fun(discord.ext.commands.Cog):
             timeout = None
             question = args[0]
             choices = args[1:]
+
+        if timeout is None and only_one_vote:
+            await ctx.send(
+                "You can only use ONLYONEVOTE if there is a timeout :(")
+            return
+
         choice_to_emoji = {choice: chr(i+ord("🇦"))
                            for i, choice in enumerate(choices)}
         choices_str = "\n".join([f"{emoji} {choice}"
@@ -190,8 +203,35 @@ class Fun(discord.ext.commands.Cog):
 
         if not timeout:
             return
-        await asyncio.sleep(timeout)
-        message = await ctx.fetch_message(message.id)
+        elif not only_one_vote:
+            await asyncio.sleep(timeout)
+        else:
+            start_time = time.time()
+            while time.time() - start_time < timeout:
+                message = await ctx.fetch_message(message.id)
+                # Check for duplicate reactions
+                users_reacted = [
+                    user for reaction in message.reactions
+                    for user in await reaction.users().flatten()
+                    if not user == self.bot.user
+                ]
+                user_reaction_count = collections.Counter(users_reacted)
+                multi_reaction_users = {
+                    user for user, count in user_reaction_count.items()
+                    if count > 1
+                }
+                for multi_reaction_user in multi_reaction_users:
+                    for reaction in message.reactions:
+                        try:
+                            await reaction.remove(multi_reaction_user)
+                            logger.info(
+                                f"Removed {multi_reaction_user}'s "
+                                f"reaction {reaction} due to ONLYONEVOTE")
+                        except discord.errors.Forbidden:
+                            logger.info(
+                                f"Couldn't remove {multi_reaction_user}'s "
+                                f"reaction {reaction} due to permissions")
+
         choice_to_reaction = {
             choice: discord.utils.get(message.reactions, emoji=emoji)
             for choice, emoji in choice_to_emoji.items()}
