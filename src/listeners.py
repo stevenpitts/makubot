@@ -1,7 +1,8 @@
 import random
+import itertools
 import discord
 import logging
-from discord.ext import commands
+from discord.ext import commands, tasks
 from discord.ext.commands.errors import (
     CommandError, CommandNotFound, CommandOnCooldown, NotOwner,
     MissingPermissions, BotMissingPermissions, BadUnionArgument,
@@ -11,10 +12,21 @@ from . import util
 
 logger = logging.getLogger()
 
+STATUS_MESSAGES = [
+    "mb.help",
+    "mb.support",
+    "mb.invite"
+]
+
 
 class Listeners(discord.ext.commands.Cog):
     def __init__(self, bot):
         self.bot = bot
+        self.status_messages = itertools.cycle(STATUS_MESSAGES)
+        self.cycle_status_message.start()
+
+    def cog_unload(self):
+        self.cycle_status_message.stop()
 
     @commands.Cog.listener()
     async def on_member_join(self, member: discord.Member):
@@ -96,6 +108,15 @@ class Listeners(discord.ext.commands.Cog):
             await message.channel.send(message.author.mention+" grr")
         if "vore" in message.content.split() and random.random() > 0.8:
             await message.pin()
+
+    @tasks.loop(seconds=10)
+    async def cycle_status_message(self):
+        new_activity = discord.Game(name=next(self.status_messages))
+        await self.bot.change_presence(activity=new_activity)
+
+    @cycle_status_message.before_loop
+    async def before_cycle_status_message(self):
+        await self.bot.wait_until_ready()
 
 
 def setup(bot):
