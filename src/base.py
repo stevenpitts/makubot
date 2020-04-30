@@ -23,7 +23,7 @@ class Base(discord.ext.commands.Cog):
         self.bot.description = f"""
         Hey there! I'm Makubot!
         I know a lot of commands. Test my vast knowledge!
-        You can use nb.help <command> for detailed help!
+        You can use mb.help <command> for detailed help!
         I'm currently running Python {version_formatted}.
         Also, you can join the support server at discord.gg/JqfeT4J! ^_^
         If there are legal issues with an image, please join:
@@ -85,8 +85,18 @@ class Base(discord.ext.commands.Cog):
     async def support(self, ctx):
         """I'll send you a link to my support server!"""
         support_server = self.bot.get_guild(SUPPORT_SERVER_ID)
-        invite = await support_server.system_channel.create_invite(max_age=1)
+        invite = await support_server.system_channel.create_invite(
+            max_age=600)
         await ctx.send(invite.url)
+
+    @commands.command()
+    async def invite(self, ctx):
+        """I'll send you a link to invite me to your server!"""
+        link = (
+            f"https://discordapp.com/oauth2/authorize?"
+            f"&client_id={self.bot.user.id}&scope=bot&permissions=0/"
+        )
+        await ctx.send(link)
 
     def get_free_guild_ids(self):
         cursor = self.bot.db_connection.cursor(cursor_factory=RealDictCursor)

@@ -61,7 +61,7 @@ class Movement(discord.ext.commands.Cog):
         """
         Send all the pins in the current channel to a dedicated pins channel!
         I currently don't support multiple attachments.
-        Remember to use nb.deleteallpins after this!
+        Remember to use mb.deleteallpins after this!
         """
         bot_as_member = ctx.guild.get_member(self.bot.user.id)
         member_can_move_messages = pins_channel.permissions_for(

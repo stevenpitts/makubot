@@ -322,7 +322,7 @@ class PictureAdder(discord.ext.commands.Cog):
     @commands.command(aliases=["addimageraw"])
     async def addimage(self, ctx, image_collection: str, *, urls: str = ""):
         """Requests an image be added.
-        nb.addimage nao http://static.zerochan.net/Tomori.Nao.full.1901643.jpg
+        mb.addimage nao http://static.zerochan.net/Tomori.Nao.full.1901643.jpg
         Then, it'll be sent to Nao for approval!"""
         logger.info(
             f"Called add_image with ctx {ctx.__dict__}, "
