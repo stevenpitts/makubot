@@ -23,7 +23,7 @@ class Base(discord.ext.commands.Cog):
         self.bot.description = f"""
         Hey there! I'm Makubot!
         I know a lot of commands. Test my vast knowledge!
-        You can use nb.help <command> for detailed help!
+        You can use mb.help <command> for detailed help!
         I'm currently running Python {version_formatted}.
         Also, you can join the support server at discord.gg/JqfeT4J! ^_^
         If there are legal issues with an image, please join:

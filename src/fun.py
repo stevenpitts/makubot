@@ -132,7 +132,7 @@ class Fun(discord.ext.commands.Cog):
         Returns a random choice from the choices you provide!
         Separated  by spaces, but you can put options in quotes
         to allow spaces in a single option.
-        For example: `nb.choose "North Carolina" Maine "Rhode Island"`
+        For example: `mb.choose "North Carolina" Maine "Rhode Island"`
         """
         if not args:
             await ctx.send(f"You gotta give options!\n{ctx.command.help}")
@@ -147,10 +147,10 @@ class Fun(discord.ext.commands.Cog):
         The first argument should be the question, followed by choices.
         Arguments are separated by spaces.
         You can put options in quotes to allow spaces in a single option.
-        Example: `nb.poll "Favorite state?" "North Carolina" Maine Iowa`
+        Example: `mb.poll "Favorite state?" "North Carolina" Maine Iowa`
         You can also add "timeout=SECONDS" after the question
         to limit the poll.
-        Example: `nb.poll timeout=30 "Favorite state?" RI MA`
+        Example: `mb.poll timeout=30 "Favorite state?" RI MA`
         Put "ONLYONEVOTE" anywhere in your command to limit people to one vote.
         Example: `mb.poll ONLYONEVOTE timeout=30 "Favorite state?" RI MA`
         """
