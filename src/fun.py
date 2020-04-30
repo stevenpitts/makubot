@@ -176,7 +176,7 @@ class Fun(discord.ext.commands.Cog):
                                  for choice, emoji
                                  in choice_to_emoji.items()])
         message = await ctx.send(
-            f"Poll: {question}\n"
+            f"Poll by {ctx.message.author.name}: {question}\n"
             f"Reply with the emoji to vote:\n{choices_str}")
         for emoji in choice_to_emoji.values():
             await message.add_reaction(emoji)
