@@ -166,6 +166,12 @@ class RoleGiver(discord.ext.commands.Cog):
             await ctx.send("Your role isn't high enough in permissions :(")
             return
 
+        rolegiver_role_ids = [ids[2] for ids in self.get_rolegiver_ids()]
+        if role.id in rolegiver_role_ids:
+            await ctx.send(
+                "Sure, but that role is controlled by a rolegiver message. "
+                "Check the audit logs for the issue!")
+
         await user.add_roles(
             role, reason=f"mb.assign called by {ctx.message.author.name}")
 
