@@ -89,6 +89,15 @@ class Base(discord.ext.commands.Cog):
             max_age=600)
         await ctx.send(invite.url)
 
+    @commands.command()
+    async def invite(self, ctx):
+        """I'll send you a link to invite me to your server!"""
+        link = (
+            f"https://discordapp.com/oauth2/authorize?"
+            f"&client_id={self.bot.user.id}&scope=bot&permissions=0/"
+        )
+        await ctx.send(link)
+
     def get_free_guild_ids(self):
         cursor = self.bot.db_connection.cursor(cursor_factory=RealDictCursor)
         cursor.execute(
