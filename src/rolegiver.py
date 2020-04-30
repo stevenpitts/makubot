@@ -42,10 +42,12 @@ class RoleGiver(discord.ext.commands.Cog):
         members_to_remove_role_from = members_set - members_with_reaction
         members_to_add_role_to = members_with_reaction - members_set
         remove_role_tasks = [
-            member.remove_roles(role, reason="Removed reaction")
+            member.remove_roles(
+                role, reason=f"Removed reaction from {message.jump_url}")
             for member in members_to_remove_role_from]
         add_roles_tasks = [
-            member.add_roles(role, reason="Added reaction")
+            member.add_roles(
+                role, reason=f"Added reaction to {message.jump_url}")
             for member in members_to_add_role_to]
         try:
             await asyncio.gather(*remove_role_tasks, *add_roles_tasks)
@@ -124,7 +126,7 @@ class RoleGiver(discord.ext.commands.Cog):
             await ctx.send(
                 "You can only specify a message in the same server :(")
             return
-        bot_member = message.guild.get_member(self.bot.user.id)
+        bot_member = ctx.message.guild.get_member(self.bot.user.id)
         bot_top_role = bot_member.top_role
         bot_top_role_higher = bot_top_role > role
         if not bot_top_role_higher:
@@ -137,6 +139,33 @@ class RoleGiver(discord.ext.commands.Cog):
             return
         self.add_rolegiver_ids(*rolegiver_ids)
 
+    @commands.command(hidden=True)
+    @commands.is_owner()
+    @commands.guild_only()
+    @commands.has_guild_permissions(administrator=True)
+    @commands.bot_has_permissions(manage_roles=True)
+    async def assign(self, ctx, role: discord.Role, user: discord.Member):
+        """Assign a given user a role"""
+        bot_member = ctx.message.guild.get_member(self.bot.user.id)
+        bot_top_role = bot_member.top_role
+        bot_top_role_higher = bot_top_role > role
+        if not bot_top_role_higher:
+            await ctx.send("My role isn't high enough in permissions :(")
+            return
+        author_top_role = ctx.message.author.top_role
+        author_top_role_higher = author_top_role > role
+        author_is_owner = ctx.message.guild.owner == ctx.message.author
+        if not author_top_role_higher and not author_is_owner:
+            await ctx.send("Your role isn't high enough in permissions :(")
+            return
+
+        await user.add_roles(
+            role, reason=f"mb.assign called by {ctx.message.author.name}")
+
+        await ctx.send("All done! ^_^")
+
+
+# TODO add top role of author logic to rolegiver
 
 def setup(bot):
     logger.info("rolegiver starting setup")
