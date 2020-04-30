@@ -141,6 +141,7 @@ class Fun(discord.ext.commands.Cog):
     async def poll(self, ctx, *args):
         """
         Starts a poll from the choices you provide!
+        I'll also delete your message after I start the poll, if I can.
         The first argument should be the question, followed by choices.
         Arguments are separated by spaces.
         You can put options in quotes to allow spaces in a single option.
@@ -180,6 +181,13 @@ class Fun(discord.ext.commands.Cog):
             f"Reply with the emoji to vote:\n{choices_str}")
         for emoji in choice_to_emoji.values():
             await message.add_reaction(emoji)
+
+        try:
+            await ctx.message.delete()
+            logger.info(f"Deleted poll message")
+        except discord.errors.Forbidden:
+            logger.info(f"Couldn't delete message {ctx.message.jump_url}")
+
         if not timeout:
             return
         await asyncio.sleep(timeout)
