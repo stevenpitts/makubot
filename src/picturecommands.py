@@ -100,7 +100,6 @@ def collection_has_image_bytes(
 class PictureAdder(discord.ext.commands.Cog):
     def __init__(self, bot):
         self.bot = bot
-        self.temp_save_dir = self.bot.shared["temp_dir"]
         self.pending_approval_message_ids = []
 
     async def get_approval(self, request_id, peek_count=3):
@@ -133,19 +132,15 @@ class PictureAdder(discord.ext.commands.Cog):
         finally:
             self.pending_approval_message_ids.remove(request_id)
 
-    async def image_suggestion(self, image_collection, filename, requestor,
-                               image_bytes=None, status_message=None):
+    async def image_suggestion(self, image_collection, filepath, requestor,
+                               image_bytes=None, status_message=None,
+                               temp_dir=None):
+        if filepath is None or temp_dir is None or image_bytes is None:
+            raise ValueError("filepath, temp_dir, and image_bytes must be set")
+        filename = filepath.split("/")[-1]
         try:
-            if image_bytes is None:
-                with open(self.temp_save_dir / filename, "rb") as f:
-                    image_bytes = f.read()
-            else:
-                existing_keys = {
-                    str(path) for path in self.temp_save_dir.iterdir()}
-                filename = util.get_nonconflicting_filename(
-                    filename, existing_keys=existing_keys)
-                with open(self.temp_save_dir / filename, "wb") as f:
-                    f.write(image_bytes)
+            with open(filepath, "rb") as f:
+                image_bytes = f.read()
             if collection_has_image_bytes(
                     self.bot.db_connection, image_collection, image_bytes,):
                 response = (
@@ -164,8 +159,7 @@ class PictureAdder(discord.ext.commands.Cog):
                         f"{image_collection}? Requested by {requestor.name}")
             try:
                 request = await self.bot.makusu.send(
-                    proposal, file=discord.File(self.temp_save_dir
-                                                / filename))
+                    proposal, file=discord.File(filepath))
                 try:
                     await status_message.edit(content="Sent to Maku!")
                 except discord.errors.NotFound:
@@ -213,7 +207,7 @@ class PictureAdder(discord.ext.commands.Cog):
                     await requestor.send(response)
                 return
             return await self.apply_image_approved(
-                filename,
+                filepath,
                 image_collection,
                 requestor,
                 status_message,
@@ -235,18 +229,18 @@ class PictureAdder(discord.ext.commands.Cog):
                 f"\n```{formatted_tb}```")
 
     async def apply_image_approved(
-            self, filename, cmd, requestor, status_message, image_bytes):
+            self, filepath, cmd, requestor, status_message, image_bytes):
+        filename = filepath.split("/")[-1]
         existing_keys = get_all_cmd_images_from_db(self.bot.db_connection, cmd)
         image_key = util.get_nonconflicting_filename(
             filename, existing_keys=existing_keys)
         full_image_key = f"pictures/{cmd}/{image_key}"
 
         def upload_image_func():
-            local_path = self.temp_save_dir / filename
-            mimetype, _ = mimetypes.guess_type(local_path)
+            mimetype, _ = mimetypes.guess_type(filepath)
             mimetype = mimetype or "binary/octet-steam"
             return S3.upload_file(
-                str(local_path),
+                str(filepath),
                 self.bot.s3_bucket,
                 full_image_key,
                 ExtraArgs={
@@ -356,7 +350,7 @@ class PictureAdder(discord.ext.commands.Cog):
         for url in urls:
             try:
                 status_message = await ctx.send(f"Querying... {loading_emoji}")
-                data, filename = await get_media_bytes_and_name(
+                data, filepath, temp_dir = await get_media_bytes_and_name(
                     url, status_message=status_message, do_raw=do_raw,
                     loading_emoji=loading_emoji)
             except(youtube_dl.utils.DownloadError,
@@ -383,8 +377,9 @@ class PictureAdder(discord.ext.commands.Cog):
             else:
                 await status_message.edit(content="Sent to Maku for approval!")
                 image_suggestion_coros.append(self.image_suggestion(
-                    image_collection, filename, ctx.author,
-                    image_bytes=data, status_message=status_message))
+                    image_collection, filepath, ctx.author,
+                    image_bytes=data, status_message=status_message,
+                    temp_dir=temp_dir))
         all_suggestion_coros = asyncio.gather(*image_suggestion_coros)
         try:
             await all_suggestion_coros

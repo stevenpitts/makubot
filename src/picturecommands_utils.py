@@ -622,53 +622,52 @@ async def generate_image_embed(
 
 async def get_media_bytes_and_name(
         url, status_message=None, do_raw=False, loading_emoji=""):
-    with tempfile.TemporaryDirectory() as temp_dir:
-        quality_format = "best" if do_raw else "best[filesize<8M]/worst"
-        ydl_options = {
-            # "logger": logger,
-            "quiet": True,
-            "no_warnings": True,
-            "format": quality_format,
-            "outtmpl": f"{temp_dir}/%(title)s.%(ext)s"
-        }
-        with youtube_dl.YoutubeDL(ydl_options) as ydl:
-            await status_message.edit(content=f"Downloading...{loading_emoji}")
-            download_start_time = datetime.now()
-            with concurrent.futures.ThreadPoolExecutor() as pool:
-                await asyncio.get_running_loop().run_in_executor(
-                    pool, ydl.extract_info, url)  # This guy takes a while
-            download_time = datetime.now() - download_start_time
-            logger.info(f"{url} took {download_time} to download")
-            files_in_dir = os.listdir(temp_dir)
-            if len(files_in_dir) == 0:
-                raise youtube_dl.utils.DownloadError("No file found")
-            elif len(files_in_dir) > 1:
-                logger.warning(
-                    f"youtube_dl got more than one file: {files_in_dir}")
-                raise youtube_dl.utils.DownloadError(
-                    "Multiple files received")
-            filename = files_in_dir[0]
-            filepath = f"{temp_dir}/{filename}"
-            # Fix bad extension
-            temp_filepath = f"{filepath}2"
-            os.rename(filepath, temp_filepath)
-            if filepath.endswith(".mkv"):
-                filepath += ".webm"
-                filename += ".webm"
-            await status_message.edit(content=f"Processing...{loading_emoji}")
-            processing_start_time = datetime.now()
-            if do_raw:
+    temp_dir = tempfile.TemporaryDirectory()
+    quality_format = "best" if do_raw else "best[filesize<8M]/worst"
+    ydl_options = {
+        # "logger": logger,
+        "quiet": True,
+        "no_warnings": True,
+        "format": quality_format,
+        "outtmpl": f"{temp_dir.name}/%(title)s.%(ext)s"
+    }
+    with youtube_dl.YoutubeDL(ydl_options) as ydl:
+        await status_message.edit(content=f"Downloading...{loading_emoji}")
+        download_start_time = datetime.now()
+        with concurrent.futures.ThreadPoolExecutor() as pool:
+            await asyncio.get_running_loop().run_in_executor(
+                pool, ydl.extract_info, url)  # This guy takes a while
+        download_time = datetime.now() - download_start_time
+        logger.info(f"{url} took {download_time} to download")
+        files_in_dir = os.listdir(temp_dir.name)
+        if len(files_in_dir) == 0:
+            raise youtube_dl.utils.DownloadError("No file found")
+        elif len(files_in_dir) > 1:
+            logger.warning(
+                f"youtube_dl got more than one file: {files_in_dir}")
+            raise youtube_dl.utils.DownloadError(
+                "Multiple files received")
+        filename = files_in_dir[0]
+        filepath = f"{temp_dir.name}/{filename}"
+        # Fix bad extension
+        temp_filepath = f"{filepath}2"
+        os.rename(filepath, temp_filepath)
+        if filepath.endswith(".mkv"):
+            filepath += ".webm"
+        await status_message.edit(content=f"Processing...{loading_emoji}")
+        processing_start_time = datetime.now()
+        if do_raw:
+            os.rename(temp_filepath, filepath)
+        else:
+            try:
+                await convert_video(temp_filepath, filepath)
+            except NotVideo:
                 os.rename(temp_filepath, filepath)
-            else:
-                try:
-                    await convert_video(temp_filepath, filepath)
-                except NotVideo:
-                    os.rename(temp_filepath, filepath)
-            processing_time = datetime.now() - processing_start_time
-            logger.info(f"{url} took {processing_time} to process")
-            with open(filepath, "rb") as downloaded_file:
-                data = downloaded_file.read()
-            return data, filename
+        processing_time = datetime.now() - processing_start_time
+        logger.info(f"{url} took {processing_time} to process")
+        with open(filepath, "rb") as downloaded_file:
+            data = downloaded_file.read()
+        return data, filepath, temp_dir
 
 
 async def get_video_length(video_input):
