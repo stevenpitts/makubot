@@ -418,6 +418,7 @@ def get_all_cmd_images_from_db(db_connection, cmd):
 
 
 def get_cmd_from_alias(db_connection, alias_cmd):
+    alias_cmd = alias_cmd.lower()
     cursor = db_connection.cursor(cursor_factory=RealDictCursor)
     cursor.execute(
         """
