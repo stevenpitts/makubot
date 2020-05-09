@@ -389,6 +389,20 @@ def get_all_cmds_aliases_from_db(db_connection):
     return normal_commands | alias_commands
 
 
+def get_cmd_aliases_from_db(db_connection, cmd):
+    cursor = db_connection.cursor(cursor_factory=RealDictCursor)
+    cursor.execute(
+        """
+        SELECT * FROM media.aliases
+        WHERE real = %s
+        """,
+        (cmd,)
+    )
+    results = cursor.fetchall()
+    alias_commands = {result["alias"] for result in results}
+    return alias_commands
+
+
 def cmd_has_hash(db_connection, cmd, md5):
     md5 = as_text(md5)
     cursor = db_connection.cursor(cursor_factory=RealDictCursor)

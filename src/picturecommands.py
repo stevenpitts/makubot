@@ -46,6 +46,7 @@ from .picturecommands_utils import (
     set_cmd_images_server_on_db,
     get_all_user_cmds,
     get_all_user_images,
+    get_cmd_aliases_from_db,
 )
 
 logger = logging.getLogger()
@@ -526,6 +527,63 @@ class ReactionImages(discord.ext.commands.Cog):
         command_size = cmd_sizes[real_cmd]
         image_plurality = "image" if command_size == 1 else "images"
         await ctx.send(f"{cmd} has {command_size} {image_plurality}!")
+
+    @commands.command()
+    async def deleteimage(self, ctx, cmdimgpath):
+        try:
+            cmd, image_key = cmdimgpath.split("/")
+        except (AttributeError, ValueError):
+            await ctx.send(
+                "Please use the form cmd/img, eg lupo/happy.jpg")
+            return
+        cmd = get_cmd_from_alias(self.bot.db_connection, cmd)
+        if not cmd:
+            await ctx.send("That isn't an image command :?")
+            return
+        image_info_dict = image_info(
+            self.bot.db_connection, cmd, image_key)
+        if not image_info_dict:
+            await ctx.send("I can't find that image :?")
+            return
+        uid = image_info_dict["uid"]
+        sid = image_info_dict["sid"]
+        md5 = image_info_dict["md5"]
+        uid_user = self.bot.get_user(uid) if uid else None
+        uid_user_str = (
+            f"{uid_user.name}#{uid_user.discriminator}"
+            if uid_user else f"Unknown ({uid})")
+        sid_server = self.bot.get_guild(sid) if sid else None
+        sid_server_str = sid_server.name if sid_server else f"Unknown ({sid})"
+        logger.info(
+            f"Deleting {cmd}/{image_key}. "
+            f"Was at pictures/{cmd}/{image_key}. "
+            f"{uid_user_str=}, {sid_server_str=}, {md5=}.")
+        full_image_key = f"pictures/{cmd}/{image_key}"
+
+        delete_image_from_db(self.bot.db_connection, cmd, image_key)
+
+        S3.delete_object(
+            Bucket=self.bot.s3_bucket,
+            Key=full_image_key
+        )
+        await ctx.send("Image deleted!")
+
+        images_remaining = get_all_cmd_images_from_db(
+            self.bot.db_connection, cmd)
+        if not images_remaining:
+            cmd_aliases = get_cmd_aliases_from_db(self.bot.db_connection, cmd)
+            cmd_aliases.add(cmd)
+            delete_cmd_and_all_images(self.bot.db_connection, cmd)
+            cascade_deleted_referenced_aliases(self.bot.db_connection)
+            send_image_func_ref = self.bot.get_command("send_image_func")
+            self.bot.get_command("send_image_func").aliases = [
+                alias for alias in send_image_func_ref.aliases
+                if alias not in cmd_aliases
+            ]
+            for alias in cmd_aliases:
+                logger.info(f"Removing alias {alias}...")
+                self.bot.all_commands.pop(alias)
+            await ctx.send("Also deleted command, as it is now empty.")
 
     @commands.command(aliases=["topten"])
     async def bigten(self, ctx):
