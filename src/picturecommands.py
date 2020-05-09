@@ -623,7 +623,13 @@ class ReactionImages(discord.ext.commands.Cog):
             f"{origin_sid_server_strs=}.")
 
     @commands.command(hidden=True, aliases=["getimageinfo", "getimginfo"])
-    async def get_image_info(self, ctx, cmd, image_key):
+    async def get_image_info(self, ctx, cmdimgpath):
+        try:
+            cmd, image_key = cmdimgpath.split("/")
+        except (AttributeError, ValueError):
+            await ctx.send(
+                "Please use the form cmd/img, eg lupo/happy.jpg")
+            return
         real_cmd = get_cmd_from_alias(self.bot.db_connection, cmd)
         if not real_cmd:
             await ctx.send("That isn't an image command :?")
