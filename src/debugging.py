@@ -132,7 +132,7 @@ class Debugging(discord.ext.commands.Cog):
             snekbox_running = False
         snekbox_status = "up" if snekbox_running else "down"
         db_size = util.db_size(self.bot.db_connection)
-        await self.bot.makusu.send(
+        await ctx.send(
             f"I'm in {len(self.bot.guilds)} servers!\n"
             f"I have {total_reactions} reaction commands.\n"
             f"Snekbox is {snekbox_status}.\n"
