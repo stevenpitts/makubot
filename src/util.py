@@ -250,3 +250,4 @@ def hardware_usage():
         return (
             f"{process.cpu_percent():.2f}% cpu, "
             f"{process.memory_percent():.2f}% RAM"
+        )
