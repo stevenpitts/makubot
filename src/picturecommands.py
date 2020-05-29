@@ -47,6 +47,7 @@ from .picturecommands_utils import (
     get_all_user_cmds,
     get_all_user_images,
     get_cmd_aliases_from_db,
+    get_cmd_size_server_user,
 )
 
 logger = logging.getLogger()
@@ -562,30 +563,24 @@ class ReactionImages(discord.ext.commands.Cog):
             await ctx.send(f"{cmd} isn't an image command :o")
             return
         cmd_sizes = get_cmd_sizes(self.bot.db_connection)
-        command_size = cmd_sizes[real_cmd]
-        image_plurality = "image" if command_size == 1 else "images"
-        base_size_msg = f"{cmd} has {command_size} {image_plurality}!"
+        cmd_size = cmd_sizes[real_cmd]
+        image_plurality = "image" if cmd_size == 1 else "images"
+        base_size_msg = f"{cmd} has {cmd_size} {image_plurality}!"
         if not ctx.guild:
             await ctx.send(base_size_msg)
             return
-        cmd_sizes_server = get_cmd_sizes(
-            self.bot.db_connection, sid=ctx.guild.id)
         uid = ctx.author.id
         user_sids = get_user_sids(self.bot, uid)
-        cmd_sizes_user = get_cmd_sizes(
-            self.bot.db_connection,
-            sid=ctx.guild.id,
-            uid=uid,
-            user_sids=user_sids)
-        command_size_server = cmd_sizes_server[real_cmd]
-        command_size_user = cmd_sizes_user[real_cmd]
+        sid = ctx.guild.id
+        cmd_size_server, cmd_size_user = get_cmd_size_server_user(
+            self.bot.db_connection, real_cmd, uid, sid, user_sids)
         server_size_msg = (
-            f"Anyone on the server can pull {command_size_server} of them!")
+            f"Anyone on the server can pull {cmd_size_server} of them!")
         user_size_msg = (
-            f"You can personally pull {command_size_user} of them here!")
-        if command_size == command_size_server:
+            f"You can personally pull {cmd_size_user} of them here!")
+        if cmd_size == cmd_size_server:
             await ctx.send(base_size_msg)
-        elif command_size_server == command_size_user:
+        elif cmd_size_server == cmd_size_user:
             await ctx.send(f"{base_size_msg} {server_size_msg}")
         else:
             await ctx.send(
