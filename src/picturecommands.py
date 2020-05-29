@@ -489,6 +489,36 @@ class ReactionImages(discord.ext.commands.Cog):
             await sent_message.edit(embed=None, content=new_url)
 
     @commands.command()
+    async def showimage(self, ctx, cmdimgpath):
+        """Shows an image as though you got it randomly! Cheater."""
+        try:
+            cmd, image_key = cmdimgpath.split("/")
+        except (AttributeError, ValueError):
+            await ctx.send(
+                "Please use the form cmd/img, eg lupo/happy.jpg")
+            return
+        cmd = get_cmd_from_alias(self.bot.db_connection, cmd)
+        if not cmd:
+            await ctx.send("That isn't an image command :?")
+            return
+        if not image_exists_in_cmd(self.bot.db_connection, image_key, cmd):
+            await ctx.send("I can't find that image :?")
+            return
+        chosen_path = f"pictures/{cmd}/{image_key}"
+        chosen_url = util.url_from_s3_key(
+            ctx.bot.s3_bucket, ctx.bot.s3_bucket_location, chosen_path,
+            improve=True)
+        logging.info(f"Sending url in showimage func: {chosen_url}")
+        image_embed = await generate_image_embed(ctx, chosen_url)
+        sent_message = await ctx.send(embed=image_embed)
+        if not await util.url_is_image(chosen_url):
+            new_url = util.improve_url(chosen_url)
+            logger.info(
+                "URL wasn't image, so turned to text URL. "
+                f"{chosen_url} -> {new_url}")
+            await sent_message.edit(embed=None, content=new_url)
+
+    @commands.command()
     async def listreactions(self, ctx):
         """List all my reactions"""
         all_invocations = get_all_cmds_aliases_from_db(self.bot.db_connection)
