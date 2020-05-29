@@ -1,5 +1,4 @@
 import traceback
-import re
 import itertools
 import logging
 from datetime import datetime
