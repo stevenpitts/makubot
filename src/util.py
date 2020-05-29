@@ -196,15 +196,6 @@ def get_formatted_traceback(e):
     return "".join(traceback.format_exception(type(e), e, e.__traceback__))
 
 
-def slugify(candidate_filename: str):
-    slugified = candidate_filename.replace(" ", "_")
-    slugified = re.sub(r"(?u)[^-\w.]", "", slugified)
-    slugified = slugified.strip(" .")
-    if "." not in slugified:
-        slugified += ".unknown"
-    return slugified
-
-
 @fnlog
 def get_nonconflicting_filename(candidate_filename: str, existing_keys=None):
     existing_keys = {key.split("/")[-1] for key in existing_keys}
