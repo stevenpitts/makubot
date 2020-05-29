@@ -705,7 +705,7 @@ async def get_video_length(video_input):
     return video_length
 
 
-async def suggest_audio_video_bitrate(video_input):
+def suggest_audio_video_bitrate(video_input):
     audio_bitrate = 64e3  # bits
     video_length = await get_video_length(video_input)
     max_size = 32e6  # bits. Technically 64e6 but there's some error.
@@ -715,8 +715,7 @@ async def suggest_audio_video_bitrate(video_input):
 
 
 async def convert_video(video_input, video_output, log=False):
-    audio_bitrate, video_bitrate = await suggest_audio_video_bitrate(
-        video_input)
+    audio_bitrate, video_bitrate = suggest_audio_video_bitrate(video_input)
     cmds = ["ffmpeg",
             "-y",
             "-i", video_input,
