@@ -10,6 +10,8 @@ import boto3
 import botocore
 import time
 import discord
+import os
+import psutil
 
 logger = logging.getLogger()
 
@@ -229,3 +231,20 @@ async def url_media_type(url):
 async def url_is_image(url):
     media_type = await url_media_type(url)
     return media_type.split("/")[0].lower() == "image"
+
+
+def db_size(db_connection):
+    cursor = db_connection.cursor()
+    cursor.execute(
+        """
+        SELECT pg_size_pretty(pg_database_size(current_database()));
+        """
+    )
+    result = cursor.fetchall()
+    return result[0]
+
+
+def hardware_usage():
+    process = psutil.Process(os.getpid())
+    with process.oneshot():
+        return f"{process.cpu_percent()}% cpu, {process.memory_percent()}% RAM"
