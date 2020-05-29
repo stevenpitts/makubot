@@ -310,8 +310,21 @@ def get_cmd_sizes(db_connection):
         GROUP BY cmd
         """
     )
+
     results = cursor.fetchall()
     return {result["cmd"]: result["cmd_size"] for result in results}
+
+
+def get_cmd_size_server_user(db_connection, cmd, uid, sid, user_sids):
+    uid = as_text(uid)
+    sid = as_text(sid)
+    user_sids = as_text(user_sids)
+    fake_uid = "0"*18
+    appropriate_images_server = get_appropriate_images(
+        db_connection, cmd, fake_uid, sid)
+    appropriate_images_user = get_appropriate_images(
+        db_connection, cmd, uid, sid, user_sids)
+    return len(appropriate_images_server), len(appropriate_images_user)
 
 
 def get_all_true_cmds_from_db(db_connection):
@@ -636,9 +649,9 @@ async def generate_image_embed(
 
 
 async def get_media_bytes_and_name(
-        url, status_message=None, do_raw=False, loading_emoji=""):
+        url, status_message=None, loading_emoji=""):
     temp_dir = tempfile.TemporaryDirectory()
-    quality_format = "best" if do_raw else "best[filesize<8M]/worst"
+    quality_format = "best[filesize<8M]/worst"
     ydl_options = {
         # "logger": logger,
         "quiet": True,
@@ -671,13 +684,10 @@ async def get_media_bytes_and_name(
             filepath += ".webm"
         await status_message.edit(content=f"Processing...{loading_emoji}")
         processing_start_time = datetime.now()
-        if do_raw:
+        try:
+            await convert_video(temp_filepath, filepath)
+        except NotVideo:
             os.rename(temp_filepath, filepath)
-        else:
-            try:
-                await convert_video(temp_filepath, filepath)
-            except NotVideo:
-                os.rename(temp_filepath, filepath)
         processing_time = datetime.now() - processing_start_time
         logger.info(f"{url} took {processing_time} to process")
         with open(filepath, "rb") as downloaded_file:
@@ -705,9 +715,10 @@ async def get_video_length(video_input):
     return video_length
 
 
-async def suggest_audio_video_bitrate(video_input):
+def suggest_audio_video_bitrate(video_length):
+    if not video_length:
+        raise NotVideo()
     audio_bitrate = 64e3  # bits
-    video_length = await get_video_length(video_input)
     max_size = 32e6  # bits. Technically 64e6 but there's some error.
     video_bitrate = (max_size / video_length) - audio_bitrate
     video_bitrate = max(int(video_bitrate), 1e3)
@@ -715,8 +726,8 @@ async def suggest_audio_video_bitrate(video_input):
 
 
 async def convert_video(video_input, video_output, log=False):
-    audio_bitrate, video_bitrate = await suggest_audio_video_bitrate(
-        video_input)
+    video_length = await get_video_length(video_input)
+    audio_bitrate, video_bitrate = suggest_audio_video_bitrate(video_length)
     cmds = ["ffmpeg",
             "-y",
             "-i", video_input,

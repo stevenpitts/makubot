@@ -47,6 +47,7 @@ from .picturecommands_utils import (
     get_all_user_cmds,
     get_all_user_images,
     get_cmd_aliases_from_db,
+    get_cmd_size_server_user,
 )
 
 logger = logging.getLogger()
@@ -314,7 +315,7 @@ class PictureAdder(discord.ext.commands.Cog):
         all_images = get_all_user_images(self.bot.db_connection, ctx.author.id)
         await ctx.send(f"You have {len(all_images)} owned images!")
 
-    @commands.command(aliases=["addimageraw"])
+    @commands.command()
     async def addimage(self, ctx, image_collection: str, *, urls: str = ""):
         """Requests an image be added.
         mb.addimage nao http://static.zerochan.net/Tomori.Nao.full.1901643.jpg
@@ -322,7 +323,6 @@ class PictureAdder(discord.ext.commands.Cog):
         logger.info(
             f"Called add_image with ctx {ctx.__dict__}, "
             f"image_collection {image_collection}, and urls {urls}.")
-        do_raw = ctx.invoked_with == "addimageraw"
         if " " in image_collection:
             await ctx.send("Spaces replaced with underscores")
         image_collection = image_collection.strip().lower().replace(" ", "_")
@@ -352,7 +352,7 @@ class PictureAdder(discord.ext.commands.Cog):
             try:
                 status_message = await ctx.send(f"Querying... {loading_emoji}")
                 data, filepath, temp_dir = await get_media_bytes_and_name(
-                    url, status_message=status_message, do_raw=do_raw,
+                    url, status_message=status_message,
                     loading_emoji=loading_emoji)
             except(youtube_dl.utils.DownloadError,
                    aiohttp.client_exceptions.ClientConnectorError,
@@ -397,10 +397,6 @@ class ReactionImages(discord.ext.commands.Cog):
         cursor.execute(
             """
             CREATE SCHEMA IF NOT EXISTS media;
-            ALTER TABLE IF EXISTS alias_pictures
-                RENAME TO aliases;
-            ALTER TABLE IF EXISTS aliases
-                SET SCHEMA media;
             CREATE TABLE IF NOT EXISTS media.commands (
                 cmd TEXT PRIMARY KEY,
                 uid CHARACTER(18));
@@ -429,6 +425,8 @@ class ReactionImages(discord.ext.commands.Cog):
 
         cascade_deleted_referenced_aliases(self.bot.db_connection)
 
+        self.sent_messages_image_urls = dict()
+
     @commands.command(aliases=["yo", "hey", "makubot"])
     async def randomimage(self, ctx):
         """Get a totally random image!"""
@@ -442,6 +440,7 @@ class ReactionImages(discord.ext.commands.Cog):
         image_embed = await generate_image_embed(
             ctx, chosen_url, call_bot_name=True)
         sent_message = await ctx.send(embed=image_embed)
+        self.sent_messages_image_urls[sent_message.id] = chosen_url
         sent_message_check = await sent_message.channel.fetch_message(
             sent_message.id)
         # There's a race condition here where
@@ -486,12 +485,52 @@ class ReactionImages(discord.ext.commands.Cog):
         logging.info(f"Sending url in send_image func: {chosen_url}")
         image_embed = await generate_image_embed(ctx, chosen_url)
         sent_message = await ctx.send(embed=image_embed)
+        self.sent_messages_image_urls[sent_message.id] = chosen_url
         if not await util.url_is_image(chosen_url):
             new_url = util.improve_url(chosen_url)
             logger.info(
                 "URL wasn't image, so turned to text URL. "
                 f"{chosen_url} -> {new_url}")
             await sent_message.edit(embed=None, content=new_url)
+
+    @commands.command()
+    async def showimage(self, ctx, cmdimgpath):
+        """Shows an image as though you got it randomly! Cheater."""
+        try:
+            cmd, image_key = cmdimgpath.split("/")
+        except (AttributeError, ValueError):
+            await ctx.send(
+                "Please use the form cmd/img, eg lupo/happy.jpg")
+            return
+        cmd = get_cmd_from_alias(self.bot.db_connection, cmd)
+        if not cmd:
+            await ctx.send("That isn't an image command :?")
+            return
+        if not image_exists_in_cmd(self.bot.db_connection, image_key, cmd):
+            await ctx.send("I can't find that image :?")
+            return
+        chosen_path = f"pictures/{cmd}/{image_key}"
+        chosen_url = util.url_from_s3_key(
+            ctx.bot.s3_bucket, ctx.bot.s3_bucket_location, chosen_path,
+            improve=True)
+        logging.info(f"Sending url in showimage func: {chosen_url}")
+        image_embed = await generate_image_embed(ctx, chosen_url)
+        sent_message = await ctx.send(embed=image_embed)
+        self.sent_messages_image_urls[sent_message.id] = chosen_url
+        if not await util.url_is_image(chosen_url):
+            new_url = util.improve_url(chosen_url)
+            logger.info(
+                "URL wasn't image, so turned to text URL. "
+                f"{chosen_url} -> {new_url}")
+            await sent_message.edit(embed=None, content=new_url)
+
+    @commands.command(hidden=True)
+    async def whatwassentin(self, ctx, message: discord.Message):
+        message_id = message.id
+        if message_id not in self.sent_messages_image_urls:
+            await ctx.send("idk man")
+            return
+        await ctx.send(self.sent_messages_image_urls[message_id])
 
     @commands.command()
     async def listreactions(self, ctx):
@@ -524,9 +563,28 @@ class ReactionImages(discord.ext.commands.Cog):
             await ctx.send(f"{cmd} isn't an image command :o")
             return
         cmd_sizes = get_cmd_sizes(self.bot.db_connection)
-        command_size = cmd_sizes[real_cmd]
-        image_plurality = "image" if command_size == 1 else "images"
-        await ctx.send(f"{cmd} has {command_size} {image_plurality}!")
+        cmd_size = cmd_sizes[real_cmd]
+        image_plurality = "image" if cmd_size == 1 else "images"
+        base_size_msg = f"{cmd} has {cmd_size} {image_plurality}!"
+        if not ctx.guild:
+            await ctx.send(base_size_msg)
+            return
+        uid = ctx.author.id
+        user_sids = get_user_sids(self.bot, uid)
+        sid = ctx.guild.id
+        cmd_size_server, cmd_size_user = get_cmd_size_server_user(
+            self.bot.db_connection, real_cmd, uid, sid, user_sids)
+        server_size_msg = (
+            f"Anyone on the server can pull {cmd_size_server} of them!")
+        user_size_msg = (
+            f"You can personally pull {cmd_size_user} of them here!")
+        if cmd_size == cmd_size_server:
+            await ctx.send(base_size_msg)
+        elif cmd_size_server == cmd_size_user:
+            await ctx.send(f"{base_size_msg} {server_size_msg}")
+        else:
+            await ctx.send(
+                f"{base_size_msg} {server_size_msg} {user_size_msg}")
 
     @commands.command()
     async def deleteimage(self, ctx, cmdimgpath):

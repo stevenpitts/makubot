@@ -106,7 +106,9 @@ class Listeners(discord.ext.commands.Cog):
             return
         if message.mention_everyone:
             await message.channel.send(message.author.mention+" grr")
-        if "vore" in message.content.split() and random.random() > 0.8:
+        if ("vore" in message.content.lower().split()
+            and message.content.lower().strip() != "vore"
+                and random.random() > 0.8):
             await message.pin()
 
     @tasks.loop(seconds=10)

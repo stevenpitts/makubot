@@ -2,6 +2,7 @@ import discord
 from discord.ext import commands, tasks
 import logging
 from io import StringIO
+import aiohttp
 from discord.utils import escape_markdown
 from psycopg2.extras import RealDictCursor
 import asyncio
@@ -9,6 +10,7 @@ import concurrent
 import sys
 import os
 from . import util
+from .picturecommands_utils import get_all_cmds_aliases_from_db
 
 logger = logging.getLogger()
 
@@ -118,7 +120,25 @@ class Debugging(discord.ext.commands.Cog):
     async def getstatus(self, ctx):
         current_servers_string = "Current servers: {}".format(
             {guild.name: guild.id for guild in self.bot.guilds})
-        await self.bot.makusu.send(f"```{current_servers_string}```")
+        total_reactions = len(
+            get_all_cmds_aliases_from_db(self.bot.db_connection))
+        eval_path = r"http://snekbox:8060/eval"
+        try:
+            async with aiohttp.ClientSession() as session:
+                async with session.head(eval_path) as resp:
+                    await resp.text()
+                    snekbox_running = True
+        except aiohttp.client_exceptions.ClientConnectorError:
+            snekbox_running = False
+        snekbox_status = "up" if snekbox_running else "down"
+        db_size = util.db_size(self.bot.db_connection)
+        await ctx.send(
+            f"I'm in {len(self.bot.guilds)} servers!\n"
+            f"I have {total_reactions} reaction commands.\n"
+            f"Snekbox is {snekbox_status}.\n"
+            f"The database size is {db_size}.\n"
+            f"I'm using {util.hardware_usage()}.\n"
+            f"```{current_servers_string}```")
 
     @commands.command(hidden=True, aliases=["restoredatabase", "restoredb"])
     @commands.is_owner()
