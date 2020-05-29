@@ -10,7 +10,7 @@ import concurrent
 import sys
 import os
 from . import util
-from picturecommands_utils import get_all_cmds_aliases_from_db
+from .picturecommands_utils import get_all_cmds_aliases_from_db
 
 logger = logging.getLogger()
 

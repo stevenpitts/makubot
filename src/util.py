@@ -247,4 +247,6 @@ def db_size(db_connection):
 def hardware_usage():
     process = psutil.Process(os.getpid())
     with process.oneshot():
-        return f"{process.cpu_percent()}% cpu, {process.memory_percent()}% RAM"
+        return (
+            f"{process.cpu_percent():.2f}% cpu, "
+            f"{process.memory_percent():.2f}% RAM"
