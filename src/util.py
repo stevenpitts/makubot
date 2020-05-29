@@ -241,7 +241,7 @@ def db_size(db_connection):
         """
     )
     result = cursor.fetchall()
-    return result[0]
+    return result[0][0]
 
 
 def hardware_usage():
