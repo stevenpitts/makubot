@@ -563,7 +563,32 @@ class ReactionImages(discord.ext.commands.Cog):
         cmd_sizes = get_cmd_sizes(self.bot.db_connection)
         command_size = cmd_sizes[real_cmd]
         image_plurality = "image" if command_size == 1 else "images"
-        await ctx.send(f"{cmd} has {command_size} {image_plurality}!")
+        base_size_msg = f"{cmd} has {command_size} {image_plurality}!"
+        if not ctx.guild:
+            await ctx.send(base_size_msg)
+            return
+        cmd_sizes_server = get_cmd_sizes(
+            self.bot.db_connection, sid=ctx.guild.id)
+        uid = ctx.author.id
+        user_sids = get_user_sids(self.bot, uid)
+        cmd_sizes_user = get_cmd_sizes(
+            self.bot.db_connection,
+            sid=ctx.guild.id,
+            uid=uid,
+            user_sids=user_sids)
+        command_size_server = cmd_sizes_server[real_cmd]
+        command_size_user = cmd_sizes_user[real_cmd]
+        server_size_msg = (
+            f"Anyone on the server can pull {command_size_server} of them!")
+        user_size_msg = (
+            f"You can personally pull {command_size_user} of them here!")
+        if command_size == command_size_server:
+            await ctx.send(base_size_msg)
+        elif command_size_server == command_size_user:
+            await ctx.send(f"{base_size_msg} {server_size_msg}")
+        else:
+            await ctx.send(
+                f"{base_size_msg} {server_size_msg} {user_size_msg}")
 
     @commands.command()
     async def deleteimage(self, ctx, cmdimgpath):

@@ -302,14 +302,42 @@ def get_random_image(db_connection):
     return f"pictures/{result_cmd}/{result_image_key}"
 
 
-def get_cmd_sizes(db_connection):
+def get_cmd_sizes(db_connection, sid=None, uid=None, user_sids=None):
+    uid = as_text(uid)
+    sid = as_text(sid)
+    user_sids = as_text(user_sids)
+
     cursor = db_connection.cursor(cursor_factory=RealDictCursor)
-    cursor.execute(
-        """
-        SELECT cmd, COUNT(*) AS cmd_size FROM media.images
-        GROUP BY cmd
-        """
-    )
+
+    if sid and uid and user_sids:
+        cursor.execute(
+            """
+            SELECT cmd, COUNT(*) AS cmd_size FROM media.images
+            AND (cmd.uid IS NULL
+                 OR cmd.uid = %s
+                 OR cmd.sid = %s
+                 OR cmd.sid = ANY(%s));
+            GROUP BY cmd
+            """,
+            (uid, sid, user_sids)
+        )
+    elif sid:
+        cursor.execute(
+            """
+            SELECT cmd, COUNT(*) AS cmd_size FROM media.images
+            WHERE  (cmd.uid IS NULL OR cmd.sid = %s);
+            GROUP BY cmd
+            """,
+            (uid, sid)
+        )
+    else:
+        cursor.execute(
+            """
+            SELECT cmd, COUNT(*) AS cmd_size FROM media.images
+            GROUP BY cmd
+            """
+        )
+
     results = cursor.fetchall()
     return {result["cmd"]: result["cmd_size"] for result in results}
 
