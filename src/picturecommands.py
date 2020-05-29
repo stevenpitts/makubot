@@ -524,7 +524,8 @@ class ReactionImages(discord.ext.commands.Cog):
             await sent_message.edit(embed=None, content=new_url)
 
     @commands.command(hidden=True)
-    async def whatwassentin(self, ctx, message_id):
+    async def whatwassentin(self, ctx, message: discord.Message):
+        message_id = message.id
         if message_id not in self.sent_messages_image_urls:
             await ctx.send("idk man")
             return
