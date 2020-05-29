@@ -314,7 +314,7 @@ class PictureAdder(discord.ext.commands.Cog):
         all_images = get_all_user_images(self.bot.db_connection, ctx.author.id)
         await ctx.send(f"You have {len(all_images)} owned images!")
 
-    @commands.command(aliases=["addimageraw"])
+    @commands.command()
     async def addimage(self, ctx, image_collection: str, *, urls: str = ""):
         """Requests an image be added.
         mb.addimage nao http://static.zerochan.net/Tomori.Nao.full.1901643.jpg
@@ -322,7 +322,6 @@ class PictureAdder(discord.ext.commands.Cog):
         logger.info(
             f"Called add_image with ctx {ctx.__dict__}, "
             f"image_collection {image_collection}, and urls {urls}.")
-        do_raw = ctx.invoked_with == "addimageraw"
         if " " in image_collection:
             await ctx.send("Spaces replaced with underscores")
         image_collection = image_collection.strip().lower().replace(" ", "_")
@@ -352,7 +351,7 @@ class PictureAdder(discord.ext.commands.Cog):
             try:
                 status_message = await ctx.send(f"Querying... {loading_emoji}")
                 data, filepath, temp_dir = await get_media_bytes_and_name(
-                    url, status_message=status_message, do_raw=do_raw,
+                    url, status_message=status_message,
                     loading_emoji=loading_emoji)
             except(youtube_dl.utils.DownloadError,
                    aiohttp.client_exceptions.ClientConnectorError,

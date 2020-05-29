@@ -636,9 +636,9 @@ async def generate_image_embed(
 
 
 async def get_media_bytes_and_name(
-        url, status_message=None, do_raw=False, loading_emoji=""):
+        url, status_message=None, loading_emoji=""):
     temp_dir = tempfile.TemporaryDirectory()
-    quality_format = "best" if do_raw else "best[filesize<8M]/worst"
+    quality_format = "best[filesize<8M]/worst"
     ydl_options = {
         # "logger": logger,
         "quiet": True,
@@ -671,13 +671,10 @@ async def get_media_bytes_and_name(
             filepath += ".webm"
         await status_message.edit(content=f"Processing...{loading_emoji}")
         processing_start_time = datetime.now()
-        if do_raw:
+        try:
+            await convert_video(temp_filepath, filepath)
+        except NotVideo:
             os.rename(temp_filepath, filepath)
-        else:
-            try:
-                await convert_video(temp_filepath, filepath)
-            except NotVideo:
-                os.rename(temp_filepath, filepath)
         processing_time = datetime.now() - processing_start_time
         logger.info(f"{url} took {processing_time} to process")
         with open(filepath, "rb") as downloaded_file:
