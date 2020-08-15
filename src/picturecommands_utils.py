@@ -638,7 +638,7 @@ async def generate_image_embed(
     )
     image_embed_dict = {
         "description": embed_description,
-        "author": {"name": ctx.author.name,
+        "author": {"name": ctx.author.display_name,
                    "icon_url": str(ctx.author.avatar_url)
                    } if has_content else {},
         "image": {"url": url},
