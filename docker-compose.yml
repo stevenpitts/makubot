@@ -17,8 +17,10 @@ services:
             - net
 
     bot:
-        build:
-            context: .
+        build: .
+        depends_on:
+            - mbdb
+            - snekbox
         networks:
             - net
         environment:
