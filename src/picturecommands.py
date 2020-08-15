@@ -586,6 +586,7 @@ class ReactionImages(discord.ext.commands.Cog):
             await ctx.send(
                 f"{base_size_msg} {server_size_msg} {user_size_msg}")
 
+    @commands.is_owner()
     @commands.command()
     async def deletecmd(self, ctx, cmd):
         cmd = get_cmd_from_alias(self.bot.db_connection, cmd)
@@ -623,6 +624,7 @@ class ReactionImages(discord.ext.commands.Cog):
 
         await ctx.send(f"Command {cmd} deleted!")
 
+    @commands.is_owner()
     @commands.command()
     async def deleteimage(self, ctx, cmdimgpath):
         try:
