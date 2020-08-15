@@ -587,6 +587,43 @@ class ReactionImages(discord.ext.commands.Cog):
                 f"{base_size_msg} {server_size_msg} {user_size_msg}")
 
     @commands.command()
+    async def deletecmd(self, ctx, cmd):
+        cmd = get_cmd_from_alias(self.bot.db_connection, cmd)
+        if not cmd:
+            await ctx.send("That isn't an image command :?")
+            return
+        cmd_info_dict = cmd_info(self.bot.db_connection, cmd)
+        uid = cmd_info_dict["uid"]
+        origin_sids = cmd_info_dict["origin_sids"]
+        uid_user = self.bot.get_user(uid) if uid else None
+        uid_user_str = (
+            f"{uid_user.name}#{uid_user.discriminator}"
+            if uid_user else f"Unknown ({uid})")
+        origin_servers = [self.bot.get_guild(sid) for sid in origin_sids]
+
+        logger.info(
+            f"Deleting {cmd}."
+            f"Was at pictures/{cmd} "
+            f"{uid_user_str=}, {origin_servers=}.")
+
+        cmd_aliases = get_cmd_aliases_from_db(self.bot.db_connection, cmd)
+        cmd_aliases.add(cmd)
+        delete_cmd_and_all_images(self.bot.db_connection, cmd)
+        cascade_deleted_referenced_aliases(self.bot.db_connection)
+        cmd_bucket = boto3.resource('s3').Bucket(self.bot.s3_bucket)
+        cmd_bucket.objects.filter(Prefix=f"pictures/{cmd}").delete()
+        send_image_func_ref = self.bot.get_command("send_image_func")
+        self.bot.get_command("send_image_func").aliases = [
+            alias for alias in send_image_func_ref.aliases
+            if alias not in cmd_aliases
+        ]
+        for alias in cmd_aliases:
+            logger.info(f"Removing alias {alias}...")
+            self.bot.all_commands.pop(alias)
+
+        await ctx.send(f"Command {cmd} deleted!")
+
+    @commands.command()
     async def deleteimage(self, ctx, cmdimgpath):
         try:
             cmd, image_key = cmdimgpath.split("/")
