@@ -17,6 +17,10 @@ NO_EMOJI, YES_EMOJI = "❌", "✅"
 
 S3 = boto3.client("s3")
 
+INTERACTION_CMDS = {
+    "hug": "{receiver}, you got a hug from {sender}!",
+}
+
 
 class NotVideo(Exception):
     pass
@@ -620,15 +624,14 @@ def get_starting_keys_hashes(bucket):
     return collection_keys, collection_hashes
 
 
-async def generate_image_embed(
-        ctx, url, call_bot_name=False):
-    url = util.improve_url(url)
-    bot_nick = ctx.me.nick if getattr(ctx.me, "nick", None) else ctx.me.name
+async def generate_image_embed_phrase_generic(ctx, call_bot_name):
     invocation = f"{ctx.prefix}{ctx.invoked_with}"
     content_without_invocation = ctx.message.content[len(invocation):]
     has_content = bool(content_without_invocation.strip())
     query = f"{content_without_invocation}"
     cleaned_query = await util.clean(ctx, query)
+    cleaned_query = cleaned_query.strip()
+    bot_nick = ctx.me.nick if getattr(ctx.me, "nick", None) else ctx.me.name
     call_beginning = ("" if not has_content else
                       f"{bot_nick}, " if call_bot_name else
                       f"{ctx.invoked_with}, "
@@ -636,11 +639,43 @@ async def generate_image_embed(
     embed_description = (
         f"{call_beginning}{cleaned_query}" if has_content else ""
     )
+    return embed_description
+
+
+async def generate_image_embed_phrase_formatted(ctx, fstring):
+    invocation = f"{ctx.prefix}{ctx.invoked_with}"
+    content_without_invocation = ctx.message.content[len(invocation):]
+    query = f"{content_without_invocation}"
+    cleaned_query = await util.clean(ctx, query)
+    receiver = cleaned_query.strip(" @")
+    sender = ctx.author.display_name
+    formatted_phrase = fstring.format(sender=sender, receiver=receiver)
+    return formatted_phrase
+
+
+async def generate_image_embed_phrase(ctx, call_bot_name):
+    invoked_command = ctx.invoked_with.lower()
+    fstring = INTERACTION_CMDS.get(invoked_command)
+    if fstring:
+        return await generate_image_embed_phrase_formatted(ctx, fstring)
+    return await generate_image_embed_phrase_generic(ctx, call_bot_name)
+
+
+async def generate_image_embed(
+        ctx, url, call_bot_name=False):
+    url = util.improve_url(url)
+    bot_nick = ctx.me.nick if getattr(ctx.me, "nick", None) else ctx.me.name
+    invocation = f"{ctx.prefix}{ctx.invoked_with}"
+    content_without_invocation = ctx.message.content[len(invocation):]
+    has_content = bool(content_without_invocation.strip())
+    invoked_command = ctx.invoked_with.lower()
+    fstring = INTERACTION_CMDS.get(invoked_command)
+    embed_description = await generate_image_embed_phrase(ctx, call_bot_name)
     image_embed_dict = {
         "description": embed_description,
         "author": {"name": ctx.author.display_name,
                    "icon_url": str(ctx.author.avatar_url)
-                   } if has_content else {},
+                   } if has_content and not fstring else {},
         "image": {"url": url},
         "footer": {"text": f"-{bot_nick}", "icon_url": str(ctx.me.avatar_url)},
     }
