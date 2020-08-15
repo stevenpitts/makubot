@@ -180,7 +180,9 @@ class ReminderCommands(discord.ext.commands.Cog):
         """
         total_seconds, reminder_message = parse_remind_me(
             time_and_reminder)
-        reminder_message = await util.clean(ctx, reminder_message)
+        reminder_message = (
+            await util.clean(ctx, reminder_message) if reminder_message else ""
+        )
         total_seconds = total_seconds and int(total_seconds)
         if total_seconds is None or reminder_message is None:
             await ctx.send(
