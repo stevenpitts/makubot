@@ -648,7 +648,7 @@ async def generate_image_embed_phrase_formatted(ctx, fstring):
     query = f"{content_without_invocation}"
     cleaned_query = await util.clean(ctx, query)
     receiver = cleaned_query.strip(" @")
-    sender = ctx.author.display_name
+    sender = ctx.author.mention
     formatted_phrase = fstring.format(sender=sender, receiver=receiver)
     return formatted_phrase
 
