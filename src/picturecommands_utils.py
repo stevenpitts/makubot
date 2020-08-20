@@ -22,7 +22,7 @@ INTERACTION_CMDS = {
     "kiss": "{receiver}, you got kissed by {sender}!",
     "highfive": "{receiver}, {sender} just gave you a high-five!",
     "pat": "{receiver}, you were given headpats by {sender}!",
-    "lick" "{receiver}, you just got... licked????!? By {sender}!",
+    "lick": "{receiver}, you just got... licked????!? By {sender}!",
 }
 
 
@@ -649,9 +649,14 @@ async def generate_image_embed_phrase_generic(ctx, call_bot_name):
 async def generate_image_embed_phrase_formatted(ctx, fstring):
     invocation = f"{ctx.prefix}{ctx.invoked_with}"
     content_without_invocation = ctx.message.content[len(invocation):]
-    query = f"{content_without_invocation}"
+    query = f"{content_without_invocation}".strip()
+    mentioned_uids = ctx.message.raw_mentions
+    mentioned_uid = mentioned_uids[0] if len(mentioned_uids) == 1 else None
     cleaned_query = await util.clean(ctx, query)
-    receiver = cleaned_query.strip(" @")
+    receiver = (
+        f"<@!{mentioned_uid}>" if mentioned_uid
+        else cleaned_query.strip(" @")
+    )
     sender = ctx.author.mention
     formatted_phrase = fstring.format(sender=sender, receiver=receiver)
     return formatted_phrase
