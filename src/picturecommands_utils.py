@@ -19,6 +19,10 @@ S3 = boto3.client("s3")
 
 INTERACTION_CMDS = {
     "hug": "{receiver}, you got a hug from {sender}!",
+    "kiss": "{receiver}, you got kissed by {sender}!",
+    "highfive": "{receiver}, {sender} just gave you a high-five!",
+    "pat": "{receiver}, you were given headpats by {sender}!",
+    "lick" "{receiver}, you just got... licked????!? By {sender}!",
 }
 
 
