@@ -7,6 +7,7 @@ from discord.ext.commands.errors import (
     CommandError, CommandNotFound, CommandOnCooldown, NotOwner,
     MissingPermissions, BotMissingPermissions, BadUnionArgument,
     MissingRequiredArgument, BadArgument, PrivateMessageOnly, NoPrivateMessage,
+    UserInputError,
 )
 from . import util
 
@@ -69,6 +70,10 @@ class Listeners(discord.ext.commands.Cog):
                 NoPrivateMessage,
         )):
             await ctx.send(str(caught_exception))
+        elif isinstance(caught_exception, UserInputError):
+            await ctx.send(
+                "Hmm, I can't tell what you're saying... did you make a typo?"
+            )
         else:
             formatted_tb = util.get_formatted_traceback(
                 caught_exception)
