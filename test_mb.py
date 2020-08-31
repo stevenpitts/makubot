@@ -8,6 +8,8 @@ from src.util import (
     url_from_s3_key,
     get_nonconflicting_filename,
 )
+from src import ctxhelpers
+
 
 id_text_pairs = [
     ["1", "1"],
@@ -71,3 +73,36 @@ def test_get_nonconflicting_filename():
             existing_keys=possible_keys_without_key)
         assert new_filename not in possible_keys
         assert new_filename_without_key == possible_key
+
+
+class objectview(object):
+    def __init__(self, d):
+        self.__dict__ = d
+
+
+def get_example_ctx():
+    content_example = objectview({"content": "mb.lupo what's up?"})
+    ctx_example = {
+        "prefix": "mb.",
+        "invoked_with": "lupo",
+        "message": content_example,
+    }
+    return objectview(ctx_example)
+    # thing = object
+    # setattr(thing, "prefix", "mb.")
+    # setattr(thing, "invoked_with", "lupo")
+    # setattr(thing, "content", "mb.lupo what's up?")
+    # return thing
+
+
+def test_get_invocation():
+    assert ctxhelpers.get_invocation(get_example_ctx()) == "mb.lupo"
+
+
+def test_get_content_without_invocation():
+    ctx = get_example_ctx()
+    assert ctxhelpers.get_content_without_invocation(ctx) == "what's up?"
+
+
+def test_get_invoked_command():
+    assert ctxhelpers.get_invoked_command(get_example_ctx()) == "lupo"

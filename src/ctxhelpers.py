@@ -13,7 +13,7 @@ def get_bot_nick(ctx):
 
 @lru_cache
 def get_content_without_invocation(ctx):
-    return ctx.message.content[len(get_invocation(ctx)):]
+    return ctx.message.content[len(get_invocation(ctx))+1:]
 
 
 @lru_cache
