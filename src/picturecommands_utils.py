@@ -10,6 +10,7 @@ from psycopg2.extras import RealDictCursor
 from datetime import datetime
 import boto3
 from . import util
+from .ctx_helpers import get_invocation
 
 logger = logging.getLogger()
 
@@ -629,7 +630,7 @@ def get_starting_keys_hashes(bucket):
 
 
 async def generate_image_embed_phrase_generic(ctx, call_bot_name):
-    invocation = f"{ctx.prefix}{ctx.invoked_with}"
+    invocation = get_invocation(ctx)
     content_without_invocation = ctx.message.content[len(invocation):]
     has_content = bool(content_without_invocation.strip())
     query = f"{content_without_invocation}"
@@ -647,7 +648,7 @@ async def generate_image_embed_phrase_generic(ctx, call_bot_name):
 
 
 async def generate_image_embed_phrase_formatted(ctx, fstring):
-    invocation = f"{ctx.prefix}{ctx.invoked_with}"
+    invocation = get_invocation(ctx)
     content_without_invocation = ctx.message.content[len(invocation):]
     has_content = bool(content_without_invocation.strip())
     query = f"{content_without_invocation}".strip()
@@ -675,7 +676,7 @@ async def generate_image_embed(
         ctx, url, call_bot_name=False):
     url = util.improve_url(url)
     bot_nick = ctx.me.nick if getattr(ctx.me, "nick", None) else ctx.me.name
-    invocation = f"{ctx.prefix}{ctx.invoked_with}"
+    invocation = get_invocation(ctx)
     content_without_invocation = ctx.message.content[len(invocation):]
     has_content = bool(content_without_invocation.strip())
     invoked_command = ctx.invoked_with.lower()
