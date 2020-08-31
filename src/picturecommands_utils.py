@@ -632,8 +632,7 @@ def get_starting_keys_hashes(bucket):
 async def generate_image_embed_phrase_generic(ctx, call_bot_name):
     content_without_invocation = ctxhelpers.get_content_without_invocation(ctx)
     has_content = ctxhelpers.get_has_content(ctx)
-    query = f"{content_without_invocation}"
-    cleaned_query = await util.clean(ctx, query)
+    cleaned_query = await util.clean(ctx, content_without_invocation)
     cleaned_query = cleaned_query.strip()
     bot_nick = ctxhelpers.get_bot_nick(ctx)
     call_beginning = ("" if not has_content else
@@ -649,10 +648,9 @@ async def generate_image_embed_phrase_generic(ctx, call_bot_name):
 async def generate_image_embed_phrase_formatted(ctx, fstring):
     content_without_invocation = ctxhelpers.get_content_without_invocation(ctx)
     has_content = ctxhelpers.get_has_content(ctx)
-    query = f"{content_without_invocation}".strip()
     mentioned_uids = ctx.message.raw_mentions
     mentioned_uid = mentioned_uids[0] if len(mentioned_uids) == 1 else None
-    cleaned_query = await util.clean(ctx, query)
+    cleaned_query = await util.clean(ctx, content_without_invocation)
     receiver = (
         f"<@!{mentioned_uid}>" if mentioned_uid
         else cleaned_query.strip(" @")
