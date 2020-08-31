@@ -649,6 +649,7 @@ async def generate_image_embed_phrase_generic(ctx, call_bot_name):
 async def generate_image_embed_phrase_formatted(ctx, fstring):
     invocation = f"{ctx.prefix}{ctx.invoked_with}"
     content_without_invocation = ctx.message.content[len(invocation):]
+    has_content = bool(content_without_invocation.strip())
     query = f"{content_without_invocation}".strip()
     mentioned_uids = ctx.message.raw_mentions
     mentioned_uid = mentioned_uids[0] if len(mentioned_uids) == 1 else None
@@ -659,7 +660,7 @@ async def generate_image_embed_phrase_formatted(ctx, fstring):
     )
     sender = ctx.author.mention
     formatted_phrase = fstring.format(sender=sender, receiver=receiver)
-    return formatted_phrase
+    return formatted_phrase if has_content else ""
 
 
 async def generate_image_embed_phrase(ctx, call_bot_name):
