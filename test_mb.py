@@ -88,11 +88,6 @@ def get_example_ctx():
         "message": content_example,
     }
     return objectview(ctx_example)
-    # thing = object
-    # setattr(thing, "prefix", "mb.")
-    # setattr(thing, "invoked_with", "lupo")
-    # setattr(thing, "content", "mb.lupo what's up?")
-    # return thing
 
 
 def test_get_invocation():
