@@ -10,6 +10,7 @@ from psycopg2.extras import RealDictCursor
 from datetime import datetime
 import boto3
 from . import util
+from . import ctxhelpers
 
 logger = logging.getLogger()
 
@@ -629,13 +630,11 @@ def get_starting_keys_hashes(bucket):
 
 
 async def generate_image_embed_phrase_generic(ctx, call_bot_name):
-    invocation = f"{ctx.prefix}{ctx.invoked_with}"
-    content_without_invocation = ctx.message.content[len(invocation):]
-    has_content = bool(content_without_invocation.strip())
-    query = f"{content_without_invocation}"
-    cleaned_query = await util.clean(ctx, query)
+    content_without_invocation = ctxhelpers.get_content_without_invocation(ctx)
+    has_content = ctxhelpers.get_has_content(ctx)
+    cleaned_query = await util.clean(ctx, content_without_invocation)
     cleaned_query = cleaned_query.strip()
-    bot_nick = ctx.me.nick if getattr(ctx.me, "nick", None) else ctx.me.name
+    bot_nick = ctxhelpers.get_bot_nick(ctx)
     call_beginning = ("" if not has_content else
                       f"{bot_nick}, " if call_bot_name else
                       f"{ctx.invoked_with}, "
@@ -647,37 +646,33 @@ async def generate_image_embed_phrase_generic(ctx, call_bot_name):
 
 
 async def generate_image_embed_phrase_formatted(ctx, fstring):
-    invocation = f"{ctx.prefix}{ctx.invoked_with}"
-    content_without_invocation = ctx.message.content[len(invocation):]
-    query = f"{content_without_invocation}".strip()
+    content_without_invocation = ctxhelpers.get_content_without_invocation(ctx)
+    has_content = ctxhelpers.get_has_content(ctx)
     mentioned_uids = ctx.message.raw_mentions
     mentioned_uid = mentioned_uids[0] if len(mentioned_uids) == 1 else None
-    cleaned_query = await util.clean(ctx, query)
+    cleaned_query = await util.clean(ctx, content_without_invocation)
     receiver = (
         f"<@!{mentioned_uid}>" if mentioned_uid
         else cleaned_query.strip(" @")
     )
     sender = ctx.author.mention
     formatted_phrase = fstring.format(sender=sender, receiver=receiver)
-    return formatted_phrase
+    return formatted_phrase if has_content else ""
 
 
 async def generate_image_embed_phrase(ctx, call_bot_name):
-    invoked_command = ctx.invoked_with.lower()
+    invoked_command = ctxhelpers.get_invoked_command(ctx)
     fstring = INTERACTION_CMDS.get(invoked_command)
     if fstring:
         return await generate_image_embed_phrase_formatted(ctx, fstring)
     return await generate_image_embed_phrase_generic(ctx, call_bot_name)
 
 
-async def generate_image_embed(
-        ctx, url, call_bot_name=False):
+async def generate_image_embed(ctx, url, call_bot_name=False):
     url = util.improve_url(url)
-    bot_nick = ctx.me.nick if getattr(ctx.me, "nick", None) else ctx.me.name
-    invocation = f"{ctx.prefix}{ctx.invoked_with}"
-    content_without_invocation = ctx.message.content[len(invocation):]
-    has_content = bool(content_without_invocation.strip())
-    invoked_command = ctx.invoked_with.lower()
+    bot_nick = ctxhelpers.get_bot_nick(ctx)
+    has_content = ctxhelpers.get_has_content(ctx)
+    invoked_command = ctxhelpers.get_invoked_command(ctx)
     fstring = INTERACTION_CMDS.get(invoked_command)
     embed_description = await generate_image_embed_phrase(ctx, call_bot_name)
     image_embed_dict = {
@@ -692,8 +687,7 @@ async def generate_image_embed(
     return image_embed
 
 
-async def get_media_bytes_and_name(
-        url, status_message=None, loading_emoji=""):
+async def get_media_bytes_and_name(url, status_message=None, loading_emoji=""):
     temp_dir = tempfile.TemporaryDirectory()
     quality_format = "best[filesize<8M]/worst"
     ydl_options = {
