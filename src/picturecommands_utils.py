@@ -670,8 +670,7 @@ async def generate_image_embed_phrase(ctx, call_bot_name):
     return await generate_image_embed_phrase_generic(ctx, call_bot_name)
 
 
-async def generate_image_embed(
-        ctx, url, call_bot_name=False):
+async def generate_image_embed(ctx, url, call_bot_name=False):
     url = util.improve_url(url)
     bot_nick = ctxhelpers.get_bot_nick(ctx)
     has_content = ctxhelpers.get_has_content(ctx)
@@ -690,8 +689,7 @@ async def generate_image_embed(
     return image_embed
 
 
-async def get_media_bytes_and_name(
-        url, status_message=None, loading_emoji=""):
+async def get_media_bytes_and_name(url, status_message=None, loading_emoji=""):
     temp_dir = tempfile.TemporaryDirectory()
     quality_format = "best[filesize<8M]/worst"
     ydl_options = {
