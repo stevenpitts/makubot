@@ -1,4 +1,4 @@
-[Invite Link](https://discordapp.com/oauth2/authorize?&client_id=363924877981253633&scope=bot&permissions=0)
+[Invite Link](https://discordapp.com/oauth2/authorize?&client_id=363924877981253633&scope=bot&permissions=314432)
 
 # Project Information
 
@@ -6,7 +6,7 @@ I’m Makubot! I have a huge image collection that you can add to; try `mb.help 
 
 [Botlist link](https://discord.bots.gg/bots/363924877981253633)
 
-[Invite Link](https://discordapp.com/oauth2/authorize?&client_id=363924877981253633&scope=bot&permissions=0)
+[Invite Link](https://discordapp.com/oauth2/authorize?&client_id=363924877981253633&scope=bot&permissions=314432)
 
 [Support Server Invite](https://discordapp.com/invite/7sFbA4W)
 
