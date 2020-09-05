@@ -93,6 +93,14 @@ class Help(discord.ext.commands.Cog):
         bot.help_command.cog = self
         self.bot = bot
 
+    @commands.command()
+    async def superhelp(self, ctx):
+        all_non_image_commands = [
+            cmd for cmd, command in self.bot.all_commands.items()
+            if command != self.bot.all_commands["send_image_func"]
+        ]
+        await ctx.send(", ".join(all_non_image_commands))
+
 
 def setup(bot):
     logger.info("help starting setup")
