@@ -316,13 +316,21 @@ class PictureAdder(discord.ext.commands.Cog):
         await ctx.send(f"You have {len(all_images)} owned images!")
 
     @commands.command()
-    async def addimage(self, ctx, image_collection: str, *, urls: str = ""):
+    async def addimage(self, ctx, *, image_collection_and_urls: str = ""):
         """Requests an image be added to an image collection.
         For example, to add an image to mb.nao:
         mb.addimage nao http://static.zerochan.net/Tomori.Nao.full.1901643.jpg
+        Alternatively, you can use mb.addimage nao, and attach an image to \
+the message!
+        Then, it'll be sent to Maku for approval!
         If you want to start a new image command, \
-you just need to add an image to it!
-        Then, it'll be sent to Maku for approval!"""
+you just need to add an image to it!"""
+        image_collection_and_urls_separated = image_collection_and_urls.split()
+        if not image_collection_and_urls_separated:
+            await ctx.send(f"`mb.addimage`: {ctx.command.help}")
+            return
+        image_collection = image_collection_and_urls_separated[0]
+        urls = " ".join(image_collection_and_urls_separated[1:])
         logger.info(
             f"Called add_image with ctx {ctx.__dict__}, "
             f"image_collection {image_collection}, and urls {urls}.")
