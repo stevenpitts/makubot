@@ -9,7 +9,6 @@ import discord
 from discord.ext import commands
 from . import util
 from psycopg2.extras import RealDictCursor
-from discord.utils import escape_markdown
 
 logger = logging.getLogger()
 
@@ -131,36 +130,6 @@ class Base(discord.ext.commands.Cog):
     @commands.bot_has_permissions(manage_messages=True)
     async def opentxt(self, ctx):
         """Opens the most recent file for reading!!!"""
-        async def displaytxt(extracted_text: str):
-            block_size = 500
-            button_emojis = left_arrow, right_arrow, stop_emote = "👈👉❌"
-            text_blocks = [f"{extracted_text[i:i+block_size]}"
-                           for i in range(0, len(extracted_text), block_size)]
-            text_blocks = [f"```{escape_markdown(text_block)}```"
-                           for text_block in text_blocks]
-            current_index = 0
-            block_message = await ctx.send(text_blocks[current_index])
-
-            def check(reaction, user):
-                return (user != self.bot.user
-                        and reaction.emoji in button_emojis
-                        and reaction.message.id == block_message.id)
-
-            while current_index is not None:
-                await block_message.edit(content=text_blocks[current_index])
-                for emoji_to_add in button_emojis:
-                    await block_message.add_reaction(emoji_to_add)
-                res = await self.bot.wait_for("reaction_add", check=check)
-                emoji_result = res[0].emoji
-                await block_message.remove_reaction(emoji_result, res[1])
-                if emoji_result == left_arrow:
-                    current_index -= 1
-                elif emoji_result == right_arrow:
-                    current_index += 1
-                else:
-                    await block_message.clear_reactions()
-                    await block_message.edit(content=r"```File closed.```")
-                    current_index = None
         try:
             previous_messages = (message async for message in
                                  ctx.channel.history() if message.attachments)
@@ -177,7 +146,7 @@ class Base(discord.ext.commands.Cog):
         except StopAsyncIteration:
             await ctx.send("Ah, I couldn't find any text file, sorry!")
         else:
-            await displaytxt(out_text)
+            await util.displaytxt(ctx, out_text)
 
 
 def setup(bot):

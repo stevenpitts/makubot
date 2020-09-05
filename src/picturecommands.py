@@ -1,6 +1,5 @@
 import discord
 from discord.ext import commands
-from discord.utils import escape_markdown
 import logging
 import random
 import aiohttp
@@ -549,11 +548,7 @@ class ReactionImages(discord.ext.commands.Cog):
         all_invocations = get_all_cmds_aliases_from_db(self.bot.db_connection)
         all_invocations_alphabetized = sorted(all_invocations)
         pictures_desc = ", ".join(all_invocations_alphabetized)
-        block_size = 1500
-        text_blocks = [f"{pictures_desc[i:i+block_size]}"
-                       for i in range(0, len(pictures_desc), block_size)]
-        for text_block in text_blocks:
-            await ctx.send(f"```{escape_markdown(text_block)}```")
+        await util.displaytxt(ctx, pictures_desc)
 
     @commands.command(hidden=True, aliases=["realinvocation"])
     async def real_invocation(self, ctx, alias):
