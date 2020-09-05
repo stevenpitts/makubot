@@ -251,3 +251,44 @@ def hardware_usage():
             f"{process.cpu_percent():.2f}% cpu, "
             f"{process.memory_percent():.2f}% RAM"
         )
+
+
+async def displaytxt(ctx, text: str, blockify=False):
+    block_size = 500
+    surrounder = "```" if blockify else ""
+    button_emojis = left_arrow, right_arrow, stop_emote = "👈👉❌"
+    text_blocks = [
+        f"{text[i:i+block_size]}"
+        for i in range(0, len(text), block_size)]
+    text_blocks = [
+        f"{surrounder}{text_block}{surrounder}"
+        for text_block in text_blocks]
+    current_index = 0
+    block_message = await ctx.send(text_blocks[current_index])
+
+    def check(reaction, user):
+        return (user != ctx.bot.user
+                and reaction.emoji in button_emojis
+                and reaction.message.id == block_message.id)
+
+    while current_index is not None:
+        await block_message.edit(content=text_blocks[current_index])
+        for emoji_to_add in button_emojis:
+            await block_message.add_reaction(emoji_to_add)
+        res = await ctx.bot.wait_for("reaction_add", check=check)
+        emoji_result = res[0].emoji
+        try:
+            await block_message.remove_reaction(emoji_result, res[1])
+        except discord.errors.Forbidden:
+            pass
+        if emoji_result == left_arrow:
+            current_index -= 1
+        elif emoji_result == right_arrow:
+            current_index += 1
+        else:
+            try:
+                await block_message.clear_reactions()
+            except discord.errors.Forbidden:
+                pass
+            await block_message.edit(content=r"```Closed.```")
+            current_index = None

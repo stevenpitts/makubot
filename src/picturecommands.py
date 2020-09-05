@@ -1,6 +1,5 @@
 import discord
 from discord.ext import commands
-from discord.utils import escape_markdown
 import logging
 import random
 import aiohttp
@@ -199,7 +198,7 @@ class PictureAdder(discord.ext.commands.Cog):
                     pass
                 return
             if not approved:
-                response = (f"Your image {filename} was not approved. "
+                response = (f"Your image `{filename}` was not approved. "
                             "Feel free to ask Maku why ^_^")
                 try:
                     await status_message.edit(content=response)
@@ -272,7 +271,7 @@ class PictureAdder(discord.ext.commands.Cog):
                 self.bot.db_connection, image_key, cmd,
                 uid=uid, sid=sid, md5=md5)
 
-        response = f"Your image {image_key} was approved!"
+        response = f"Your image `{image_key}` was approved!"
         await requestor.send(response)
         try:
             await status_message.edit(content=response)
@@ -316,10 +315,21 @@ class PictureAdder(discord.ext.commands.Cog):
         await ctx.send(f"You have {len(all_images)} owned images!")
 
     @commands.command()
-    async def addimage(self, ctx, image_collection: str, *, urls: str = ""):
-        """Requests an image be added.
+    async def addimage(self, ctx, *, image_collection_and_urls: str = ""):
+        """Requests an image be added to an image collection.
+        For example, to add an image to mb.nao:
         mb.addimage nao http://static.zerochan.net/Tomori.Nao.full.1901643.jpg
-        Then, it'll be sent to Nao for approval!"""
+        Alternatively, you can use mb.addimage nao, and attach an image to \
+the message!
+        Then, it'll be sent to Maku for approval!
+        If you want to start a new image command, \
+you just need to add an image to it!"""
+        image_collection_and_urls_separated = image_collection_and_urls.split()
+        if not image_collection_and_urls_separated:
+            await ctx.send(f"`mb.addimage`: {ctx.command.help}")
+            return
+        image_collection = image_collection_and_urls_separated[0]
+        urls = " ".join(image_collection_and_urls_separated[1:])
         logger.info(
             f"Called add_image with ctx {ctx.__dict__}, "
             f"image_collection {image_collection}, and urls {urls}.")
@@ -538,11 +548,7 @@ class ReactionImages(discord.ext.commands.Cog):
         all_invocations = get_all_cmds_aliases_from_db(self.bot.db_connection)
         all_invocations_alphabetized = sorted(all_invocations)
         pictures_desc = ", ".join(all_invocations_alphabetized)
-        block_size = 1500
-        text_blocks = [f"{pictures_desc[i:i+block_size]}"
-                       for i in range(0, len(pictures_desc), block_size)]
-        for text_block in text_blocks:
-            await ctx.send(f"```{escape_markdown(text_block)}```")
+        await util.displaytxt(ctx, pictures_desc)
 
     @commands.command(hidden=True, aliases=["realinvocation"])
     async def real_invocation(self, ctx, alias):
