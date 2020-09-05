@@ -199,7 +199,7 @@ class PictureAdder(discord.ext.commands.Cog):
                     pass
                 return
             if not approved:
-                response = (f"Your image {filename} was not approved. "
+                response = (f"Your image `{filename}` was not approved. "
                             "Feel free to ask Maku why ^_^")
                 try:
                     await status_message.edit(content=response)
@@ -272,7 +272,7 @@ class PictureAdder(discord.ext.commands.Cog):
                 self.bot.db_connection, image_key, cmd,
                 uid=uid, sid=sid, md5=md5)
 
-        response = f"Your image {image_key} was approved!"
+        response = f"Your image `{image_key}` was approved!"
         await requestor.send(response)
         try:
             await status_message.edit(content=response)
