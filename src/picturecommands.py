@@ -684,7 +684,7 @@ class ReactionImages(discord.ext.commands.Cog):
 
     @commands.command(aliases=["topten"])
     async def bigten(self, ctx):
-        """List ten biggest image commands!"""
+        """List my ten biggest image commands!"""
         command_sizes = get_cmd_sizes(self.bot.db_connection)
         commands_sorted = sorted(
             command_sizes.keys(),
