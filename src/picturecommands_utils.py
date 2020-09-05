@@ -585,9 +585,15 @@ def get_appropriate_images(db_connection, cmd, uid, sid=None, user_sids=[]):
         """
         SELECT * FROM media.images
         WHERE cmd = %s
-        AND (uid IS NULL OR uid = %s OR sid = %s OR sid = ANY(%s));
+        AND (uid IS NULL OR uid = %s OR sid = %s OR sid = ANY(%s))
+        AND image_key NOT IN (
+            SELECT image_key
+            FROM media.blacklist_associations
+            WHERE uid = %s
+            AND cmd = %s
+        );
         """,
-        (cmd, uid, sid, user_sids)
+        (cmd, uid, sid, user_sids, uid, cmd)
     )
     results = cursor.fetchall()
     if results:
