@@ -317,9 +317,12 @@ class PictureAdder(discord.ext.commands.Cog):
 
     @commands.command()
     async def addimage(self, ctx, image_collection: str, *, urls: str = ""):
-        """Requests an image be added.
+        """Requests an image be added to an image collection.
+        For example, to add an image to mb.nao:
         mb.addimage nao http://static.zerochan.net/Tomori.Nao.full.1901643.jpg
-        Then, it'll be sent to Nao for approval!"""
+        If you want to start a new image command, \
+you just need to add an image to it!
+        Then, it'll be sent to Maku for approval!"""
         logger.info(
             f"Called add_image with ctx {ctx.__dict__}, "
             f"image_collection {image_collection}, and urls {urls}.")
