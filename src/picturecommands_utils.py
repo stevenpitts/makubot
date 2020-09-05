@@ -585,9 +585,15 @@ def get_appropriate_images(db_connection, cmd, uid, sid=None, user_sids=[]):
         """
         SELECT * FROM media.images
         WHERE cmd = %s
-        AND (uid IS NULL OR uid = %s OR sid = %s OR sid = ANY(%s));
+        AND (uid IS NULL OR uid = %s OR sid = %s OR sid = ANY(%s))
+        AND image_key NOT IN (
+            SELECT image_key
+            FROM media.blacklist_associations
+            WHERE uid = %s
+            AND cmd = %s
+        );
         """,
-        (cmd, uid, sid, user_sids)
+        (cmd, uid, sid, user_sids, uid, cmd)
     )
     results = cursor.fetchall()
     if results:
@@ -604,6 +610,53 @@ def get_appropriate_images(db_connection, cmd, uid, sid=None, user_sids=[]):
     )
     results = cursor.fetchall()
     return [result["image_key"] for result in results]
+
+
+def add_blacklist_association(db_connection, cmd, image_key, uid):
+    uid = as_text(uid)
+    logger.info(f"Adding blacklist for {cmd=}, {image_key=}, {uid=}.")
+    cursor = db_connection.cursor(cursor_factory=RealDictCursor)
+    cursor.execute(
+        """
+        INSERT INTO media.blacklist_associations (
+        cmd,
+        image_key,
+        uid)
+        VALUES (%s, %s, %s);
+        """,
+        (cmd, image_key, uid)
+    )
+    db_connection.commit()
+
+
+def remove_blacklist_association(db_connection, cmd, image_key, uid):
+    uid = as_text(uid)
+    logger.info(f"Removing blacklist for {cmd=}, {image_key=}, {uid=}.")
+    cursor = db_connection.cursor(cursor_factory=RealDictCursor)
+    cursor.execute(
+        """
+        DELETE FROM media.blacklist_associations
+        WHERE cmd = %s
+        AND image_key = %s
+        AND uid = %s
+        """,
+        (cmd, image_key, uid)
+    )
+    db_connection.commit()
+
+
+def get_user_blacklist(db_connection, uid):
+    uid = as_text(uid)
+    cursor = db_connection.cursor(cursor_factory=RealDictCursor)
+    cursor.execute(
+        """
+        SELECT * FROM media.blacklist_associations
+        WHERE uid = %s
+        """,
+        (uid,)
+    )
+    results = cursor.fetchall()
+    return [(result["cmd"], result["image_key"]) for result in results]
 
 
 def get_starting_keys_hashes(bucket):
