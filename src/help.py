@@ -85,6 +85,13 @@ class MyHelpCommand(commands.DefaultHelpCommand):
             )
         )
 
+    async def send_command_help(self, command):
+        if command.callback.__name__ == "send_image_func":
+            await self.get_destination().send(
+                "Use this command to send an image from an image directory!")
+        else:
+            await super().send_command_help(command)
+
 
 class Help(discord.ext.commands.Cog):
     def __init__(self, bot):
