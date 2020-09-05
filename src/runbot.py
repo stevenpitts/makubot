@@ -38,10 +38,17 @@ class MakuBot(commands.Bot):
                  db_port=None,
                  db_user=None,
                  ):
-        commands.Bot.__init__(self,
-                              command_prefix=commands.when_mentioned,
-                              case_insensitive=True,
-                              owner_id=203285581004931072)
+        commands.Bot.__init__(
+            self,
+            command_prefix=commands.when_mentioned,
+            case_insensitive=True,
+            owner_id=203285581004931072,
+            allowed_mentions=discord.AllowedMentions(
+                everyone=False,
+                roles=False,
+                users=True,
+            )
+        )
         logger.info("Bot entering setup")
         self.makusu = None
         self.shared = {}
@@ -58,7 +65,8 @@ class MakuBot(commands.Bot):
                                              "ytsearch",
                                              "fun",
                                              "debugging",
-                                             "rolegiver"
+                                             "rolegiver",
+                                             "help",
                                              ]
         self.s3_bucket = s3_bucket
         if self.s3_bucket:

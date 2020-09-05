@@ -94,7 +94,7 @@ class Base(discord.ext.commands.Cog):
         """I'll send you a link to invite me to your server!"""
         link = (
             f"https://discordapp.com/oauth2/authorize?"
-            f"&client_id={self.bot.user.id}&scope=bot&permissions=0/"
+            f"&client_id={self.bot.user.id}&scope=bot&permissions=314432/"
         )
         await ctx.send(link)
 

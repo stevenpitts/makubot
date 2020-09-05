@@ -12,7 +12,7 @@ class Wikisearch(discord.ext.commands.Cog):
 
     @commands.command()
     async def whatis(self, ctx, *, query):
-        """Searches Wikipedia to see what something is! Give it a try!"""
+        """Searches Wikipedia to see what something is!"""
         try:
             first_result = wikipedia.search(query)[0]
             result = wikipedia.page(first_result)

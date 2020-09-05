@@ -58,7 +58,7 @@ class Fun(discord.ext.commands.Cog):
     @commands.command(aliases=["emoji spam"])
     @commands.bot_has_permissions(add_reactions=True)
     async def emojispam(self, ctx):
-        """Prepare to be spammed by the greatest emojis you've ever seen"""
+        """I'll show off the greatest (but random) emojis you've ever seen"""
         max_reacts = 20
         emojis_random_order = iter(sorted(self.bot.emojis,
                                           key=lambda *args: random.random()))
