@@ -47,6 +47,9 @@ from .picturecommands_utils import (
     get_all_user_images,
     get_cmd_aliases_from_db,
     get_cmd_size_server_user,
+    add_blacklist_association,
+    get_user_blacklist,
+    remove_blacklist_association,
 )
 
 logger = logging.getLogger()
@@ -424,6 +427,11 @@ class ReactionImages(discord.ext.commands.Cog):
             CREATE TABLE IF NOT EXISTS media.aliases (
                 alias TEXT PRIMARY KEY,
                 real TEXT);
+            CREATE TABLE IF NOT EXISTS media.blacklist_associations (
+                cmd TEXT REFERENCES media.commands(cmd) ON DELETE CASCADE,
+                image_key TEXT,
+                uid CHARACTER(18),
+                PRIMARY KEY (cmd, image_key, uid));
             """
         )
         self.bot.db_connection.commit()
@@ -815,6 +823,59 @@ class ReactionImages(discord.ext.commands.Cog):
         for url_group in url_groups:
             await ctx.send("\n".join(url_group))
             await asyncio.sleep(0.5)
+
+    @commands.command()
+    async def nolike(self, ctx, cmd_and_key: str):
+        """Don't like an image? mb.nolike imagecommand/image01.png"""
+        uid = ctx.author.id
+        try:
+            cmd, image_key = cmd_and_key.split("/")
+        except ValueError:
+            await ctx.send(
+                "Hmm, I can't tell what the command/key combination is!")
+            return
+        cmd = get_cmd_from_alias(self.bot.db_connection, cmd)
+        if not cmd:
+            await ctx.send("That's not an image command :?")
+            return
+        if not image_exists_in_cmd(self.bot.db_connection, image_key, cmd):
+            await ctx.send("I can't find that image :?")
+            return
+        add_blacklist_association(self.bot.db_connection, cmd, image_key, uid)
+        await ctx.send("Done!")
+
+    @commands.command()
+    async def relike(self, ctx, cmd_and_key: str):
+        """Undo a mb.nolike command"""
+        uid = ctx.author.id
+        try:
+            cmd, image_key = cmd_and_key.split("/")
+        except ValueError:
+            await ctx.send(
+                "Hmm, I can't tell what the command/key combination is!")
+            return
+        cmd = get_cmd_from_alias(self.bot.db_connection, cmd)
+        if not cmd:
+            await ctx.send("That's not an image command :?")
+            return
+        if not image_exists_in_cmd(self.bot.db_connection, image_key, cmd):
+            await ctx.send("I can't find that image :?")
+            return
+        remove_blacklist_association(
+            self.bot.db_connection, cmd, image_key, uid)
+        await ctx.send("Sure!")
+
+    @commands.command()
+    async def myblacklist(self, ctx):
+        """Gets your "nolike" blacklist"""
+        cmd_image_pairs = get_user_blacklist(
+            self.bot.db_connection, ctx.author.id)
+        if not cmd_image_pairs:
+            await ctx.send("Looks like you haven't blacklisted any images!")
+            return
+        cmd_image_pairs_text = ", ".join([
+            f"{cmd}/{image_key}" for cmd, image_key in cmd_image_pairs])
+        await ctx.send(f"Your blacklisted images: {cmd_image_pairs_text}")
 
 
 def setup(bot):
