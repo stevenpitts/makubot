@@ -12,4 +12,4 @@ ENV s3_bucket makumistake
 
 COPY . .
 
-CMD [ "python3.8", "-m", "src", "test" ]
+CMD [ "python3.8", "-m", "src" ]

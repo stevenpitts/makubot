@@ -166,6 +166,15 @@ class Debugging(discord.ext.commands.Cog):
     async def before_regular_db_backups(self):
         await self.bot.wait_until_ready()
 
+    @commands.command(hidden=True)
+    @commands.is_owner()
+    async def breakpoint(self, ctx):
+        if not os.environ.get("DEVELOPMENT", None):
+            await ctx.send("No way jose")
+            return
+        await ctx.send("Beginning breakpoint...")
+        breakpoint()
+
 
 def setup(bot):
     logger.info("debugging starting setup")
