@@ -256,7 +256,7 @@ def hardware_usage():
 async def displaytxt(ctx, text: str, blockify=False):
     block_size = 500
     surrounder = "```" if blockify else ""
-    button_emojis = left_arrow, right_arrow, stop_emote = "👈👉❌"
+    button_emojis = left_arrow, right_arrow, stop_emote = ["👈", "👉", "❌"]
     text_blocks = [
         f"{text[i:i+block_size]}"
         for i in range(0, len(text), block_size)]
