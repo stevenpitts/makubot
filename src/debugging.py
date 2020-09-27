@@ -132,13 +132,14 @@ class Debugging(discord.ext.commands.Cog):
             snekbox_running = False
         snekbox_status = "up" if snekbox_running else "down"
         db_size = util.db_size(self.bot.db_connection)
-        await ctx.send(
+        status_text = (
             f"I'm in {len(self.bot.guilds)} servers!\n"
             f"I have {total_reactions} reaction commands.\n"
             f"Snekbox is {snekbox_status}.\n"
             f"The database size is {db_size}.\n"
             f"I'm using {util.hardware_usage()}.\n"
-            f"```{current_servers_string}```")
+            f"{current_servers_string}")
+        await util.displaytxt(ctx, status_text)
 
     @commands.command(hidden=True, aliases=["restoredatabase", "restoredb"])
     @commands.is_owner()

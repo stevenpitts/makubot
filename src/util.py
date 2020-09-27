@@ -272,6 +272,7 @@ async def displaytxt(ctx, text: str, blockify=False):
                 and reaction.message.id == block_message.id)
 
     while current_index is not None:
+        current_index = current_index % len(text_blocks)
         await block_message.edit(content=text_blocks[current_index])
         for emoji_to_add in button_emojis:
             await block_message.add_reaction(emoji_to_add)
