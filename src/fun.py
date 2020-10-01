@@ -194,9 +194,9 @@ class Fun(discord.ext.commands.Cog):
         except discord.errors.Forbidden:
             logger.info(f"Couldn't delete message {ctx.message.jump_url}")
 
-        if not timeout:
+        if timeout is None:
             return
-        elif not max_votes:
+        elif max_votes is None:
             await asyncio.sleep(timeout)
         else:
             start_time = time.time()
