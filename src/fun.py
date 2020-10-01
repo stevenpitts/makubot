@@ -148,7 +148,7 @@ class Fun(discord.ext.commands.Cog):
         Arguments are separated by spaces.
         You can put options in quotes to allow spaces in a single option.
         Example: `mb.poll "Favorite state?" "North Carolina" Maine Iowa`
-        You can also add "timeout=SECONDS" after the question
+        You can also add "timeout=SECONDS" before the question
         to limit the poll.
         Example: `mb.poll timeout=30 "Favorite state?" RI MA`
         Put "ONLYONEVOTE" anywhere in your command to limit people to one vote.
