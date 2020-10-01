@@ -29,6 +29,13 @@ DATABASE_CONNECT_MAX_RETRIES = 10
 S3 = boto3.client("s3")
 
 
+def get_intents():
+    intents = discord.Intents.default()
+    intents.typing = False
+    intents.presences = False
+    return intents
+
+
 class MakuBot(commands.Bot):
     def __init__(self,
                  s3_bucket=False,
@@ -47,7 +54,8 @@ class MakuBot(commands.Bot):
                 everyone=False,
                 roles=False,
                 users=True,
-            )
+            ),
+            intents=get_intents(),
         )
         logger.info("Bot entering setup")
         self.makusu = None
