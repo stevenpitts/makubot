@@ -6,7 +6,6 @@ import asyncio
 import time
 import itertools
 import collections
-import re
 from . import util
 
 logger = logging.getLogger()
@@ -151,13 +150,12 @@ class Fun(discord.ext.commands.Cog):
         You can also add "timeout=SECONDS" after the question
         to limit the poll.
         Example: `mb.poll timeout=30 "Favorite state?" RI MA`
-        Put "ONLYONEVOTE" anywhere in your command to limit people to one vote.
-        Example: `mb.poll ONLYONEVOTE timeout=30 "Favorite state?" RI MA`
+        Put "max_votes=1" anywhere in your command to limit people to one vote.
+        Example: `mb.poll max_votes=1 timeout=30 "Favorite state?" RI MA`
         """
-        only_one_vote = "ONLYONEVOTE" in args
-        args = [
-            await util.clean(ctx, arg) for arg in args
-            if arg != "ONLYONEVOTE"]
+        args, max_votes = util.extract_args_setting(args, "max_votes")
+        args, timeout = util.extract_args_setting(args, "timeout")
+        args = [await util.clean(ctx, arg) for arg in args]
         if not args:
             await ctx.send(f"You gotta give a question and options!")
             return
@@ -170,18 +168,13 @@ class Fun(discord.ext.commands.Cog):
         if len(set(args)) != len(args):
             await ctx.send("You're repeating options...")
             return
-        if len(args) > 3 and re.match(r"timeout=\d+", args[0]):
-            timeout = int(args[0].split("=")[-1])
-            question = args[1]
-            choices = args[2:]
-        else:
-            timeout = None
-            question = args[0]
-            choices = args[1:]
 
-        if timeout is None and only_one_vote:
+        question = args[0]
+        choices = args[1:]
+
+        if timeout is None and max_votes is not None:
             await ctx.send(
-                "You can only use ONLYONEVOTE if there is a timeout :(")
+                "You can only use max_votes if there is a timeout :(")
             return
 
         choice_to_emoji = {choice: chr(i+ord("🇦"))
@@ -203,7 +196,7 @@ class Fun(discord.ext.commands.Cog):
 
         if not timeout:
             return
-        elif not only_one_vote:
+        elif not max_votes:
             await asyncio.sleep(timeout)
         else:
             start_time = time.time()
@@ -218,7 +211,7 @@ class Fun(discord.ext.commands.Cog):
                 user_reaction_count = collections.Counter(users_reacted)
                 multi_reaction_users = {
                     user for user, count in user_reaction_count.items()
-                    if count > 1
+                    if count > max_votes
                 }
                 for multi_reaction_user in multi_reaction_users:
                     for reaction in message.reactions:
@@ -226,17 +219,19 @@ class Fun(discord.ext.commands.Cog):
                             await reaction.remove(multi_reaction_user)
                             logger.info(
                                 f"Removed {multi_reaction_user}'s "
-                                f"reaction {reaction} due to ONLYONEVOTE")
+                                f"reaction {reaction} due to max_votes")
                         except discord.errors.Forbidden:
                             logger.info(
                                 f"Couldn't remove {multi_reaction_user}'s "
                                 f"reaction {reaction} due to permissions")
 
+        message = await ctx.fetch_message(message.id)
         choice_to_reaction = {
             choice: discord.utils.get(message.reactions, emoji=emoji)
             for choice, emoji in choice_to_emoji.items()}
-        choice_clauses = [f"{reaction.count - 1} for \"{choice}\""
-                          for choice, reaction in choice_to_reaction.items()]
+        choice_clauses = [
+            f"{reaction.count - 1 if reaction else 0} for \"{choice}\""
+            for choice, reaction in choice_to_reaction.items()]
         results = ", ".join(choice_clauses)
         await message.edit(content=f"{message.content}\nResults: {results}")
 

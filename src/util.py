@@ -22,6 +22,20 @@ def improve_url(url):
     return url.replace(" ", "+")
 
 
+def extract_args_setting(args, setting_prefix="NUMVOTES"):
+    for arg in args:
+        if not arg.startswith(f"{setting_prefix}="):
+            continue
+        remainder = arg[len(setting_prefix)+1:]
+        try:
+            other_args = [
+                other_arg for other_arg in args if other_arg != arg]
+            return other_args, int(remainder)
+        except ValueError:
+            continue  # Silently fail
+    return args, None
+
+
 def fnlog(func):
     # Logger that logs inputs, outputs, and time.
     def inner(*args, **kwargs):
