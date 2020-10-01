@@ -576,25 +576,47 @@ def set_img_sid(db_connection, cmd, image_key, sid):
     db_connection.commit()
 
 
-def get_appropriate_images(db_connection, cmd, uid, sid=None, user_sids=[]):
+def get_appropriate_images(
+        db_connection,
+        cmd,
+        uid,
+        sid=None,
+        user_sids=[],
+        enable_insulation=False,
+        ):
     uid = as_text(uid)
     sid = as_text(sid)
     user_sids = as_text(user_sids)
     cursor = db_connection.cursor(cursor_factory=RealDictCursor)
-    cursor.execute(
-        """
-        SELECT * FROM media.images
-        WHERE cmd = %s
-        AND (uid IS NULL OR uid = %s OR sid = %s OR sid = ANY(%s))
-        AND image_key NOT IN (
-            SELECT image_key
-            FROM media.blacklist_associations
-            WHERE uid = %s
-            AND cmd = %s
-        );
-        """,
-        (cmd, uid, sid, user_sids, uid, cmd)
-    )
+    if enable_insulation:
+        cursor.execute(
+            """
+            SELECT * FROM media.images
+            WHERE cmd = %s
+            AND (uid IS NULL OR uid = %s OR sid = %s OR sid = ANY(%s))
+            AND image_key NOT IN (
+                SELECT image_key
+                FROM media.blacklist_associations
+                WHERE uid = %s
+                AND cmd = %s
+            );
+            """,
+            (cmd, uid, sid, user_sids, uid, cmd)
+        )
+    else:
+        cursor.execute(
+            """
+            SELECT * FROM media.images
+            WHERE cmd = %s
+            AND image_key NOT IN (
+                SELECT image_key
+                FROM media.blacklist_associations
+                WHERE uid = %s
+                AND cmd = %s
+            );
+            """,
+            (cmd, uid, cmd)
+        )
     results = cursor.fetchall()
     if results:
         return [result["image_key"] for result in results]
