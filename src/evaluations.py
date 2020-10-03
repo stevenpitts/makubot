@@ -3,6 +3,7 @@ from discord.ext import commands
 import aiohttp
 import json
 import logging
+from . import util
 
 logger = logging.getLogger()
 
@@ -29,7 +30,7 @@ class Evaluations(discord.ext.commands.Cog):
             return
         result_dict = json.loads(result_text)
         if result_dict.get("stdout", ""):
-            await ctx.send(f"```{result_dict['stdout']}```")
+            await util.displaytxt(ctx, result_dict['stdout'])
         elif force_reply:
             returncode = result_dict.get("returncode", None)
             if returncode in (137, 139):
