@@ -824,9 +824,26 @@ class ReactionImages(discord.ext.commands.Cog):
             await ctx.send("\n".join(url_group))
             await asyncio.sleep(0.5)
 
-    @commands.command()
-    async def nolike(self, ctx, cmd_and_key: str):
-        """Don't like an image? mb.nolike imagecommand/image01.png"""
+    @commands.group()
+    async def imageblacklist(self, ctx):
+        """Gets your blacklisted images"""
+        if ctx.invoked_subcommand is not None:
+            return
+        cmd_image_pairs = get_user_blacklist(
+            self.bot.db_connection, ctx.author.id)
+        if not cmd_image_pairs:
+            await ctx.send("Looks like you haven't blacklisted any images!")
+            return
+        cmd_image_pairs_text = ", ".join([
+            f"{cmd}/{image_key}" for cmd, image_key in cmd_image_pairs])
+        await ctx.send(f"Your blacklisted images: {cmd_image_pairs_text}")
+
+    @imageblacklist.command(aliases=["add"])
+    async def add_to_blacklist(self, ctx, cmd_and_key: str):
+        """
+        Don't like an image?
+        mb.imageblacklist add imagecommand/image01.png
+        """
         uid = ctx.author.id
         try:
             cmd, image_key = cmd_and_key.split("/")
@@ -844,9 +861,12 @@ class ReactionImages(discord.ext.commands.Cog):
         add_blacklist_association(self.bot.db_connection, cmd, image_key, uid)
         await ctx.send("Done!")
 
-    @commands.command()
-    async def relike(self, ctx, cmd_and_key: str):
-        """Undo a mb.nolike command"""
+    @imageblacklist.command(aliases=["remove"])
+    async def remove_from_blacklist(self, ctx, cmd_and_key: str):
+        """
+        Undo a mb.imageblacklist add command
+        mb.imageblacklist remove imagecommand/image01.png
+        """
         uid = ctx.author.id
         try:
             cmd, image_key = cmd_and_key.split("/")
@@ -865,17 +885,13 @@ class ReactionImages(discord.ext.commands.Cog):
             self.bot.db_connection, cmd, image_key, uid)
         await ctx.send("Sure!")
 
-    @commands.command()
-    async def myblacklist(self, ctx):
-        """Gets your "nolike" blacklist"""
-        cmd_image_pairs = get_user_blacklist(
-            self.bot.db_connection, ctx.author.id)
-        if not cmd_image_pairs:
-            await ctx.send("Looks like you haven't blacklisted any images!")
-            return
-        cmd_image_pairs_text = ", ".join([
-            f"{cmd}/{image_key}" for cmd, image_key in cmd_image_pairs])
-        await ctx.send(f"Your blacklisted images: {cmd_image_pairs_text}")
+    @commands.command(hidden=True)
+    async def nolike(self, ctx, cmd_and_key: str):
+        await self.add_to_blacklist(ctx, cmd_and_key)
+
+    @commands.command(hidden=True)
+    async def relike(self, ctx, cmd_and_key: str):
+        await self.remove_from_blacklist(ctx, cmd_and_key)
 
 
 def setup(bot):
