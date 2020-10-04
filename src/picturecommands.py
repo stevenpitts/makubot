@@ -459,14 +459,12 @@ class ReactionImages(discord.ext.commands.Cog):
             ctx, chosen_url, call_bot_name=True)
         sent_message = await ctx.send(embed=image_embed)
         self.sent_messages_image_urls[sent_message.id] = chosen_url
-        sent_message_check = await sent_message.channel.fetch_message(
-            sent_message.id)
-        # There's a race condition here where
-        # the url and an empty embed will stay
-        await asyncio.sleep(3)  # Countermeasure to race condition
-        if sent_message_check.embeds[0].image.url == discord.Embed.Empty:
+        if not await util.url_is_image(chosen_url):
             new_url = util.improve_url(chosen_url)
-            sent_message.edit(embed=None, content=new_url)
+            logger.info(
+                "URL wasn't image, so turned to text URL. "
+                f"{chosen_url} -> {new_url}")
+            await sent_message.edit(embed=None, content=new_url)
 
     @commands.command(hidden=True)
     async def send_image_func(self, ctx):
