@@ -824,7 +824,7 @@ class ReactionImages(discord.ext.commands.Cog):
             await ctx.send("\n".join(url_group))
             await asyncio.sleep(0.5)
 
-    @commands.group()
+    @commands.group(aliases=["imgbl", "imgblacklist", "imagebl"])
     async def imageblacklist(self, ctx):
         """Gets your blacklisted images"""
         if ctx.invoked_subcommand is not None:
