@@ -293,6 +293,9 @@ def split_text_to_chunks(text, block_size, separator=" "):
 async def displaytxt(ctx, text: str, blockify=False, separator=" "):
     block_size = 500
     surrounder = "```" if blockify else ""
+    if len(text) <= block_size:
+        await ctx.send(f"{surrounder}{text}{surrounder}")
+        return
     button_emojis = left_arrow, right_arrow, stop_emote = ["👈", "👉", "❌"]
     text_blocks = split_text_to_chunks(text, block_size, separator)
     text_blocks = [

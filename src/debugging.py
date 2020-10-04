@@ -139,7 +139,7 @@ class Debugging(discord.ext.commands.Cog):
             f"The database size is {db_size}.\n"
             f"I'm using {util.hardware_usage()}.\n"
             f"{current_servers_string}")
-        await util.displaytxt(ctx, status_text)
+        await util.displaytxt(ctx, status_text, blockify=True)
 
     @commands.command(hidden=True, aliases=["restoredatabase", "restoredb"])
     @commands.is_owner()
