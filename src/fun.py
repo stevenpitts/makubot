@@ -62,13 +62,18 @@ class Fun(discord.ext.commands.Cog):
         emojis_random_order = iter(sorted(self.bot.emojis,
                                           key=lambda *args: random.random()))
         emojis_to_add = itertools.islice(emojis_random_order, max_reacts)
-        emoji_futures = [ctx.message.add_reaction(emoji_to_add)
-                         for emoji_to_add in emojis_to_add]
+        emoji_futures = [
+            ctx.message.add_reaction(emoji_to_add)
+            for emoji_to_add in emojis_to_add]
         all_emoji_futures = asyncio.gather(*emoji_futures)
         try:
             await all_emoji_futures
-        except discord.errors.Forbidden:
+        except (discord.errors.Forbidden, discord.errors.HTTPException):
             return
+        except discord.errors.HTTPException:
+            # https://github.com/makusu2/makubot/issues/230
+            logger.warning(f"Got HTTPException for {emojis_to_add=}")
+            raise
 
     @commands.command(aliases=["english"], hidden=True)
     async def translate(self, ctx, *, text: str):
