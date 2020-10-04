@@ -785,7 +785,6 @@ class ReactionImages(discord.ext.commands.Cog):
         set_cmd_images_server_on_db(self.bot.db_connection, cmd, sid)
         await ctx.send("Done!")
 
-    @commands.dm_only()
     @commands.command(hidden=True)
     async def imagesin(self, ctx, cmd):
         """Shows you all images in a command. Extremely spammy."""
@@ -796,33 +795,13 @@ class ReactionImages(discord.ext.commands.Cog):
         images = get_all_cmd_images_from_db(
             self.bot.db_connection, cmd)
         image_paths = [f"pictures/{cmd}/{image_key}" for image_key in images]
-        image_urls = [util.url_from_s3_key(
-            ctx.bot.s3_bucket, ctx.bot.s3_bucket_location, path,
-            improve=True) for path in image_paths]
-        urls_per_message = 5
-        url_groups = [
-            image_urls[i:i+urls_per_message]
-            for i in range(0, len(image_urls), urls_per_message)]
-
-        def check(reaction, user):
-            return user == ctx.message.author and reaction.emoji == YES_EMOJI
-        confirmation_message = await ctx.send(
-            "This is ***EXTREMELY*** spammy, are you certain?")
-        await confirmation_message.add_reaction(YES_EMOJI)
-        try:
-            await self.bot.wait_for('reaction_add', timeout=30, check=check)
-        except asyncio.TimeoutError:
-            set_to_cancel_task = confirmation_message.edit(
-                content="Cancelled.")
-            remove_yes_task = confirmation_message.remove_reaction(
-                YES_EMOJI, self.bot.user)
-            await asyncio.gather(set_to_cancel_task, remove_yes_task)
-            return
-
-        logger.info(f"{ctx.message.author} has requested all images in {cmd}")
-        for url_group in url_groups:
-            await ctx.send("\n".join(url_group))
-            await asyncio.sleep(0.5)
+        image_urls = [
+            util.url_from_s3_key(
+                ctx.bot.s3_bucket, ctx.bot.s3_bucket_location, path,
+                improve=True)
+            for path in image_paths]
+        image_urls_str = "\n".join(image_urls)
+        await util.displaytxt(ctx, image_urls_str, separator="\n")
 
     @commands.command()
     async def nolike(self, ctx, cmd_and_key: str):
