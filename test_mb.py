@@ -7,6 +7,7 @@ from src.util import (
     improve_url,
     url_from_s3_key,
     get_nonconflicting_filename,
+    split_text_to_chunks,
 )
 from src import ctxhelpers
 
@@ -101,3 +102,21 @@ def test_get_content_without_invocation():
 
 def test_get_invoked_command():
     assert ctxhelpers.get_invoked_command(get_example_ctx()) == "lupo"
+
+
+def test_split_text_to_chunks():
+    text = "1 1 1 1234 12345 12 123456 1234 123 1 12 12345678"
+    assert tuple(split_text_to_chunks(text, block_size=4)) == (
+        "1 1",
+        "1",
+        "1234",
+        "1234",
+        "5 12",
+        "1234",
+        "56",
+        "1234",
+        "123",
+        "1 12",
+        "1234",
+        "5678"
+    )

@@ -267,13 +267,34 @@ def hardware_usage():
         )
 
 
-async def displaytxt(ctx, text: str, blockify=False):
+def split_text_to_chunks(text, block_size, separator=" "):
+    # There's probably a better way to do this
+    if len(separator) != 1:
+        raise ValueError("separator must be only one character long.")
+    start_index = 0
+    while start_index < len(text):
+        if text[start_index] == separator:
+            start_index += 1
+            continue
+        if start_index + block_size > len(text):
+            yield text[start_index: len(text)].strip(separator)
+            return
+        if separator not in text[start_index: start_index+block_size]:
+            yield text[start_index: start_index+block_size].strip(separator)
+            start_index = start_index + block_size
+            continue
+        for i in reversed(range(start_index, start_index+block_size+1)):
+            if text[i] == separator:
+                yield text[start_index: i].strip(separator)
+                start_index = i + 1  # Skip over separator
+                break  # break the for, not the while
+
+
+async def displaytxt(ctx, text: str, blockify=False, separator=" "):
     block_size = 500
     surrounder = "```" if blockify else ""
     button_emojis = left_arrow, right_arrow, stop_emote = ["👈", "👉", "❌"]
-    text_blocks = [
-        f"{text[i:i+block_size]}"
-        for i in range(0, len(text), block_size)]
+    text_blocks = split_text_to_chunks(text, block_size, separator)
     text_blocks = [
         f"{surrounder}{text_block}{surrounder}"
         for text_block in text_blocks]
@@ -285,11 +306,12 @@ async def displaytxt(ctx, text: str, blockify=False):
                 and reaction.emoji in button_emojis
                 and reaction.message.id == block_message.id)
 
+    for emoji_to_add in button_emojis:
+        await block_message.add_reaction(emoji_to_add)
+
     while current_index is not None:
         current_index = current_index % len(text_blocks)
         await block_message.edit(content=text_blocks[current_index])
-        for emoji_to_add in button_emojis:
-            await block_message.add_reaction(emoji_to_add)
         res = await ctx.bot.wait_for("reaction_add", check=check)
         emoji_result = res[0].emoji
         try:
