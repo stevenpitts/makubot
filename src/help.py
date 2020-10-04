@@ -21,7 +21,8 @@ SHOWOFF_COMMANDS = [
     "poll",
     "remindme",
     "whatis",
-    "youtube"
+    "youtube",
+    "imageblacklist",
 ]
 MINOR_SHOWOFF_COMMANDS = [
     "bully",
