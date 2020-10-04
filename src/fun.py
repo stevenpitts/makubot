@@ -201,6 +201,7 @@ class Fun(discord.ext.commands.Cog):
         else:
             start_time = time.time()
             while time.time() - start_time < timeout:
+                await asyncio.sleep(1)
                 message = await ctx.fetch_message(message.id)
                 # Check for duplicate reactions
                 users_reacted = [
