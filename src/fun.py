@@ -201,6 +201,7 @@ class Fun(discord.ext.commands.Cog):
         else:
             start_time = time.time()
             while time.time() - start_time < timeout:
+                await asyncio.sleep(1)
                 message = await ctx.fetch_message(message.id)
                 # Check for duplicate reactions
                 users_reacted = [
@@ -229,11 +230,23 @@ class Fun(discord.ext.commands.Cog):
         choice_to_reaction = {
             choice: discord.utils.get(message.reactions, emoji=emoji)
             for choice, emoji in choice_to_emoji.items()}
+        choice_num_votes = {
+            choice: reaction.count - 1 if reaction else 0
+            for choice, reaction in choice_to_reaction.items()}
         choice_clauses = [
-            f"{reaction.count - 1 if reaction else 0} for \"{choice}\""
+            f"{choice_num_votes[choice]} for \"{choice}\""
             for choice, reaction in choice_to_reaction.items()]
-        results = ", ".join(choice_clauses)
-        await message.edit(content=f"{message.content}\nResults: {results}")
+        max_votes = max(choice_num_votes.values())
+        winners = [
+            choice for choice, num_votes in choice_num_votes.items()
+            if num_votes == max_votes]
+        assert winners
+        winners_str = " and ".join([f"**{winner}**" for winner in winners])
+        choice_clauses_joined = ", ".join(choice_clauses)
+        winner_plural = "Winner" if len(winners) == 1 else "Winners"
+        results = f"{choice_clauses_joined}\n{winner_plural}: {winners_str}!"
+        await message.edit(content=f"{message.content}\nThe poll is now over!")
+        await ctx.send(f"Results of \"{question}\":\n{results}")
 
 
 def setup(bot):
