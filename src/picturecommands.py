@@ -826,7 +826,12 @@ class ReactionImages(discord.ext.commands.Cog):
 
     @commands.group(aliases=["imgbl", "imgblacklist", "imagebl"])
     async def imageblacklist(self, ctx):
-        """Gets your blacklisted images"""
+        """
+        See, add to, or remove from your blacklisted images!
+        mb.imageblacklist
+        mb.imageblacklist add imagecommand/image01.png
+        mb.imageblacklist remove imagecommand/image01.png
+        """
         if ctx.invoked_subcommand is not None:
             return
         cmd_image_pairs = get_user_blacklist(
@@ -838,10 +843,10 @@ class ReactionImages(discord.ext.commands.Cog):
             f"{cmd}/{image_key}" for cmd, image_key in cmd_image_pairs])
         await ctx.send(f"Your blacklisted images: {cmd_image_pairs_text}")
 
-    @imageblacklist.command(aliases=["add"])
-    async def add_to_blacklist(self, ctx, cmd_and_key: str):
+    @imageblacklist.command()
+    async def add(self, ctx, cmd_and_key: str):
         """
-        Don't like an image?
+        Add an image to a list of images that you don't want to see
         mb.imageblacklist add imagecommand/image01.png
         """
         uid = ctx.author.id
@@ -861,8 +866,8 @@ class ReactionImages(discord.ext.commands.Cog):
         add_blacklist_association(self.bot.db_connection, cmd, image_key, uid)
         await ctx.send("Done!")
 
-    @imageblacklist.command(aliases=["remove"])
-    async def remove_from_blacklist(self, ctx, cmd_and_key: str):
+    @imageblacklist.command()
+    async def remove(self, ctx, cmd_and_key: str):
         """
         Undo a mb.imageblacklist add command
         mb.imageblacklist remove imagecommand/image01.png
