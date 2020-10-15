@@ -1,5 +1,4 @@
 import traceback
-import itertools
 import logging
 from datetime import datetime
 import urllib
@@ -12,6 +11,7 @@ import time
 import discord
 import os
 import psutil
+from uuid import uuid4
 
 logger = logging.getLogger()
 
@@ -213,18 +213,11 @@ def get_formatted_traceback(e):
 
 @fnlog
 def get_nonconflicting_filename(candidate_filename: str, existing_keys=None):
-    existing_keys = {key.split("/")[-1] for key in existing_keys}
-    if candidate_filename not in existing_keys:
-        return candidate_filename
     try:
         filename_prefix, filename_suffix = candidate_filename.split(".", 1)
     except ValueError:
         raise("Filename was not valid (needs prefix and suffix")
-    for addition in itertools.count():
-        candidate_filename = f"{filename_prefix}{addition}.{filename_suffix}"
-        if candidate_filename not in existing_keys:
-            return candidate_filename
-    raise AssertionError("Shouldn't ever get here")
+    return f"{filename_prefix}{uuid4().hex}.{filename_suffix}"
 
 
 def readable_timedelta(old, new=None):

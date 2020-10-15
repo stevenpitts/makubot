@@ -68,12 +68,7 @@ def test_get_nonconflicting_filename():
         new_filename = get_nonconflicting_filename(
             possible_key,
             existing_keys=possible_keys)
-        possible_keys_without_key = possible_keys - {possible_key}
-        new_filename_without_key = get_nonconflicting_filename(
-            possible_key,
-            existing_keys=possible_keys_without_key)
         assert new_filename not in possible_keys
-        assert new_filename_without_key == possible_key
 
 
 class objectview(object):
