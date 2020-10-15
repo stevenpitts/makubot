@@ -548,9 +548,9 @@ class ReactionImages(discord.ext.commands.Cog):
             return
         await ctx.send(self.sent_messages_image_urls[message_id])
 
-    @commands.command()
+    @commands.command(aliases=["listimagecommands"])
     async def listreactions(self, ctx):
-        """List all my reactions"""
+        """List all my reactions (image commands)"""
         all_invocations = get_all_cmds_aliases_from_db(self.bot.db_connection)
         all_invocations_alphabetized = sorted(all_invocations)
         pictures_desc = ", ".join(all_invocations_alphabetized)
