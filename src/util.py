@@ -11,6 +11,7 @@ import time
 import discord
 import os
 import psutil
+import math
 from uuid import uuid4
 
 logger = logging.getLogger()
@@ -260,7 +261,8 @@ def hardware_usage():
         )
 
 
-def split_text_to_chunks(text, block_size, separator=" "):
+def split_text_to_chunks(
+        text, block_size, separator=" ", max_separators=math.inf):
     # There's probably a better way to do this
     if len(separator) != 1:
         raise ValueError("separator must be only one character long.")
@@ -277,20 +279,27 @@ def split_text_to_chunks(text, block_size, separator=" "):
             start_index = start_index + block_size
             continue
         for i in reversed(range(start_index, start_index+block_size+1)):
+            if text[start_index: i].count(separator) > max_separators:
+                # If there are more separators than max_separators
+                # in the string, cut it down more
+                continue
             if text[i] == separator:
                 yield text[start_index: i].strip(separator)
                 start_index = i + 1  # Skip over separator
                 break  # break the for, not the while
 
 
-async def displaytxt(ctx, text: str, blockify=False, separator=" "):
+async def displaytxt(
+        ctx, text: str, blockify=False, separator=" ",
+        max_separators=math.inf):
     block_size = 500
     surrounder = "```" if blockify else ""
     if len(text) <= block_size:
         await ctx.send(f"{surrounder}{text}{surrounder}")
         return
     button_emojis = left_arrow, right_arrow, stop_emote = ["👈", "👉", "❌"]
-    text_blocks = split_text_to_chunks(text, block_size, separator)
+    text_blocks = split_text_to_chunks(
+        text, block_size, separator, max_separators=max_separators)
     text_blocks = [
         f"{surrounder}{text_block}{surrounder}"
         for text_block in text_blocks]
