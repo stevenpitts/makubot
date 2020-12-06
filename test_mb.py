@@ -115,3 +115,15 @@ def test_split_text_to_chunks():
         "1234",
         "5678"
     )
+
+
+def test_split_text_to_chunks_with_max_separator():
+    text = "1 1 1 1234 12345 12 123456 1234 123 1 12 12345678"
+    actual_result = tuple(
+        split_text_to_chunks(text, block_size=20, max_separators=2))
+    assert actual_result == (
+        "1 1 1",
+        "1234 12345 12",
+        "123456 1234 123",
+        "1 12 12345678"
+    )
