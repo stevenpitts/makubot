@@ -30,24 +30,6 @@ class Listeners(discord.ext.commands.Cog):
         self.cycle_status_message.stop()
 
     @commands.Cog.listener()
-    async def on_member_join(self, member: discord.Member):
-        """Called when a member joins to tell them that Maku loves them
-        (because Maku does) <3"""
-        guild_is_free = (
-            str(member.guild.id)
-            in self.bot.get_cog("Base").get_free_guild_ids()
-        )
-        if not guild_is_free:
-            return
-        try:
-            await member.guild.system_channel.send(
-                f"Hi {member.mention}! Maku loves you! <333333")
-        except AttributeError:
-            logger.warning(f"{member.mention} joined, but guild "
-                           f"{member.guild.name} has no system_channel. ID is "
-                           f"{member.guild._system_channel_id}.")
-
-    @commands.Cog.listener()
     async def on_command_error(self, ctx,
                                caught_exception: CommandError):
         if isinstance(caught_exception, CommandNotFound):
