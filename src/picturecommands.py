@@ -799,7 +799,10 @@ class ReactionImages(discord.ext.commands.Cog):
                 improve=True)
             for path in image_paths]
         image_urls_str = "\n".join(image_urls)
-        await util.displaytxt(ctx, image_urls_str, separator="\n")
+        max_embeds = 5
+        max_separators = max_embeds - 1
+        await util.displaytxt(
+            ctx, image_urls_str, separator="\n", max_separators=max_separators)
 
     @commands.group(aliases=["imgbl", "imgblacklist", "imagebl"])
     async def imageblacklist(self, ctx):
