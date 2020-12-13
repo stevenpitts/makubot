@@ -15,7 +15,6 @@ services:
         hostname: snekbox
         networks:
             - net
-
     bot:
         build: .
         depends_on:
