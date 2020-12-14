@@ -114,7 +114,8 @@ class MakuBot(commands.Bot):
                 break
         else:
             raise psycopg2.OperationalError("Couldn't connect after retries")
-        util.backup_and_drop_all(self.db_connection, self.s3_bucket)
+        util.backup_and_drop_all(
+            self.db_connection, self.s3_bucket, self.db_name)
         util.restore_db(self.s3_bucket)
 
         for extension in self.shared["default_extensions"]:
