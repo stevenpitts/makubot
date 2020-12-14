@@ -46,6 +46,7 @@ class MakuBot(commands.Bot):
                  db_pass=None,
                  db_port=None,
                  db_user=None,
+                 db_name=None,
                  ):
         commands.Bot.__init__(
             self,
@@ -88,8 +89,12 @@ class MakuBot(commands.Bot):
         self.db_pass = db_pass
         self.db_port = db_port
         self.db_user = db_user
+        self.db_name = db_name
         self.loop.set_debug(True)
 
+        logger.info(
+            f"Attempting to connect to postgres database at {self.db_host} "
+            f"on port {self.db_port} as user {self.db_user}
         for database_connect_attempt in range(DATABASE_CONNECT_MAX_RETRIES):
             try:
                 self.db_connection = psycopg2.connect(

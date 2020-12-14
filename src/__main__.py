@@ -29,6 +29,7 @@ def main():
     db_pass = os.environ["PGPASSWORD"]
     db_port = os.environ["PGPORT"]
     db_user = os.environ["PGUSER"]
+    db_name = os.environ["PGNAME"]
 
     makubot_bot = runbot.MakuBot(
         s3_bucket=s3_bucket,
@@ -36,7 +37,8 @@ def main():
         db_host=db_host,
         db_pass=db_pass,
         db_port=db_port,
-        db_user=db_user
+        db_user=db_user,
+        db_name=db_name,
     )
 
     if "profile" in sys.argv:
