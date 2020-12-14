@@ -20,6 +20,7 @@ services:
         depends_on:
             - mbdb
             - snekbox
+            - puller
         networks:
             - net
         environment:
@@ -33,6 +34,17 @@ services:
             - PGPORT=${db_port}
             - PGUSER=postgres
             - PYTHONUNBUFFERED=1
+        volumes:
+            - repo:/makubot
+    puller:
+        image: makusu2/pull_repo
+        environment:
+          REPO_URL: https://github.com/makusu2/makubot.git
+        volumes:
+            - repo:/repo
 
 networks:
     net:
+
+volumes:
+  repo:
