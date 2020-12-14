@@ -1,3 +1,5 @@
+#!/usr/bin/env bash
+
 source ./prepare_vars.sh
 
 export AWS_ACCESS_KEY_ID=${bot_access_key}

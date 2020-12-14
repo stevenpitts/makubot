@@ -1,3 +1,4 @@
+#!/usr/bin/env bash
 export bot_name="${bot_name:-makumistake}"
 export s3_bucket="${s3_bucket:-$bot_name}"
 export credentials_secret_name="${credentials_secret_name:-$bot_name}"

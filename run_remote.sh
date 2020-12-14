@@ -1,4 +1,4 @@
-#! /bin/bash
+#!/usr/bin/env bash
 source ./prepare_vars.sh
 
 if docker-compose exec mbdb echo hi > /dev/null 2>&1
