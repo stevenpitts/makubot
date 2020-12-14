@@ -9,6 +9,7 @@ export PGPASSWORD=${pgpassword}
 export PGHOST=localhost
 export PGPORT=${db_port}
 export PGUSER=postgres
+export PGNAME=postgres
 
 export DEVELOPMENT=1
 
