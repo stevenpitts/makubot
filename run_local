@@ -1,0 +1,32 @@
+#!/usr/bin/env bash
+
+export BOT_NAME="${BOT_NAME:-makumistake}"
+
+credentials_secret_name="${credentials_secret_name:-$BOT_NAME}"
+
+credentials=$(aws secretsmanager get-secret-value \
+  --secret-id "$credentials_secret_name" \
+  --query SecretString \
+  --output text)
+
+export AWS_ACCESS_KEY_ID
+export AWS_SECRET_ACCESS_KEY
+export DISCORD_BOT_TOKEN
+export PGPASSWORD
+export GOOGLE_API_KEY
+
+AWS_ACCESS_KEY_ID=$(echo "$credentials" | jq -r ".AWS_ACCESS_KEY_ID")
+AWS_SECRET_ACCESS_KEY=$(echo "$credentials" | jq -r ".AWS_SECRET_ACCESS_KEY")
+GOOGLE_API_KEY=$(echo "$credentials" | jq -r ".GOOGLE_API_KEY")
+DISCORD_BOT_TOKEN=$("echo $credentials" | jq -r ".DISCORD_TOKEN")
+PGPASSWORD=$(echo "$credentials" | jq -r ".PGPASSWORD")
+
+export S3_BUCKET="${S3_BUCKET:-$BOT_NAME}"
+export PGHOST="${PGHOST:-localhost}"
+export PGPORT="${PGPORT:-5432}"
+export PGUSER="${PGUSER:-postgres}"
+export PGNAME="${PGNAME:-mb_db}"
+
+export DEVELOPMENT=1
+
+python3.8 -m src
