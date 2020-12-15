@@ -6,7 +6,7 @@ services:
             - net
         hostname: mbdb
         environment:
-            - POSTGRES_PASSWORD=${pgpassword}
+            - POSTGRES_PASSWORD=${PGPASSWORD}
     snekbox:
         image: pythondiscord/snekbox
         privileged: true
@@ -24,16 +24,19 @@ services:
         networks:
             - net
         environment:
-            - AWS_ACCESS_KEY_ID=${bot_access_key}
-            - AWS_SECRET_ACCESS_KEY=${bot_secret_key}
-            - DISCORD_BOT_TOKEN=${discord_token}
-            - GOOGLE_API_KEY=${google_api_key}
-            - S3_BUCKET=${s3_bucket}
-            - PGPASSWORD=${pgpassword}
-            - PGHOST=mbdb
-            - PGPORT=${db_port}
-            - PGUSER=postgres
+            - AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID}
+            - AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY}
+            - DISCORD_BOT_TOKEN=${DISCORD_BOT_TOKEN}
+            - GOOGLE_API_KEY=${GOOGLE_API_KEY}
+            - S3_BUCKET=${S3_BUCKET}
+            - PGPASSWORD=${PGPASSWORD}
+            - PGHOST=${PGHOST}
+            - PGPORT=${PGPORT}
+            - PGUSER=${PGUSER}
+            - PGNAME=${PGNAME}
             - PYTHONUNBUFFERED=1
+        healthcheck:
+            test: ["CMD-SHELL", "discordhealthcheck"]
         volumes:
             - repo:/makubot
     puller:
