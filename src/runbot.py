@@ -5,6 +5,7 @@ All reloading should take place in base and util.
 """
 import logging
 import discord
+import discordhealthcheck
 import tempfile
 import sys
 from datetime import datetime
@@ -60,6 +61,8 @@ class MakuBot(commands.Bot):
             ),
             intents=get_intents(),
         )
+        logger.info("Starting healthcheck server")
+        self.healthcheck_server = discordhealthcheck.start(self)
         logger.info("Bot entering setup")
         self.makusu = None
         self.shared = {}
