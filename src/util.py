@@ -130,32 +130,6 @@ def get_num_tables(db_connection):
     return num_tables
 
 
-def drop_all_tables(db_connection, db_name):
-    cursor = db_connection.cursor()
-    cursor.execute(
-        f"""
-        DROP SCHEMA public CASCADE;
-        CREATE SCHEMA public;
-        GRANT ALL ON SCHEMA public TO {db_name};
-        GRANT ALL ON SCHEMA public TO public;
-        COMMENT ON SCHEMA public IS 'standard public schema';
-        """
-    )
-    db_connection.commit()
-
-
-def backup_and_drop_all(db_connection, s3_bucket, db_name):
-    num_tables = get_num_tables(db_connection)
-    logger.info(f"Started with {num_tables} tables")
-    if num_tables:
-        logger.info("Backing up existing database")
-        backup_db(s3_bucket)
-        logger.info("Backed up existing database")
-    logger.info("Dropping all tables")
-    drop_all_tables(db_connection, db_name=db_name)
-    logger.info("Dropped all tables")
-
-
 def restore_db(s3_bucket, most_recent_key=None):
     if most_recent_key is None:
         most_recent_key = get_most_recent_backup_key(s3_bucket)
