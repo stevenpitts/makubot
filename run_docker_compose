@@ -22,11 +22,11 @@ DISCORD_BOT_TOKEN=$(echo "$credentials" | jq -r ".DISCORD_TOKEN")
 PGPASSWORD=$(echo "$credentials" | jq -r ".PGPASSWORD")
 
 export S3_BUCKET="${S3_BUCKET:-$BOT_NAME}"
-export PGHOST="${PGHOST:-localhost}"
+export PGHOST="${PGHOST:-mbdb}"
 export PGPORT="${PGPORT:-5432}"
 export PGUSER="${PGUSER:-postgres}"
 export PGNAME="${PGNAME:-postgres}"
 
 export DEVELOPMENT=1
 
-python3.8 -m src
+docker-compose up
