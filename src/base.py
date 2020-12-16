@@ -77,7 +77,6 @@ class Base(discord.ext.commands.Cog):
     @commands.is_owner()
     async def perish(self, ctx):
         """Murders me :( """
-        util.backup_db(self.bot.s3_bucket)
         await self.bot.close()
 
     @commands.command()

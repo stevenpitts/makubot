@@ -1,5 +1,5 @@
 import discord
-from discord.ext import commands, tasks
+from discord.ext import commands
 import logging
 from io import StringIO
 import aiohttp
@@ -15,17 +15,9 @@ from .picturecommands_utils import get_all_cmds_aliases_from_db
 logger = logging.getLogger()
 
 
-BACKUP_TIME_DELTA_HOURS = os.environ.get(
-    "BACKUP_TIME_DELTA_HOURS", 24)
-
-
 class Debugging(discord.ext.commands.Cog):
     def __init__(self, bot):
         self.bot = bot
-        self.regular_db_backups.start()
-
-    def cog_unload(self):
-        self.regular_db_backups.stop()
 
     @commands.command(hidden=True)
     @commands.is_owner()
@@ -148,24 +140,6 @@ class Debugging(discord.ext.commands.Cog):
             await asyncio.get_running_loop().run_in_executor(
                 pool, util.restore_db, self.bot.s3_bucket, backup_key)
         await ctx.send("Done!")
-
-    @commands.command(hidden=True, aliases=["backupdatabase", "backupdb"])
-    @commands.is_owner()
-    async def backup_db(self, ctx):
-        with concurrent.futures.ThreadPoolExecutor() as pool:
-            await asyncio.get_running_loop().run_in_executor(
-                pool, util.backup_db, self.bot.s3_bucket)
-        await ctx.send("Done!")
-
-    @tasks.loop(hours=BACKUP_TIME_DELTA_HOURS)
-    async def regular_db_backups(self):
-        with concurrent.futures.ThreadPoolExecutor() as pool:
-            await asyncio.get_running_loop().run_in_executor(
-                pool, util.backup_db, self.bot.s3_bucket)
-
-    @regular_db_backups.before_loop
-    async def before_regular_db_backups(self):
-        await self.bot.wait_until_ready()
 
     @commands.command(hidden=True)
     @commands.is_owner()

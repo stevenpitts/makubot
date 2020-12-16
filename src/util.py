@@ -154,24 +154,6 @@ def restore_db(s3_bucket, most_recent_key=None):
     logger.info("Successfully restored database")
 
 
-def backup_db(s3_bucket):
-    now_formatted = datetime.now().strftime("%Y.%m.%d.%H.%M.%S")
-    backups_dir = f"s3://{s3_bucket}/backups"
-    backup_location = f"{backups_dir}/{now_formatted}.pgdump"
-    logger.info(f"Backing up database to {backup_location}")
-
-    cmd = f"pg_dump | aws s3 cp - {backup_location}"
-    try:
-        subprocess.run(
-            cmd, shell=True, check=True, capture_output=True)
-    except subprocess.CalledProcessError as e:
-        logger.info(f"Failed backup output: {e.stdout}")
-        logger.error(
-            f"Backup failed with exit code {e.returncode} and err {e.stderr}."
-        )
-        raise
-
-
 def s3_object_exists(s3_bucket, key):
     try:
         S3.head_object(Bucket=s3_bucket,
