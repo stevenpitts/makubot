@@ -34,8 +34,7 @@ def get_intents():
     intents = discord.Intents.default()
     intents.typing = False
     intents.presences = False
-    intents.members = True
-    intents.presences = True
+    intents.members = False
     return intents
 
 
