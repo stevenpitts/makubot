@@ -133,8 +133,14 @@ def parse_remind_me(time_and_reminder):
         years, months, days, hours, minutes, seconds = [int(val) if val else 0
                                                 for val
                                                 in short_match.group(*"yMdhms")]
-        relative_delta = relativedelta(years=years,months=months,days=days,
-                                hours=hours,minutes=minutes,seconds=seconds)
+        relative_delta = relativedelta(
+            years=years,
+            months=months,
+            days=days,
+            hours=hours,
+            minutes=minutes,
+            seconds=seconds,
+        )
         utcnow = datetime.utcnow()
         total_seconds = (utcnow + relative_delta - utcnow).total_seconds()
         words = strip_conjunctions(words[1:])
@@ -151,6 +157,8 @@ def parse_remind_me(time_and_reminder):
         return None, None
     if not reminder_tokens:
         return None, None
+    time_difference = time_specified - datetime.utcnow()
+    total_seconds = time_difference.total_seconds()
     reminder_message_raw = max(reminder_tokens, key=len)
     words = strip_conjunctions(reminder_message_raw.split(" "))
     if not words:
