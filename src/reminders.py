@@ -142,6 +142,8 @@ def parse_remind_me(time_and_reminder):
             seconds=seconds,
         )
         utcnow = datetime.utcnow()
+        # Find the date calculated from applying relative_delta to utcnow,
+        # then subtract utcnow to get a plain timedelta object.
         total_seconds = (utcnow + relative_delta - utcnow).total_seconds()
         words = strip_conjunctions(words[1:])
         if not words:
