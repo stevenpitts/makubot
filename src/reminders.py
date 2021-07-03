@@ -8,6 +8,7 @@ import re
 from psycopg2.extras import RealDictCursor
 from . import util
 from dateutil.parser import parse as date_parse
+from dateutil.relativedelta import relativedelta
 
 logger = logging.getLogger()
 
@@ -125,15 +126,17 @@ def strip_conjunctions(words):
 
 def parse_remind_me(time_and_reminder):
     words = time_and_reminder.split(" ")
-    timereg_parts = [r"((?P<{}>\d*){})?".format(cha, cha) for cha in "ydhms"]
+    timereg_parts = [r"((?P<{}>\d*){})?".format(cha, cha) for cha in "yMdhms"]
     timereg = re.compile(r"^"+"".join(timereg_parts)+r"$")
     short_match = re.search(timereg, words[0])
     if short_match:
-        years, days, hours, minutes, seconds = [int(val) if val else 0
+        years, months, days, hours, minutes, seconds = [int(val) if val else 0
                                                 for val
-                                                in short_match.group(*"ydhms")]
-        total_seconds = (years*31557600 + days*86400 + hours*3600 + minutes*60
-                         + seconds)
+                                                in short_match.group(*"yMdhms")]
+        relative_delta = relativedelta(years=years,months=months,days=days,
+                                hours=hours,minutes=minutes,seconds=seconds)
+        utcnow = datetime.utcnow()
+        total_seconds = (utcnow + relative_delta - utcnow).total_seconds()
         words = strip_conjunctions(words[1:])
         if not words:
             return None, None
@@ -148,8 +151,6 @@ def parse_remind_me(time_and_reminder):
         return None, None
     if not reminder_tokens:
         return None, None
-    time_difference = time_specified - datetime.utcnow()
-    total_seconds = time_difference.total_seconds()
     reminder_message_raw = max(reminder_tokens, key=len)
     words = strip_conjunctions(reminder_message_raw.split(" "))
     if not words:
@@ -171,7 +172,7 @@ class ReminderCommands(discord.ext.commands.Cog):
     async def remind_me(self, ctx, *, time_and_reminder: str):
         """Reminds you of a thing!
         Usage:
-          remindme [<years>y][<days>d][<hours>h][<minutes>m][<seconds>s]
+          remindme [<years>y][<months>M][<days>d][<hours>h][<minutes>m][<seconds>s]
                    <reminder>
           remindme in 1 day to <reminder>
         Many other forms are also supported, but they must use UTC and
