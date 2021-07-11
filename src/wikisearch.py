@@ -10,7 +10,7 @@ class Wikisearch(discord.ext.commands.Cog):
     def __init__(self, bot):
         self.bot = bot
 
-    @commands.command()
+    @commands.command(aliases=["wiki", "wikipedia"])
     async def whatis(self, ctx, *, query):
         """Searches Wikipedia to see what something is!"""
         try:
