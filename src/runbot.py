@@ -1,7 +1,5 @@
 """
 Main module for makubot.
-This module should never have to be reloaded.
-All reloading should take place in base and util.
 """
 import logging
 import discord
@@ -40,7 +38,7 @@ def get_intents():
 
 class MakuBot(commands.Bot):
     def __init__(self,
-                 s3_bucket=False,
+                 s3_bucket=None,
                  google_api_key=None,
                  db_host=None,
                  db_pass=None,
@@ -101,7 +99,7 @@ class MakuBot(commands.Bot):
             f"on port {self.db_port} as user {self.db_user} "
             f"with db_name {self.db_name}"
         )
-        for database_connect_attempt in range(DATABASE_CONNECT_MAX_RETRIES):
+        for _ in range(DATABASE_CONNECT_MAX_RETRIES):
             try:
                 self.db_connection = psycopg2.connect(
                     host=self.db_host,

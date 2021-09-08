@@ -2,7 +2,7 @@
 
 # Project Information
 
-I’m Makubot! I have a huge image collection that you can add to; try `mb.help addimage`!
+I’m Makubot, a Discord bot! I have a huge image collection that you can add to; try `mb.help addimage`!
 
 [Botlist link](https://discord.bots.gg/bots/363924877981253633)
 
@@ -10,12 +10,12 @@ I’m Makubot! I have a huge image collection that you can add to; try `mb.help 
 
 [Support Server Invite](https://discordapp.com/invite/7sFbA4W)
 
+FYI the main developer of this bot is ashamed of the code years later.
+
 ## Setup & Installation
 
-You must add your Discord bot token to the environment variable DISCORD_BOT_TOKEN.
+To test locally, run `DISCORD_BOT_TOKEN=your_token ./run_no_aws`
 
-In order to use YouTube services, you must set a GOOGLE_API_KEY environment variable to a Google API key.
+Image command work cannot be tested without an AWS environment set up in a super specific way. Sorry.
 
-To start, run the docker-compose file, supplying the variables as you wish.
-
-This bot runs best when set up with the resources described in run_remote on AWS.
+In order to use YouTube services, pass a `GOOGLE_API_KEY` environment variable. If you don't have one, it's probably not worth getting one. Just let the bot die.

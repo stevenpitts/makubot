@@ -29,8 +29,6 @@ export PGPORT="${PGPORT:-5432}"
 export PGUSER="${PGUSER:-postgres}"
 export PGNAME="${PGNAME:-postgres}"
 
-export DEVELOPMENT=1
-
 docker-compose down
 
 docker-compose up --build --abort-on-container-exit --remove-orphans

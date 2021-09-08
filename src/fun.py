@@ -75,12 +75,6 @@ class Fun(discord.ext.commands.Cog):
             logger.warning(f"Got HTTPException for {emojis_to_add=}")
             raise
 
-    @commands.command(aliases=["english"], hidden=True)
-    async def translate(self, ctx, *, text: str):
-        """Translate some text into English!
-        Idea stolen from KitchenSink."""
-        await ctx.send("Not implemented :<")
-
     @commands.command()
     async def fact(self, ctx):
         """Sends a fun fact!"""

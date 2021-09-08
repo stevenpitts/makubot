@@ -46,7 +46,6 @@ class ServerLogging(discord.ext.commands.Cog):
     @commands.is_owner()
     async def add_log_channel(self, ctx, log_channel: discord.TextChannel):
         guild_id, log_channel_id = str(ctx.guild.id), str(log_channel.id)
-        # self.bot.shared["data"]["log_channels"][guild_id] = log_channel_id
         # TODO see what happens when you add a second log channel
         # (wouldn't be unique primary key)
         cursor = self.bot.db_connection.cursor()
@@ -110,7 +109,6 @@ class ServerLogging(discord.ext.commands.Cog):
         return extra_log_channel
 
     async def get_log_channels(self, guild, channel):
-        # log_channels = self.bot.shared["data"]["log_channels"]
         extra_log_channel = self.get_extra_log_channel()
         if guild is None:
             return [extra_log_channel] if extra_log_channel else []
