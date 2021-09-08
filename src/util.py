@@ -131,6 +131,8 @@ def get_num_tables(db_connection):
 
 
 def restore_db(s3_bucket, most_recent_key=None):
+    if not s3_bucket:
+        return  # We don't have access to an s3 bucket
     if most_recent_key is None:
         most_recent_key = get_most_recent_backup_key(s3_bucket)
     if most_recent_key is None:
