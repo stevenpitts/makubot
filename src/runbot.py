@@ -63,13 +63,13 @@ class MakuBot(commands.Bot):
         logger.info("Starting healthcheck server")
         self.healthcheck_server = discordhealthcheck.start(self)
         logger.info("Bot entering setup")
+        self.s3_bucket = s3_bucket
         self.makusu = None
         self.shared = {}
         self.temp_dir_pointer = tempfile.TemporaryDirectory()
         self.shared["temp_dir"] = Path(self.temp_dir_pointer.name)
         self.shared["default_extensions"] = ["base",
                                              "reminders",
-                                             "picturecommands",
                                              "serverlogging",
                                              "movement",
                                              "evaluations",
@@ -81,8 +81,10 @@ class MakuBot(commands.Bot):
                                              "rolegiver",
                                              "help",
                                              ]
-        self.s3_bucket = s3_bucket
         if self.s3_bucket:
+            self.shared["default_extensions"] += [
+                "picturecommands",
+            ]
             self.s3_bucket_location = S3.get_bucket_location(
                 Bucket=self.s3_bucket
             )["LocationConstraint"]
