@@ -130,9 +130,8 @@ def parse_remind_me(time_and_reminder):
     timereg = re.compile(r"^"+"".join(timereg_parts)+r"$")
     short_match = re.search(timereg, words[0])
     if short_match:
-        years, months, days, hours, minutes, seconds = [int(val) if val else 0
-                                                for val
-                                                in short_match.group(*"yMdhms")]
+        years, months, days, hours, minutes, seconds = [
+            int(val) if val else 0 for val in short_match.group(*"yMdhms")]
         relative_delta = relativedelta(
             years=years,
             months=months,
@@ -182,8 +181,7 @@ class ReminderCommands(discord.ext.commands.Cog):
     async def remind_me(self, ctx, *, time_and_reminder: str):
         """Reminds you of a thing!
         Usage:
-          remindme [<years>y][<months>M][<days>d][<hours>h][<minutes>m][<seconds>s]
-                   <reminder>
+          remindme [<years>y][<months>M][<days>d][<hours>h][<minutes>m][<seconds>s] <reminder>
           remindme in 1 day to <reminder>
         Many other forms are also supported, but they must use UTC and
         day-before-month format. Also they're a tad wonky.

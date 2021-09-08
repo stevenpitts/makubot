@@ -41,31 +41,7 @@ class Base(discord.ext.commands.Cog):
             """)
         self.bot.db_connection.commit()
 
-    @commands.command(hidden=True)
-    @commands.is_owner()
-    async def reload(self, ctx):
-        """
-        Reloads my command cogs. Works even in fatal situations. Sometimes.
-        """
-        logger.info("---Reloading base and util---")
-        importlib.reload(util)
-        reload_response = ""
-        for to_reload in self.bot.shared["default_extensions"]:
-            try:
-                ctx.bot.reload_extension(f"src.{to_reload}")
-            except Exception as e:
-                reload_response += f"Failed to reload {to_reload}\n"
-                fail_tb = util.get_formatted_traceback(e)
-                fail_message = f"Error reloading {to_reload}: \n{fail_tb}\n\n"
-                logger.error(fail_message)
-                logger.info(fail_message)
-        reload_response += "Done!"
-        await ctx.send(reload_response)
-        logger.info("Reloaded")
-
-    @commands.command(aliases=["are you free",
-                               "areyoufree?",
-                               "are you free?"])
+    @commands.command()
     @commands.guild_only()
     async def areyoufree(self, ctx):
         """If I have free reign I'll tell you"""
@@ -106,7 +82,7 @@ class Base(discord.ext.commands.Cog):
         results = cursor.fetchall()
         return [result["guild_id"] for result in results]
 
-    @commands.command(aliases=["go wild"])
+    @commands.command()
     @commands.is_owner()
     @commands.guild_only()
     async def gowild(self, ctx):

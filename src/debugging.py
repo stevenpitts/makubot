@@ -62,12 +62,6 @@ class Debugging(discord.ext.commands.Cog):
         self.bot.db_connection.rollback()
         await ctx.send("Done")
 
-    @commands.command(hidden=True)
-    @commands.is_owner()
-    async def clearshell(self, ctx):
-        """Adds a few newlines to Maku's shell (for clean debugging)"""
-        print("\n"*10)
-
     @commands.command(hidden=True, aliases=["deletehist"])
     @commands.is_owner()
     async def removehist(self, ctx, num_to_delete: int):
@@ -140,15 +134,6 @@ class Debugging(discord.ext.commands.Cog):
             await asyncio.get_running_loop().run_in_executor(
                 pool, util.restore_db, self.bot.s3_bucket, backup_key)
         await ctx.send("Done!")
-
-    @commands.command(hidden=True)
-    @commands.is_owner()
-    async def breakpoint(self, ctx):
-        if not os.environ.get("DEVELOPMENT", None):
-            await ctx.send("No way jose")
-            return
-        await ctx.send("Beginning breakpoint...")
-        breakpoint()
 
 
 def setup(bot):
