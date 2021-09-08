@@ -2,8 +2,6 @@ version: '3.7'
 services:
     mbdb:
         image: postgres:11
-        networks:
-            - net
         hostname: mbdb
         environment:
             - POSTGRES_PASSWORD=${PGPASSWORD}
@@ -13,16 +11,11 @@ services:
         init: true
         ipc: none
         hostname: snekbox
-        networks:
-            - net
     bot:
         build: .
         depends_on:
             - mbdb
             - snekbox
-            - puller
-        networks:
-            - net
         environment:
             - AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID}
             - AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY}
@@ -37,17 +30,3 @@ services:
             - PYTHONUNBUFFERED=1
         healthcheck:
             test: ["CMD-SHELL", "discordhealthcheck"]
-        volumes:
-            - repo:/makubot
-    puller:
-        image: makusu2/pull_repo
-        environment:
-          REPO_URL: https://github.com/makusu2/makubot.git
-        volumes:
-            - repo:/repo
-
-networks:
-    net:
-
-volumes:
-  repo:
