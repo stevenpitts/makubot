@@ -2,7 +2,7 @@ import discord
 from discord.ext import commands
 import logging
 from googleapiclient.discovery import build
-from discord_slash import SlashCommand, cog_ext
+from discord_slash import cog_ext
 
 logger = logging.getLogger()
 
