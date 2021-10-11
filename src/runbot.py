@@ -59,7 +59,7 @@ class MakuBot(commands.Bot):
             ),
             intents=get_intents(),
         )
-        slash = SlashCommand(self, sync_commands=True)
+        SlashCommand(self, sync_commands=True)
         logger.info("Starting healthcheck server")
         self.healthcheck_server = discordhealthcheck.start(self)
         logger.info("Bot entering setup")
