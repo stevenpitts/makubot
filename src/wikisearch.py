@@ -32,6 +32,7 @@ class Wikisearch(discord.ext.commands.Cog):
     @cog_ext.cog_slash(name="wiki")
     async def _wikislash(self, ctx, *, query):
         await self.wiki(ctx, query)
+
     @commands.command(name="wiki")
     async def _wikicmd(self, ctx, *, query):
         await self.wiki(ctx, query)
