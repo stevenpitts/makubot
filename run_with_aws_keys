@@ -1,0 +1,30 @@
+#!/usr/bin/env bash
+
+set -Eeuo pipefail
+
+if [[ -z ${DISCORD_BOT_TOKEN:-} ]]; then
+  echo >&2 "Provide DISCORD_BOT_TOKEN"
+  exit 1
+fi
+
+if [[ -z ${AWS_ACCESS_KEY_ID:-} ]]; then
+  echo >&2 "Provide AWS_ACCESS_KEY_ID"
+  exit 1
+fi
+
+if [[ -z ${AWS_SECRET_ACCESS_KEY:-} ]]; then
+  echo >&2 "Provide AWS_SECRET_ACCESS_KEY"
+  exit 1
+fi
+
+export BOT_NAME="${BOT_NAME:-makumistake}"
+export S3_BUCKET="${S3_BUCKET:-$BOT_NAME}"
+export PGPASSWORD="${PGPASSWORD:-testpassword}"
+export PGHOST="${PGHOST:-mbdb}"
+export PGPORT="${PGPORT:-5432}"
+export PGUSER="${PGUSER:-postgres}"
+export PGNAME="${PGNAME:-postgres}"
+
+docker-compose down
+
+docker-compose up --build --abort-on-container-exit --remove-orphans
