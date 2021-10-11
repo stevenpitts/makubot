@@ -3,6 +3,7 @@ from discord.ext import commands
 import logging
 import wikipedia
 from discord_slash import SlashCommand, cog_ext
+
 logger = logging.getLogger()
 
 
