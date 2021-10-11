@@ -2,6 +2,7 @@ import discord
 from discord.ext import commands
 import logging
 from googleapiclient.discovery import build
+from discord_slash import SlashCommand, cog_ext
 
 logger = logging.getLogger()
 
@@ -13,12 +14,11 @@ class YTSearch(discord.ext.commands.Cog):
             "youtube", "v3", developerKey=self.bot.google_api_key
             ).search()
 
-    @commands.command(aliases=["yt"])
-    async def youtube(self, ctx, *, search_term: str):
+    async def youtube(self, ctx, search_term):
         """Post a YouTube video based on a search phrase!
         Idea stolen from KitchenSink"""
-        if self.youtube_search is None:
-            await ctx.send("Sorry, I can\"t connect to Google API!")
+        if not self.youtube_search:
+            await ctx.send("Sorry, I can\'t connect to Google API!")
             return
         search_response = self.youtube_search.list(
             q=search_term, part="id", maxResults=10
@@ -29,6 +29,13 @@ class YTSearch(discord.ext.commands.Cog):
         search_result = next(search_results, None)
         await ctx.send(f"https://www.youtube.com/watch?v={search_result}"
                        if search_result else "Sowwy, I can\"t find it :(")
+
+    @cog_ext.cog_slash(name="youtube", guild_ids=[669939748529504267])
+    async def _ytslash(self, ctx, *, search_term: str):
+        await self.youtube(ctx, search_term)
+    @commands.command(name="youtube", aliases=["yt"])
+    async def _ytcmd(self, ctx, *, search_term: str):
+        await self.youtube(ctx, search_term)
 
 
 def setup(bot):

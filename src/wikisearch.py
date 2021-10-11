@@ -2,7 +2,7 @@ import discord
 from discord.ext import commands
 import logging
 import wikipedia
-
+from discord_slash import SlashCommand, cog_ext
 logger = logging.getLogger()
 
 
@@ -10,8 +10,7 @@ class Wikisearch(discord.ext.commands.Cog):
     def __init__(self, bot):
         self.bot = bot
 
-    @commands.command(aliases=["wiki", "wikipedia"])
-    async def whatis(self, ctx, *, query):
+    async def wiki(self, ctx, query):
         """Searches Wikipedia to see what something is!"""
         try:
             first_result = wikipedia.search(query)[0]
@@ -29,6 +28,13 @@ class Wikisearch(discord.ext.commands.Cog):
             embed = discord.Embed(title="Results", description=query)
             embed.add_field(name=result.url, value=summary)
             await ctx.send(embed=embed)
+
+    @cog_ext.cog_slash(name="wiki")
+    async def _wikislash(self, ctx, *, query):
+        await self.wiki(ctx, query)
+    @commands.command(name="wiki")
+    async def _wikicmd(self, ctx, *, query):
+        await self.wiki(ctx, query)
 
 
 def setup(bot):
