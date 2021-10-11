@@ -18,7 +18,7 @@ class YTSearch(discord.ext.commands.Cog):
         """Post a YouTube video based on a search phrase!
         Idea stolen from KitchenSink"""
         if not self.youtube_search:
-            await ctx.send("Sorry, I can\'t connect to Google API!")
+            await ctx.send("Sorry, I can't connect to Google API!")
             return
         search_response = self.youtube_search.list(
             q=search_term, part="id", maxResults=10
