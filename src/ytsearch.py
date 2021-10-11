@@ -12,7 +12,7 @@ class YTSearch(discord.ext.commands.Cog):
         self.bot = bot
         self.youtube_search = self.bot.google_api_key and build(
             "youtube", "v3", developerKey=self.bot.google_api_key
-            ).search()
+        ).search()
 
     async def youtube(self, ctx, search_term):
         """Post a YouTube video based on a search phrase!
@@ -22,7 +22,7 @@ class YTSearch(discord.ext.commands.Cog):
             return
         search_response = self.youtube_search.list(
             q=search_term, part="id", maxResults=10
-            ).execute()
+        ).execute()
         search_results = (search_result["id"]["videoId"]
                           for search_result in search_response.get("items", [])
                           if search_result["id"]["kind"] == "youtube#video")
