@@ -30,7 +30,7 @@ class YTSearch(discord.ext.commands.Cog):
         await ctx.send(f"https://www.youtube.com/watch?v={search_result}"
                        if search_result else "Sowwy, I can\"t find it :(")
 
-    @cog_ext.cog_slash(name="youtube", guild_ids=[669939748529504267])
+    @cog_ext.cog_slash(name="youtube")
     async def _ytslash(self, ctx, *, search_term: str):
         await self.youtube(ctx, search_term)
     @commands.command(name="youtube", aliases=["yt"])
