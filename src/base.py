@@ -14,6 +14,7 @@ logger = logging.getLogger()
 
 SUPPORT_SERVER_ID = 704113879919099914
 
+
 class Base(discord.ext.commands.Cog):
     def __init__(self, bot):
         self.bot = bot
