@@ -10,6 +10,7 @@ from . import util
 
 logger = logging.getLogger()
 
+
 class Fun(discord.ext.commands.Cog):
     def __init__(self, bot):
         self.bot = bot
