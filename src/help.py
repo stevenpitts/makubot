@@ -20,16 +20,12 @@ SHOWOFF_COMMANDS = [
     "evaluate",
     "poll",
     "remindme",
-    "whatis",
+    "wiki",
     "youtube",
     "imageblacklist",
 ]
 MINOR_SHOWOFF_COMMANDS = [
-    "bully",
-    "choose",
     "emojispam",
-    "fact",
-    "hugme"
 ]
 
 

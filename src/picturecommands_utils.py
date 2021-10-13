@@ -583,7 +583,7 @@ def get_appropriate_images(
         sid=None,
         user_sids=[],
         enable_insulation=False,
-        ):
+):
     uid = as_text(uid)
     sid = as_text(sid)
     user_sids = as_text(user_sids)

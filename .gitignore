@@ -2,6 +2,8 @@ data/
 
 secrets.env
 
+queen.sh
+
 mblog.txt
 
 .vscode

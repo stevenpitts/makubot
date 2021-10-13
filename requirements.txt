@@ -10,3 +10,4 @@ boto3>=1.12.0
 psycopg2
 psutil
 discordhealthcheck
+discord-py-interactions
