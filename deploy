@@ -1,0 +1,11 @@
+#!/usr/bin/env bash
+
+set -Eeuxo pipefail
+
+# Use latest cuz I'm lazy and this project is a mess
+
+docker build . --tag makusu2/makubot
+
+docker push makusu2/makubot
+
+aws ecs update-service --cluster makubot --service makubot --force-new-deployment
