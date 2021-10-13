@@ -15,8 +15,6 @@ class YTSearch(discord.ext.commands.Cog):
         ).search()
 
     async def youtube(self, ctx, search_term):
-        """Post a YouTube video based on a search phrase!
-        Idea stolen from KitchenSink"""
         if not self.youtube_search:
             await ctx.send("Sorry, I can't connect to Google API!")
             return
@@ -30,12 +28,14 @@ class YTSearch(discord.ext.commands.Cog):
         await ctx.send(f"https://www.youtube.com/watch?v={search_result}"
                        if search_result else "Sowwy, I can\"t find it :(")
 
-    @cog_ext.cog_slash(name="youtube")
+    @cog_ext.cog_slash(name="youtube", description="Post a YouTube video based on a search phrase!")
     async def _ytslash(self, ctx, *, search_term: str):
         await self.youtube(ctx, search_term)
 
     @commands.command(name="youtube", aliases=["yt"])
     async def _ytcmd(self, ctx, *, search_term: str):
+        """Post a YouTube video based on a search phrase!
+        Idea stolen from KitchenSink"""
         await self.youtube(ctx, search_term)
 
 

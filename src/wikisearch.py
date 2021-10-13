@@ -12,7 +12,6 @@ class Wikisearch(discord.ext.commands.Cog):
         self.bot = bot
 
     async def wiki(self, ctx, query):
-        """Searches Wikipedia to see what something is!"""
         try:
             first_result = wikipedia.search(query)[0]
             result = wikipedia.page(first_result)
@@ -30,12 +29,13 @@ class Wikisearch(discord.ext.commands.Cog):
             embed.add_field(name=result.url, value=summary)
             await ctx.send(embed=embed)
 
-    @cog_ext.cog_slash(name="wiki")
+    @cog_ext.cog_slash(name="wiki", description="Searches Wikipedia to see what something is!")
     async def _wikislash(self, ctx, *, query):
         await self.wiki(ctx, query)
 
     @commands.command(name="wiki")
     async def _wikicmd(self, ctx, *, query):
+        """Searches Wikipedia to see what something is!"""
         await self.wiki(ctx, query)
 
 
