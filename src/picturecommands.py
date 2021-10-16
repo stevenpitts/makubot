@@ -10,6 +10,8 @@ import hashlib
 from datetime import datetime
 import mimetypes
 import boto3
+import re
+from discord_slash import cog_ext
 from . import util
 from .picturecommands_utils import (
     YES_EMOJI,
@@ -30,6 +32,7 @@ from .picturecommands_utils import (
     delete_image_from_db,
     get_random_image,
     generate_image_embed,
+    generate_slash_image_embed,
     get_cmd_uid,
     add_server_command_association,
     get_user_sids,
@@ -444,6 +447,68 @@ class ReactionImages(discord.ext.commands.Cog):
         cascade_deleted_referenced_aliases(self.bot.db_connection)
 
         self.sent_messages_image_urls = dict()
+
+    @cog_ext.cog_slash(name="mb", description="Pull from hundreds of community-driven image commands or just type 'hey' for a random one!")
+    async def user_image_command(self, ctx, command, text=None):
+        if not command:
+            # This should never need to run as discord won't allow empty arguments,
+            # but it's worth adding in case of modded clients
+            await ctx.send(hidden=True,
+                           content="You didn't give me an image command to look for, dummy!")
+            return
+        else:
+            input_args = command.split(" ", 1)
+            if len(input_args) == 2:
+                content = f"{input_args[0]}, {input_args[1]}"
+            else:
+                content = None
+            if input_args[0].lower() in ["yo", "hey", "makubot"]:
+                is_rand = "random"
+                command_name = "Makubot"
+                chosen_path = get_random_image(self.bot.db_connection)
+                if not content:
+                    content = "Hey Makubot!"
+            else:
+                # Prevent SQL injection since we're taking arbitrary input now
+                command_name = re.sub(
+                    r"[^a-zA-Z0-9]", "", input_args[0].lower())
+                content = None
+                cmd = get_cmd_from_alias(ctx.bot.db_connection, command_name)
+                if not cmd:
+                    await ctx.send(hidden=True,
+                                   content=f"Hmm, {command_name} doesn't seem to be a command...")
+                    return
+                is_rand = "nonrandom"
+                uid = ctx.author.id
+                try:
+                    sid = ctx.guild.id
+                except AttributeError:
+                    sid = None
+                cmd_uid = get_cmd_uid(ctx.bot.db_connection, cmd)
+                if cmd_uid == uid and sid:
+                    add_server_command_association(
+                        ctx.bot.db_connection, sid, cmd)
+                user_sids = get_user_sids(ctx.bot, uid)
+                user_origin_server_intersection = get_user_origin_server_intersection(
+                    ctx.bot.db_connection, user_sids, cmd)
+                candidate_images = get_appropriate_images(
+                    ctx.bot.db_connection, cmd, uid, sid,
+                    user_origin_server_intersection)
+                logger.info(f"From {cmd=}, {uid=}, {sid=}, "
+                            f"{user_origin_server_intersection=}, got "
+                            f"{candidate_images=}")
+                chosen_key = random.choice(candidate_images)
+                if img_sid_should_be_set(ctx.bot.db_connection, cmd, chosen_key, uid):
+                    logger.info(f"{cmd}'s sid will be set to {sid}")
+                    set_img_sid(ctx.bot.db_connection, cmd, chosen_key, sid)
+                chosen_path = f"pictures/{cmd}/{chosen_key}"
+        chosen_url = util.url_from_s3_key(
+            ctx.bot.s3_bucket, ctx.bot.s3_bucket_location, chosen_path,
+            improve=True)
+        logging.info(
+            f"Sending {is_rand} url in user_image_command func: {chosen_url}")
+        image_embed = await generate_slash_image_embed(ctx, chosen_url, command_name, content)
+        await ctx.send(embed=image_embed)
 
     @commands.command(aliases=["yo", "hey", "makubot"])
     async def randomimage(self, ctx):

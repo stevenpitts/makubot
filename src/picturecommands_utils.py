@@ -756,6 +756,20 @@ async def generate_image_embed(ctx, url, call_bot_name=False):
                    "icon_url": str(ctx.author.avatar_url)
                    } if has_content and not fstring else {},
         "image": {"url": url},
+        "footer": {"text": f"Psst - bot prefixes are deprecated! Type `/slashhelp` in chat to find out more!",
+                   "icon_url": str(ctx.me.avatar_url)},
+    }
+    image_embed = discord.Embed.from_dict(image_embed_dict)
+    return image_embed
+
+async def generate_slash_image_embed(ctx, url, command, content):
+    url = util.improve_url(url)
+    bot_nick = ctxhelpers.get_bot_nick(ctx)
+    image_embed_dict = {
+        "author": {"name": content if content else f"{ctx.author.display_name} used {command}!",
+                "icon_url": str(ctx.author.avatar_url)
+                },
+        "image": {"url": url},
         "footer": {"text": f"-{bot_nick}", "icon_url": str(ctx.me.avatar_url)},
     }
     image_embed = discord.Embed.from_dict(image_embed_dict)
