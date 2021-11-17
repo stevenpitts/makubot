@@ -5,13 +5,19 @@ import random
 import aiohttp
 import asyncio
 import concurrent
+from discord_slash.context import ComponentContext
 import youtube_dl
 import hashlib
 from datetime import datetime
 import mimetypes
 import boto3
 import re
+import math
 from discord_slash import cog_ext
+from discord_slash.utils.manage_components import create_button, create_actionrow, wait_for_component
+from discord_slash.model import ButtonStyle
+from fuzzywuzzy import fuzz
+from fuzzywuzzy import process
 from . import util
 from .picturecommands_utils import (
     YES_EMOJI,
@@ -450,66 +456,144 @@ class ReactionImages(discord.ext.commands.Cog):
 
     @cog_ext.cog_slash(name="mb", description="Pull from hundreds of community-driven image commands or just type 'hey' for a random one!")
     async def user_image_command(self, ctx, command, text=None):
-        if not command:
-            # This should never need to run as discord won't allow empty arguments,
-            # but it's worth adding in case of modded clients
-            await ctx.send(hidden=True,
-                           content="You didn't give me an image command to look for, dummy!")
-            return
-        else:
-            input_args = command.split(" ", 1)
+        input_args = command.split(" ", 1)
+        # Random image command
+        if input_args[0].lower() in ["yo", "hey", "makubot"]:
+            is_rand = "random"
+            command_name = "Makubot"
+            chosen_path = get_random_image(self.bot.db_connection)
             if len(input_args) == 2:
-                content = f"{input_args[0]}, {input_args[1]}"
+                embed_title = input_args[1]
             else:
-                content = None
-            if input_args[0].lower() in ["yo", "hey", "makubot"]:
-                is_rand = "random"
-                command_name = "Makubot"
-                chosen_path = get_random_image(self.bot.db_connection)
-                if not content:
-                    content = "Hey Makubot!"
+                embed_title = "Hey Makubot!"
+        else:
+            is_rand = "nonrandom"
+            command_name = re.sub(
+                r"[^a-zA-Z0-9]", "", input_args[0].lower())
+            cmd = get_cmd_from_alias(ctx.bot.db_connection, command_name)
+            if not cmd:
+                all_invocations = get_all_cmds_aliases_from_db(
+                    self.bot.db_connection)
+                most_similar = process.extractOne(
+                    command_name, all_invocations)
+                
+                embed_dict = {
+                    "title": "Uh oh!",
+                    "description": f"`{command_name.capitalize()}` doesn't seem to be a command...",
+                    "fields": [
+                        {
+                            "name": "Usage",
+                            "value": f"`/mb {{command}}`\nWhen you type a command into `/mb`, only the first word gets looked up - the rest is interpreted as text to include with the image. It's an attempt to correct for design inconsistencies between desktop and mobile clients.",
+                            "inline": False,
+                        },
+                    ],
+                    "footer": {"text": f"Psst... I'm {most_similar[1]}% sure you meant `/mb {most_similar[0]}`." },
+                    "color": 0xFF0000,
+                }
+                discord_embed = discord.Embed.from_dict(embed_dict)
+                await ctx.send(hidden=True,embed=discord_embed)
+                return
+            if len(input_args) == 2:
+                embed_title = input_args[1]
             else:
-                # Prevent SQL injection since we're taking arbitrary input now
-                command_name = re.sub(
-                    r"[^a-zA-Z0-9]", "", input_args[0].lower())
-                content = None
-                cmd = get_cmd_from_alias(ctx.bot.db_connection, command_name)
-                if not cmd:
-                    await ctx.send(hidden=True,
-                                   content=f"Hmm, {command_name} doesn't seem to be a command...")
-                    return
-                is_rand = "nonrandom"
-                uid = ctx.author.id
-                try:
-                    sid = ctx.guild.id
-                except AttributeError:
-                    sid = None
-                cmd_uid = get_cmd_uid(ctx.bot.db_connection, cmd)
-                if cmd_uid == uid and sid:
-                    add_server_command_association(
-                        ctx.bot.db_connection, sid, cmd)
-                user_sids = get_user_sids(ctx.bot, uid)
-                user_origin_server_intersection = get_user_origin_server_intersection(
-                    ctx.bot.db_connection, user_sids, cmd)
-                candidate_images = get_appropriate_images(
-                    ctx.bot.db_connection, cmd, uid, sid,
-                    user_origin_server_intersection)
-                logger.info(f"From {cmd=}, {uid=}, {sid=}, "
-                            f"{user_origin_server_intersection=}, got "
-                            f"{candidate_images=}")
-                chosen_key = random.choice(candidate_images)
-                if img_sid_should_be_set(ctx.bot.db_connection, cmd, chosen_key, uid):
-                    logger.info(f"{cmd}'s sid will be set to {sid}")
-                    set_img_sid(ctx.bot.db_connection, cmd, chosen_key, sid)
-                chosen_path = f"pictures/{cmd}/{chosen_key}"
+                embed_title = f"{ctx.author.display_name} used {command_name}!"
+            # Handle user/server command associations
+            uid = ctx.author.id
+            try:
+                sid = ctx.guild.id
+            except AttributeError:
+                sid = None
+            cmd_uid = get_cmd_uid(ctx.bot.db_connection, cmd)
+            if cmd_uid == uid and sid:
+                add_server_command_association(
+                    ctx.bot.db_connection, sid, cmd)
+            user_sids = get_user_sids(ctx.bot, uid)
+            user_origin_server_intersection = get_user_origin_server_intersection(
+                ctx.bot.db_connection, user_sids, cmd)
+            candidate_images = get_appropriate_images(
+                ctx.bot.db_connection, cmd, uid, sid,
+                user_origin_server_intersection)
+            logger.info(f"From {cmd=}, {uid=}, {sid=}, "
+                        f"{user_origin_server_intersection=}, got "
+                        f"{candidate_images=}")
+            chosen_key = random.choice(candidate_images)
+            if img_sid_should_be_set(ctx.bot.db_connection, cmd, chosen_key, uid):
+                logger.info(f"{cmd}'s sid will be set to {sid}")
+                set_img_sid(ctx.bot.db_connection,
+                            cmd, chosen_key, sid)
+            chosen_path = f"pictures/{cmd}/{chosen_key}"
         chosen_url = util.url_from_s3_key(
             ctx.bot.s3_bucket, ctx.bot.s3_bucket_location, chosen_path,
             improve=True)
         logging.info(
             f"Sending {is_rand} url in user_image_command func: {chosen_url}")
-        image_embed = await generate_slash_image_embed(ctx, chosen_url, command_name, content)
+        image_embed = await generate_slash_image_embed(ctx, chosen_url, command_name, embed_title)
         await ctx.send(embed=image_embed)
 
+    @cog_ext.cog_slash(name="list", description="Lists the hundreds of commands I have!")
+    async def list_reactions(self, ctx):
+
+        def generate_components(disabled=False):
+            buttons = [
+                create_button(
+                    style=ButtonStyle(2),
+                    label="◄",
+                    disabled=disabled
+                ),
+                create_button(
+                    style=ButtonStyle(1),
+                    label="►",
+                    disabled=disabled
+                ),
+            ]
+            return create_actionrow(*buttons)
+
+        def generate_embed(current_page, page_count, timedout=False):
+            image_embed_dict = {
+                "author": {"name": "Makubot commands",
+                           "icon_url": str(ctx.me.avatar_url)
+                           },
+                "fields": [
+                    {
+                        "name": f"Page {current_page + 1} of {page_count}",
+                        "value": text_blocks[current_page],
+                        "inline": False
+                    }
+                ],
+                "footer": {"text": "Timed out - type /list again to restart."} if timedout
+                else {"text": f"Showing {block_size} results per page. This embed will time out after 30 seconds of inactivity."},
+            }
+            return discord.Embed.from_dict(image_embed_dict)
+
+        all_cmds = sorted(get_all_cmds_aliases_from_db(self.bot.db_connection))
+        block_size = 50
+        text_blocks = []
+        page_count = math.ceil(len(all_cmds) / block_size)
+        current_page = 0
+        if page_count == 0:
+            page_count = 1
+        for i in range(page_count):
+            text_blocks.append(
+                ", ".join(all_cmds[i * block_size:(i + 1) * block_size])
+            )
+        actionrow = generate_components()
+        timed_message = await ctx.send(embed=generate_embed(0, page_count), components=[actionrow])
+        while True:
+            try:
+                button_ctx: ComponentContext = await wait_for_component(self.bot, components=actionrow, timeout=30)
+            except asyncio.TimeoutError:
+                await timed_message.edit(embed=generate_embed(current_page, page_count, True), components=[generate_components(disabled=True)])
+                return
+            else:
+                if button_ctx.custom_id == actionrow['components'][1]['custom_id']:
+                    if page_count > current_page + 1:
+                        current_page += 1
+                elif button_ctx.custom_id == actionrow['components'][0]['custom_id']:
+                    if current_page > 0:
+                        current_page -= 1
+                await button_ctx.edit_origin(embed=generate_embed(current_page, page_count))
+
+################################################################################
     @commands.command(aliases=["yo", "hey", "makubot"])
     async def randomimage(self, ctx):
         """Get a totally random image!"""
@@ -620,6 +704,7 @@ class ReactionImages(discord.ext.commands.Cog):
         all_invocations_alphabetized = sorted(all_invocations)
         pictures_desc = ", ".join(all_invocations_alphabetized)
         await util.displaytxt(ctx, pictures_desc)
+###############################################################################
 
     @commands.command(hidden=True, aliases=["realinvocation"])
     async def real_invocation(self, ctx, alias):
