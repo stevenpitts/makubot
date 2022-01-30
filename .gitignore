@@ -3,7 +3,7 @@ data/
 secrets.env
 
 queen.sh
-
+queen.ps1
 mblog.txt
 
 .vscode

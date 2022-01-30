@@ -454,7 +454,7 @@ class ReactionImages(discord.ext.commands.Cog):
 
         self.sent_messages_image_urls = dict()
 
-    @cog_ext.cog_slash(name="mb", description="Pull from hundreds of community-driven image commands or just type 'hey' for a random one!")
+    @cog_ext.cog_slash(name="img", description="Pull from hundreds of community-driven image commands or just type 'hey' for a random one!")
     async def user_image_command(self, ctx, command, text=None):
         input_args = command.split(" ", 1)
         # Random image command

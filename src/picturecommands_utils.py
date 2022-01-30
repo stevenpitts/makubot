@@ -756,7 +756,7 @@ async def generate_image_embed(ctx, url, call_bot_name=False):
                    "icon_url": str(ctx.author.avatar_url)
                    } if has_content and not fstring else {},
         "image": {"url": url},
-        "footer": {"text": f"Psst - bot prefixes are deprecated! Type `/slashhelp` in chat to find out more!",
+        "footer": {"text": "Psst - bot prefixes are deprecated! Type `/slashhelp` in chat to find out more, or type `/img {{command}}` to try again!",
                    "icon_url": str(ctx.me.avatar_url)},
     }
     image_embed = discord.Embed.from_dict(image_embed_dict)
