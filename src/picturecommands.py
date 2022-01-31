@@ -16,7 +16,6 @@ import math
 from discord_slash import cog_ext
 from discord_slash.utils.manage_components import create_button, create_actionrow, wait_for_component
 from discord_slash.model import ButtonStyle
-from fuzzywuzzy import fuzz
 from fuzzywuzzy import process
 from . import util
 from .picturecommands_utils import (
@@ -483,11 +482,11 @@ class ReactionImages(discord.ext.commands.Cog):
                     "fields": [
                         {
                             "name": "Usage",
-                            "value": f"`/mb {{command}}`\nWhen you type a command into `/mb`, only the first word gets looked up - the rest is interpreted as text to include with the image. It's an attempt to correct for design inconsistencies between desktop and mobile clients.",
+                            "value": f"`/img {{command}}`\nWhen you type a command into `/img`, only the first word gets looked up - the rest is interpreted as text to include with the image. It's an attempt to correct for design inconsistencies between desktop and mobile clients.",
                             "inline": False,
                         },
                     ],
-                    "footer": {"text": f"Psst... I'm {most_similar[1]}% sure you meant `/mb {most_similar[0]}`." },
+                    "footer": {"text": f"Psst... I'm {most_similar[1]}% sure you meant `/img {most_similar[0]}`." },
                     "color": 0xFF0000,
                 }
                 discord_embed = discord.Embed.from_dict(embed_dict)
