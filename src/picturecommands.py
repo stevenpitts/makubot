@@ -16,6 +16,7 @@ import math
 from discord_slash import cog_ext
 from discord_slash.utils.manage_components import create_button, create_actionrow, wait_for_component
 from discord_slash.model import ButtonStyle
+from discord_slash.utils.manage_commands import create_option, create_choice
 from fuzzywuzzy import process
 from . import util
 from .picturecommands_utils import (
@@ -475,7 +476,6 @@ class ReactionImages(discord.ext.commands.Cog):
                     self.bot.db_connection)
                 most_similar = process.extractOne(
                     command_name, all_invocations)
-                
                 embed_dict = {
                     "title": "Uh oh!",
                     "description": f"`{command_name.capitalize()}` doesn't seem to be a command...",
@@ -529,7 +529,6 @@ class ReactionImages(discord.ext.commands.Cog):
         image_embed = await generate_slash_image_embed(ctx, chosen_url, command_name, embed_title)
         await ctx.send(embed=image_embed)
 
-    @cog_ext.cog_slash(name="list", description="Lists the hundreds of commands I have!")
     async def list_reactions(self, ctx):
 
         def generate_components(disabled=False):
@@ -591,6 +590,121 @@ class ReactionImages(discord.ext.commands.Cog):
                     if current_page > 0:
                         current_page -= 1
                 await button_ctx.edit_origin(embed=generate_embed(current_page, page_count))
+
+    async def top_ten_cmds(self, ctx, is_old_invoke=False):
+        command_sizes = get_cmd_sizes(self.bot.db_connection)
+        commands_sorted = sorted(
+            command_sizes.keys(),
+            key=lambda command: command_sizes[command],
+            reverse=True
+        )
+        top_ten_commands = commands_sorted[:10]
+        embed_dict = {
+            "title": "Top 10 Commands",
+            "description": f"{top_ten_commands[0]} is currently in the lead with {command_sizes[top_ten_commands[0]]} images!",
+            "fields": [
+                {
+                    "name": f"\u200b",
+                    "value": f"".join(f"\u2022 {top_ten_commands.index(command) + 1}: {command} ({command_sizes[command]} images)\n" for command in top_ten_commands),
+                    "inline": False
+                }
+            ],
+            "footer": {"text": "Psst - bot prefixes are deprecated! Type `/slashhelp` in chat to find out more, or type `/mb` to try again!"} if is_old_invoke else {"text": "\u200b"}
+        }
+        embed = discord.Embed.from_dict(embed_dict)
+        await ctx.send(embed=embed)
+
+    async def return_cmd_size(self, ctx, cmd):
+        """Tells you how many images are in a command"""
+        real_cmd = get_cmd_from_alias(self.bot.db_connection, cmd)
+        if not real_cmd:
+            await ctx.send(f"{cmd} isn't an image command :o")
+            return
+        cmd_sizes = get_cmd_sizes(self.bot.db_connection)
+        cmd_size = cmd_sizes[real_cmd]
+        image_plurality = "image" if cmd_size == 1 else "images"
+        base_size_msg = f"{cmd} has {cmd_size} {image_plurality}!"
+        if not ctx.guild:
+            await ctx.send(base_size_msg)
+            return
+        uid = ctx.author.id
+        user_sids = get_user_sids(self.bot, uid)
+        sid = ctx.guild.id
+        cmd_size_server, cmd_size_user = get_cmd_size_server_user(
+            self.bot.db_connection, real_cmd, uid, sid, user_sids)
+        server_size_msg = (
+            f"Anyone on the server can pull {cmd_size_server} of them!")
+        user_size_msg = (
+            f"You can personally pull {cmd_size_user} of them here!")
+        if cmd_size == cmd_size_server:
+            await ctx.send(base_size_msg)
+        elif cmd_size_server == cmd_size_user:
+            await ctx.send(f"{base_size_msg} {server_size_msg}")
+        else:
+            await ctx.send(
+                f"{base_size_msg} {server_size_msg} {user_size_msg}")
+
+    __super_utils_options = [
+        create_option(
+            name="image_util",
+            description="Pick an option...",
+            option_type=3,
+            required=True,
+            choices=[
+                create_choice(
+                        value="add",
+                        name="Add image to..."
+                ),
+                create_choice(
+                    value="howbig",
+                    name="How big is..."
+                ),
+                create_choice(
+                    value="blacklist",
+                    name="Blacklist image..."
+                ),
+                create_choice(
+                    value="listcommands",
+                    name="What commands are available?"
+                ),
+                create_choice(
+                    value="top10",
+                    name="What are the top 10 commands?"
+                ),
+                create_choice(
+                    value="mycommands",
+                    name="What are my commands?"
+                )
+            ]
+        ),
+        create_option(
+            name="command_name",
+            description="What command do you want to modify? (Not needed for 'top 10' and 'my commands' options)",
+            option_type=3,
+            required=False
+        )
+    ]
+
+    @cog_ext.cog_slash(name="mb", description="Modify or see information about my commands!", options=__super_utils_options, guild_ids=[669939748529504267])
+    async def super_image_utils(self, ctx, image_util: str, command_name: str = None):
+        if image_util == "add":
+            # await self.add_image_to_command(ctx, command_name)
+            pass
+        elif image_util == "howbig":
+            if not command_name:
+                await ctx.send("You need to specify a command!", hidden=True)
+                return
+            else:
+                await self.return_cmd_size(ctx, command_name)
+        elif image_util == "blacklist":
+            # await self.blacklist_image(ctx, command_name)
+            pass
+        elif image_util == "top10":
+            await self.top_ten_cmds(ctx)
+        elif image_util == "mycommands":
+            pass
+        elif image_util == "listcommands":
+            await self.list_reactions(ctx)
 
 ################################################################################
     @commands.command(aliases=["yo", "hey", "makubot"])
@@ -718,34 +832,7 @@ class ReactionImages(discord.ext.commands.Cog):
 
     @commands.command()
     async def howbig(self, ctx, cmd):
-        """Tells you how many images are in a command"""
-        real_cmd = get_cmd_from_alias(self.bot.db_connection, cmd)
-        if not real_cmd:
-            await ctx.send(f"{cmd} isn't an image command :o")
-            return
-        cmd_sizes = get_cmd_sizes(self.bot.db_connection)
-        cmd_size = cmd_sizes[real_cmd]
-        image_plurality = "image" if cmd_size == 1 else "images"
-        base_size_msg = f"{cmd} has {cmd_size} {image_plurality}!"
-        if not ctx.guild:
-            await ctx.send(base_size_msg)
-            return
-        uid = ctx.author.id
-        user_sids = get_user_sids(self.bot, uid)
-        sid = ctx.guild.id
-        cmd_size_server, cmd_size_user = get_cmd_size_server_user(
-            self.bot.db_connection, real_cmd, uid, sid, user_sids)
-        server_size_msg = (
-            f"Anyone on the server can pull {cmd_size_server} of them!")
-        user_size_msg = (
-            f"You can personally pull {cmd_size_user} of them here!")
-        if cmd_size == cmd_size_server:
-            await ctx.send(base_size_msg)
-        elif cmd_size_server == cmd_size_user:
-            await ctx.send(f"{base_size_msg} {server_size_msg}")
-        else:
-            await ctx.send(
-                f"{base_size_msg} {server_size_msg} {user_size_msg}")
+        await self.return_cmd_size(ctx, cmd)
 
     @commands.is_owner()
     @commands.command()
@@ -846,17 +933,7 @@ class ReactionImages(discord.ext.commands.Cog):
     @commands.command(aliases=["topten"])
     async def bigten(self, ctx):
         """List my ten biggest image commands!"""
-        command_sizes = get_cmd_sizes(self.bot.db_connection)
-        commands_sorted = sorted(
-            command_sizes.keys(),
-            key=lambda command: command_sizes[command],
-            reverse=True
-        )
-        top_ten_commands = commands_sorted[:10]
-        message = "\n".join([
-            f"{command}: {command_sizes[command]}"
-            for command in top_ten_commands])
-        await ctx.send(message)
+        await self.top_ten_cmds(ctx, is_old_invoke=True)
 
     @commands.command(hidden=True, aliases=["getcmdinfo"])
     async def get_cmd_info(self, ctx, cmd):
