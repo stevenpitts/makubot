@@ -687,6 +687,18 @@ class ReactionImages(discord.ext.commands.Cog):
 
     @cog_ext.cog_slash(name="mb", description="Modify or see information about my commands!", options=__super_utils_options, guild_ids=[669939748529504267])
     async def super_image_utils(self, ctx, image_util: str, command_name: str = None):
+
+        async def my_commands(ctx):
+            cmds = get_all_user_cmds(self.bot.db_connection, ctx.author_id)
+            if not cmds:
+                await ctx.send("You don't have any commands!", hidden=True)
+                return
+            embed = discord.Embed(
+                title=f"{ctx.author}'s Commands",
+                description="\n".join(cmds),
+                color=discord.Color.blue()
+            )
+            await ctx.send(embed=embed, hidden=True)
         if image_util == "add":
             # await self.add_image_to_command(ctx, command_name)
             pass
@@ -702,11 +714,10 @@ class ReactionImages(discord.ext.commands.Cog):
         elif image_util == "top10":
             await self.top_ten_cmds(ctx)
         elif image_util == "mycommands":
-            pass
+            await my_commands(ctx)
         elif image_util == "listcommands":
             await self.list_reactions(ctx)
 
-################################################################################
     @commands.command(aliases=["yo", "hey", "makubot"])
     async def randomimage(self, ctx):
         """Get a totally random image!"""
@@ -817,7 +828,6 @@ class ReactionImages(discord.ext.commands.Cog):
         all_invocations_alphabetized = sorted(all_invocations)
         pictures_desc = ", ".join(all_invocations_alphabetized)
         await util.displaytxt(ctx, pictures_desc)
-###############################################################################
 
     @commands.command(hidden=True, aliases=["realinvocation"])
     async def real_invocation(self, ctx, alias):
