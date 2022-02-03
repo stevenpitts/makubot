@@ -454,6 +454,26 @@ class ReactionImages(discord.ext.commands.Cog):
 
         self.sent_messages_image_urls = dict()
 
+    async def image_command_error(self, ctx, user_input, syntax):
+        embed = discord.Embed(
+            title="Uh oh!",
+            description=f"I had trouble understanding that. `{user_input.capitalize()}` doesn't seem to be a command...",
+            color=discord.Color.dark_red()
+        )
+        all_invocations = get_all_cmds_aliases_from_db(
+            self.bot.db_connection)
+        most_similar = process.extractOne(
+            user_input, all_invocations)
+        # For some reason, I have to add these manually or else they don't show up
+        embed.add_field(name="Syntax", value=f"```{syntax}```", inline=False)
+        embed.set_footer(
+            text=f"Psst... I'm {most_similar[1]}% sure you meant `{most_similar[0]}`.")
+        await ctx.send(hidden=True, embed=embed)
+        return
+
+    async def sanitize_command_name(self, command_name: str):
+        return re.sub(r"[^a-zA-Z0-9]", "", command_name.lower())
+
     @cog_ext.cog_slash(name="img", description="Pull from hundreds of community-driven image commands or just type 'hey' for a random one!")
     async def user_image_command(self, ctx, command, text=None):
         input_args = command.split(" ", 1)
@@ -468,29 +488,11 @@ class ReactionImages(discord.ext.commands.Cog):
                 embed_title = "Hey Makubot!"
         else:
             is_rand = "nonrandom"
-            command_name = re.sub(
-                r"[^a-zA-Z0-9]", "", input_args[0].lower())
+            command_name = await self.sanitize_command_name(input_args[0])
             cmd = get_cmd_from_alias(ctx.bot.db_connection, command_name)
             if not cmd:
-                all_invocations = get_all_cmds_aliases_from_db(
-                    self.bot.db_connection)
-                most_similar = process.extractOne(
-                    command_name, all_invocations)
-                embed_dict = {
-                    "title": "Uh oh!",
-                    "description": f"`{command_name.capitalize()}` doesn't seem to be a command...",
-                    "fields": [
-                        {
-                            "name": "Usage",
-                            "value": f"`/img {{command}}`\nWhen you type a command into `/img`, only the first word gets looked up - the rest is interpreted as text to include with the image. It's an attempt to correct for design inconsistencies between desktop and mobile clients.",
-                            "inline": False,
-                        },
-                    ],
-                    "footer": {"text": f"Psst... I'm {most_similar[1]}% sure you meant `/img {most_similar[0]}`." },
-                    "color": 0xFF0000,
-                }
-                discord_embed = discord.Embed.from_dict(embed_dict)
-                await ctx.send(hidden=True,embed=discord_embed)
+                syntax = f"/img \u007Bcommand_name\u007D [optional text]"
+                await self.image_command_error(ctx, command_name, syntax)
                 return
             if len(input_args) == 2:
                 embed_title = input_args[1]
@@ -678,16 +680,15 @@ class ReactionImages(discord.ext.commands.Cog):
             ]
         ),
         create_option(
-            name="command_name",
-            description="What command do you want to modify? (Not needed for 'top 10' and 'my commands' options)",
+            name="input_args",
+            description="What command do you want to modify or see information about?",
             option_type=3,
             required=False
         )
     ]
 
     @cog_ext.cog_slash(name="mb", description="Modify or see information about my commands!", options=__super_utils_options, guild_ids=[669939748529504267])
-    async def super_image_utils(self, ctx, image_util: str, command_name: str = None):
-
+    async def super_image_utils(self, ctx, image_util: str, input_args: str = None):
         async def my_commands(ctx):
             cmds = get_all_user_cmds(self.bot.db_connection, ctx.author_id)
             if not cmds:
@@ -703,11 +704,26 @@ class ReactionImages(discord.ext.commands.Cog):
             # await self.add_image_to_command(ctx, command_name)
             pass
         elif image_util == "howbig":
-            if not command_name:
-                await ctx.send("You need to specify a command!", hidden=True)
+            syntax = "`/mb howbig [command]`"
+            if not input_args:
+                embed = discord.Embed(
+                    title="Oops!",
+                    description="You didn't specify a command!",
+                    color=discord.Color.dark_red()
+                )
+                embed.set_footer(
+                    text=f"*Remember to click the optional field \"input_args\" in the command prompt!*")
+                await ctx.send(embed=embed, hidden=True)
                 return
             else:
-                await self.return_cmd_size(ctx, command_name)
+                command_name = await self.sanitize_command_name(input_args.split(" ", 1)[0])
+                command_name = input_args.split(" ", 1)[0]
+                cmd = get_cmd_from_alias(ctx.bot.db_connection, command_name)
+                if not cmd:
+                    await self.image_command_error(ctx, command_name, syntax)
+                    return
+                else:
+                    await self.return_cmd_size(ctx, command_name)
         elif image_util == "blacklist":
             # await self.blacklist_image(ctx, command_name)
             pass
