@@ -701,8 +701,7 @@ class ReactionImages(discord.ext.commands.Cog):
             )
             await ctx.send(embed=embed, hidden=True)
         if image_util == "add":
-            # await self.add_image_to_command(ctx, command_name)
-            pass
+            await util.err_not_implemented(ctx)
         elif image_util == "howbig":
             syntax = "`/mb howbig [command]`"
             if not input_args:
@@ -725,8 +724,7 @@ class ReactionImages(discord.ext.commands.Cog):
                 else:
                     await self.return_cmd_size(ctx, command_name)
         elif image_util == "blacklist":
-            # await self.blacklist_image(ctx, command_name)
-            pass
+            await util.err_not_implemented(ctx)
         elif image_util == "top10":
             await self.top_ten_cmds(ctx)
         elif image_util == "mycommands":
