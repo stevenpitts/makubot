@@ -5,11 +5,19 @@ import random
 import aiohttp
 import asyncio
 import concurrent
+from discord_slash.context import ComponentContext
 import youtube_dl
 import hashlib
 from datetime import datetime
 import mimetypes
 import boto3
+import re
+import math
+from discord_slash import cog_ext
+from discord_slash.utils.manage_components import create_button, create_actionrow, wait_for_component
+from discord_slash.model import ButtonStyle
+from discord_slash.utils.manage_commands import create_option, create_choice
+from fuzzywuzzy import process
 from . import util
 from .picturecommands_utils import (
     YES_EMOJI,
@@ -30,6 +38,7 @@ from .picturecommands_utils import (
     delete_image_from_db,
     get_random_image,
     generate_image_embed,
+    generate_slash_image_embed,
     get_cmd_uid,
     add_server_command_association,
     get_user_sids,
@@ -445,6 +454,286 @@ class ReactionImages(discord.ext.commands.Cog):
 
         self.sent_messages_image_urls = dict()
 
+    async def image_command_error(self, ctx, user_input, syntax):
+        embed = discord.Embed(
+            title="Uh oh!",
+            description=f"I had trouble understanding that. `{user_input.capitalize()}` doesn't seem to be a command...",
+            color=discord.Color.dark_red(),
+        )
+        all_invocations = get_all_cmds_aliases_from_db(
+            self.bot.db_connection)
+        most_similar = process.extractOne(
+            user_input, all_invocations)
+        # There will always be at least one positive-scoring invocation
+        assert most_similar is not None
+        # For some reason, I have to add these manually or else they don't show up
+        embed.add_field(name="Syntax", value=f"```{syntax}```", inline=False)
+        most_similar_score, most_similar_invocation = most_similar
+        embed.set_footer(
+            text=f"Psst... I'm {most_similar_score}% sure you meant `{most_similar_invocation}`.")
+        await ctx.send(hidden=True, embed=embed)
+
+    async def sanitize_command_name(self, command_name: str):
+        return re.sub(r"[^a-zA-Z0-9]", "", command_name.lower())
+
+    @cog_ext.cog_slash(name="img", description="Pull from hundreds of community-driven image commands or just type 'hey' for a random one!")
+    async def user_image_command(self, ctx, command, text=None):
+        input_args = command.split(" ", 1)
+        # Random image command
+        if input_args[0].lower() in ["yo", "hey", "makubot"]:
+            is_rand = "random"
+            command_name = "Makubot"
+            chosen_path = get_random_image(self.bot.db_connection)
+            if len(input_args) == 2:
+                embed_title = input_args[1]
+            else:
+                embed_title = "Hey Makubot!"
+        else:
+            is_rand = "nonrandom"
+            command_name = await self.sanitize_command_name(input_args[0])
+            cmd = get_cmd_from_alias(ctx.bot.db_connection, command_name)
+            if not cmd:
+                syntax = f"/img \u007Bcommand_name\u007D [optional text]"
+                await self.image_command_error(ctx, command_name, syntax)
+                return
+            if len(input_args) == 2:
+                embed_title = input_args[1]
+            else:
+                embed_title = f"{ctx.author.display_name} used {command_name}!"
+            # Handle user/server command associations
+            uid = ctx.author.id
+            try:
+                sid = ctx.guild.id
+            except AttributeError:
+                sid = None
+            cmd_uid = get_cmd_uid(ctx.bot.db_connection, cmd)
+            if cmd_uid == uid and sid:
+                add_server_command_association(
+                    ctx.bot.db_connection, sid, cmd)
+            user_sids = get_user_sids(ctx.bot, uid)
+            user_origin_server_intersection = get_user_origin_server_intersection(
+                ctx.bot.db_connection, user_sids, cmd)
+            candidate_images = get_appropriate_images(
+                ctx.bot.db_connection, cmd, uid, sid,
+                user_origin_server_intersection)
+            logger.info(f"From {cmd=}, {uid=}, {sid=}, "
+                        f"{user_origin_server_intersection=}, got "
+                        f"{candidate_images=}")
+            chosen_key = random.choice(candidate_images)
+            if img_sid_should_be_set(ctx.bot.db_connection, cmd, chosen_key, uid):
+                logger.info(f"{cmd}'s sid will be set to {sid}")
+                set_img_sid(ctx.bot.db_connection,
+                            cmd, chosen_key, sid)
+            chosen_path = f"pictures/{cmd}/{chosen_key}"
+        chosen_url = util.url_from_s3_key(
+            ctx.bot.s3_bucket, ctx.bot.s3_bucket_location, chosen_path,
+            improve=True)
+        logging.info(
+            f"Sending {is_rand} url in user_image_command func: {chosen_url}")
+        image_embed = await generate_slash_image_embed(ctx, chosen_url, command_name, embed_title)
+        await ctx.send(embed=image_embed)
+
+    async def list_reactions(self, ctx):
+
+        def generate_components(disabled=False):
+            buttons = [
+                create_button(
+                    style=ButtonStyle(2),
+                    label="◄",
+                    disabled=disabled
+                ),
+                create_button(
+                    style=ButtonStyle(1),
+                    label="►",
+                    disabled=disabled
+                ),
+            ]
+            return create_actionrow(*buttons)
+
+        def generate_embed(current_page, page_count, timedout=False):
+            image_embed_dict = {
+                "author": {"name": "Makubot commands",
+                           "icon_url": str(ctx.me.avatar_url)
+                           },
+                "fields": [
+                    {
+                        "name": f"Page {current_page + 1} of {page_count}",
+                        "value": text_blocks[current_page],
+                        "inline": False
+                    }
+                ],
+                "footer": {"text": "Timed out - type /list again to restart."} if timedout
+                else {"text": f"Showing {block_size} results per page. This embed will time out after 30 seconds of inactivity."},
+            }
+            return discord.Embed.from_dict(image_embed_dict)
+
+        all_cmds = sorted(get_all_cmds_aliases_from_db(self.bot.db_connection))
+        block_size = 50
+        text_blocks = []
+        page_count = math.ceil(len(all_cmds) / block_size)
+        current_page = 0
+        if page_count == 0:
+            page_count = 1
+        for i in range(page_count):
+            text_blocks.append(
+                ", ".join(all_cmds[i * block_size:(i + 1) * block_size])
+            )
+        actionrow = generate_components()
+        timed_message = await ctx.send(embed=generate_embed(0, page_count), components=[actionrow])
+        while True:
+            try:
+                button_ctx: ComponentContext = await wait_for_component(self.bot, components=actionrow, timeout=30)
+            except asyncio.TimeoutError:
+                await timed_message.edit(embed=generate_embed(current_page, page_count, True), components=[generate_components(disabled=True)])
+                return
+            else:
+                if button_ctx.custom_id == actionrow['components'][1]['custom_id']:
+                    if page_count > current_page + 1:
+                        current_page += 1
+                elif button_ctx.custom_id == actionrow['components'][0]['custom_id']:
+                    if current_page > 0:
+                        current_page -= 1
+                await button_ctx.edit_origin(embed=generate_embed(current_page, page_count))
+
+    async def top_ten_cmds(self, ctx, is_old_invoke=False):
+        command_sizes = get_cmd_sizes(self.bot.db_connection)
+        commands_sorted = sorted(
+            command_sizes.keys(),
+            key=lambda command: command_sizes[command],
+            reverse=True
+        )
+        top_ten_commands = commands_sorted[:10]
+        embed_dict = {
+            "title": "Top 10 Commands",
+            "description": f"{top_ten_commands[0]} is currently in the lead with {command_sizes[top_ten_commands[0]]} images!",
+            "fields": [
+                {
+                    "name": f"\u200b",
+                    "value": f"".join(f"\u2022 {top_ten_commands.index(command) + 1}: {command} ({command_sizes[command]} images)\n" for command in top_ten_commands),
+                    "inline": False
+                }
+            ],
+            "footer": {"text": "Psst - bot prefixes are deprecated! Type `/slashhelp` in chat to find out more, or type `/mb` to try again!"} if is_old_invoke else {"text": "\u200b"}
+        }
+        embed = discord.Embed.from_dict(embed_dict)
+        await ctx.send(embed=embed)
+
+    async def return_cmd_size(self, ctx, cmd):
+        """Tells you how many images are in a command"""
+        real_cmd = get_cmd_from_alias(self.bot.db_connection, cmd)
+        if not real_cmd:
+            await ctx.send(f"{cmd} isn't an image command :o")
+            return
+        cmd_sizes = get_cmd_sizes(self.bot.db_connection)
+        cmd_size = cmd_sizes[real_cmd]
+        image_plurality = "image" if cmd_size == 1 else "images"
+        base_size_msg = f"{cmd} has {cmd_size} {image_plurality}!"
+        if not ctx.guild:
+            await ctx.send(base_size_msg)
+            return
+        uid = ctx.author.id
+        user_sids = get_user_sids(self.bot, uid)
+        sid = ctx.guild.id
+        cmd_size_server, cmd_size_user = get_cmd_size_server_user(
+            self.bot.db_connection, real_cmd, uid, sid, user_sids)
+        server_size_msg = (
+            f"Anyone on the server can pull {cmd_size_server} of them!")
+        user_size_msg = (
+            f"You can personally pull {cmd_size_user} of them here!")
+        if cmd_size == cmd_size_server:
+            await ctx.send(base_size_msg)
+        elif cmd_size_server == cmd_size_user:
+            await ctx.send(f"{base_size_msg} {server_size_msg}")
+        else:
+            await ctx.send(
+                f"{base_size_msg} {server_size_msg} {user_size_msg}")
+
+    __super_utils_options = [
+        create_option(
+            name="image_util",
+            description="Pick an option...",
+            option_type=3,
+            required=True,
+            choices=[
+                create_choice(
+                        value="add",
+                        name="Add image to..."
+                ),
+                create_choice(
+                    value="howbig",
+                    name="How big is..."
+                ),
+                create_choice(
+                    value="blacklist",
+                    name="Blacklist image..."
+                ),
+                create_choice(
+                    value="listcommands",
+                    name="What commands are available?"
+                ),
+                create_choice(
+                    value="top10",
+                    name="What are the top 10 commands?"
+                ),
+                create_choice(
+                    value="mycommands",
+                    name="What are my commands?"
+                )
+            ]
+        ),
+        create_option(
+            name="input_args",
+            description="What command do you want to modify or see information about?",
+            option_type=3,
+            required=False
+        )
+    ]
+
+    @cog_ext.cog_slash(name="mb", description="Modify or see information about my commands!", options=__super_utils_options, guild_ids=[669939748529504267])
+    async def super_image_utils(self, ctx, image_util: str, input_args: Optional[str] = None):
+        async def my_commands(ctx):
+            cmds = get_all_user_cmds(self.bot.db_connection, ctx.author_id)
+            if not cmds:
+                await ctx.send("You don't have any commands!", hidden=True)
+                return
+            embed = discord.Embed(
+                title=f"{ctx.author}'s Commands",
+                description="\n".join(cmds),
+                color=discord.Color.blue()
+            )
+            await ctx.send(embed=embed, hidden=True)
+        if image_util == "add":
+            await util.err_not_implemented(ctx)
+        elif image_util == "howbig":
+            syntax = "`/mb howbig [command]`"
+            if not input_args:
+                embed = discord.Embed(
+                    title="Oops!",
+                    description="You didn't specify a command!",
+                    color=discord.Color.dark_red()
+                )
+                embed.set_footer(
+                    text=f"*Remember to click the optional field \"input_args\" in the command prompt!*")
+                await ctx.send(embed=embed, hidden=True)
+                return
+            else:
+                command_name = await self.sanitize_command_name(input_args.split(" ", 1)[0])
+                command_name = input_args.split(" ", 1)[0]
+                cmd = get_cmd_from_alias(ctx.bot.db_connection, command_name)
+                if not cmd:
+                    await self.image_command_error(ctx, command_name, syntax)
+                    return
+                else:
+                    await self.return_cmd_size(ctx, command_name)
+        elif image_util == "blacklist":
+            await util.err_not_implemented(ctx)
+        elif image_util == "top10":
+            await self.top_ten_cmds(ctx)
+        elif image_util == "mycommands":
+            await my_commands(ctx)
+        elif image_util == "listcommands":
+            await self.list_reactions(ctx)
+
     @commands.command(aliases=["yo", "hey", "makubot"])
     async def randomimage(self, ctx):
         """Get a totally random image!"""
@@ -569,34 +858,7 @@ class ReactionImages(discord.ext.commands.Cog):
 
     @commands.command()
     async def howbig(self, ctx, cmd):
-        """Tells you how many images are in a command"""
-        real_cmd = get_cmd_from_alias(self.bot.db_connection, cmd)
-        if not real_cmd:
-            await ctx.send(f"{cmd} isn't an image command :o")
-            return
-        cmd_sizes = get_cmd_sizes(self.bot.db_connection)
-        cmd_size = cmd_sizes[real_cmd]
-        image_plurality = "image" if cmd_size == 1 else "images"
-        base_size_msg = f"{cmd} has {cmd_size} {image_plurality}!"
-        if not ctx.guild:
-            await ctx.send(base_size_msg)
-            return
-        uid = ctx.author.id
-        user_sids = get_user_sids(self.bot, uid)
-        sid = ctx.guild.id
-        cmd_size_server, cmd_size_user = get_cmd_size_server_user(
-            self.bot.db_connection, real_cmd, uid, sid, user_sids)
-        server_size_msg = (
-            f"Anyone on the server can pull {cmd_size_server} of them!")
-        user_size_msg = (
-            f"You can personally pull {cmd_size_user} of them here!")
-        if cmd_size == cmd_size_server:
-            await ctx.send(base_size_msg)
-        elif cmd_size_server == cmd_size_user:
-            await ctx.send(f"{base_size_msg} {server_size_msg}")
-        else:
-            await ctx.send(
-                f"{base_size_msg} {server_size_msg} {user_size_msg}")
+        await self.return_cmd_size(ctx, cmd)
 
     @commands.is_owner()
     @commands.command()
@@ -697,17 +959,7 @@ class ReactionImages(discord.ext.commands.Cog):
     @commands.command(aliases=["topten"])
     async def bigten(self, ctx):
         """List my ten biggest image commands!"""
-        command_sizes = get_cmd_sizes(self.bot.db_connection)
-        commands_sorted = sorted(
-            command_sizes.keys(),
-            key=lambda command: command_sizes[command],
-            reverse=True
-        )
-        top_ten_commands = commands_sorted[:10]
-        message = "\n".join([
-            f"{command}: {command_sizes[command]}"
-            for command in top_ten_commands])
-        await ctx.send(message)
+        await self.top_ten_cmds(ctx, is_old_invoke=True)
 
     @commands.command(hidden=True, aliases=["getcmdinfo"])
     async def get_cmd_info(self, ctx, cmd):

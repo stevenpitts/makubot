@@ -263,3 +263,21 @@ async def displaytxt(
                 pass
             await block_message.edit(content=r"```Closed.```")
             current_index = None
+
+async def err_not_implemented(ctx):
+    embed = discord.Embed(
+        title="Sorry!",
+        description=(f"This command or feature hasn't been implemented yet! "
+            f"Why not DM `queen tired#1745` and harass her about it?"
+            f"\n\n"
+            f"Make sure to include this text: "
+            f"```{ctx.data}```\n\n"
+            f"You can use the regular, prefixed version of this command "
+            f"until it's added.",
+        )
+        color=discord.Color.red()
+    )
+    embed.set_footer(text="Please be nice! She's the only one migrating me " + \
+                    "to slash commands!"
+    )
+    await ctx.send(embed=embed, hidden=True)
