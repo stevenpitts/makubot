@@ -690,7 +690,7 @@ class ReactionImages(discord.ext.commands.Cog):
     ]
 
     @cog_ext.cog_slash(name="mb", description="Modify or see information about my commands!", options=__super_utils_options, guild_ids=[669939748529504267])
-    async def super_image_utils(self, ctx, image_util: str, input_args: str = None):
+    async def super_image_utils(self, ctx, image_util: str, input_args: Optional[str] = None):
         async def my_commands(ctx):
             cmds = get_all_user_cmds(self.bot.db_connection, ctx.author_id)
             if not cmds:
