@@ -464,6 +464,8 @@ class ReactionImages(discord.ext.commands.Cog):
             self.bot.db_connection)
         most_similar = process.extractOne(
             user_input, all_invocations)
+        # There will always be at least one positive-scoring invocation
+        assert most_similar is not None
         # For some reason, I have to add these manually or else they don't show up
         embed.add_field(name="Syntax", value=f"```{syntax}```", inline=False)
         most_similar_score, most_similar_invocation = most_similar
