@@ -18,6 +18,7 @@ from discord_slash.utils.manage_components import create_button, create_actionro
 from discord_slash.model import ButtonStyle
 from discord_slash.utils.manage_commands import create_option, create_choice
 from fuzzywuzzy import process
+from typing import Optional
 from . import util
 from .picturecommands_utils import (
     YES_EMOJI,
