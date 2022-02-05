@@ -11,5 +11,4 @@ psycopg2
 psutil
 discordhealthcheck
 discord-py-interactions==3.0.2 # They keep rewriting their codebase and I'm sick of it
-python-Levenshtein
-fuzzywuzzy
+fuzzywuzzy[speedup]
