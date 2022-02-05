@@ -458,7 +458,7 @@ class ReactionImages(discord.ext.commands.Cog):
         embed = discord.Embed(
             title="Uh oh!",
             description=f"I had trouble understanding that. `{user_input.capitalize()}` doesn't seem to be a command...",
-            color=discord.Color.dark_red()
+            color=discord.Color.dark_red(),
         )
         all_invocations = get_all_cmds_aliases_from_db(
             self.bot.db_connection)
