@@ -274,7 +274,7 @@ async def err_not_implemented(ctx):
             f"```{ctx.data}```\n\n"
             f"You can use the regular, prefixed version of this command "
             f"until it's added.",
-        )
+        ),
         color=discord.Color.red()
     )
     embed.set_footer(text="Please be nice! She's the only one migrating me " + \
