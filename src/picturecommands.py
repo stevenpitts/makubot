@@ -466,10 +466,10 @@ class ReactionImages(discord.ext.commands.Cog):
             user_input, all_invocations)
         # For some reason, I have to add these manually or else they don't show up
         embed.add_field(name="Syntax", value=f"```{syntax}```", inline=False)
+        most_similar_score, most_similar_invocation = most_similar
         embed.set_footer(
-            text=f"Psst... I'm {most_similar[1]}% sure you meant `{most_similar[0]}`.")
+            text=f"Psst... I'm {most_similar_score}% sure you meant `{most_similar_invocation}`.")
         await ctx.send(hidden=True, embed=embed)
-        return
 
     async def sanitize_command_name(self, command_name: str):
         return re.sub(r"[^a-zA-Z0-9]", "", command_name.lower())
