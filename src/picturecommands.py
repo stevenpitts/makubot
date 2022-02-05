@@ -469,7 +469,7 @@ class ReactionImages(discord.ext.commands.Cog):
         assert most_similar is not None
         # For some reason, I have to add these manually or else they don't show up
         embed.add_field(name="Syntax", value=f"```{syntax}```", inline=False)
-        most_similar_score, most_similar_invocation = most_similar
+        most_similar_invocation, most_similar_score = most_similar
         embed.set_footer(
             text=f"Psst... I'm {most_similar_score}% sure you meant `{most_similar_invocation}`.")
         await ctx.send(hidden=True, embed=embed)
