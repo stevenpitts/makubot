@@ -634,9 +634,9 @@ def get_appropriate_images(
     return [result["image_key"] for result in results]
 
 
-def add_blacklist_association(db_connection, cmd, image_key, uid):
+def add_denylist_association(db_connection, cmd, image_key, uid):
     uid = as_text(uid)
-    logger.info(f"Adding blacklist for {cmd=}, {image_key=}, {uid=}.")
+    logger.info(f"Adding denylist for {cmd=}, {image_key=}, {uid=}.")
     cursor = db_connection.cursor(cursor_factory=RealDictCursor)
     cursor.execute(
         """
@@ -651,9 +651,9 @@ def add_blacklist_association(db_connection, cmd, image_key, uid):
     db_connection.commit()
 
 
-def remove_blacklist_association(db_connection, cmd, image_key, uid):
+def remove_denylist_association(db_connection, cmd, image_key, uid):
     uid = as_text(uid)
-    logger.info(f"Removing blacklist for {cmd=}, {image_key=}, {uid=}.")
+    logger.info(f"Removing denylist for {cmd=}, {image_key=}, {uid=}.")
     cursor = db_connection.cursor(cursor_factory=RealDictCursor)
     cursor.execute(
         """
@@ -667,7 +667,7 @@ def remove_blacklist_association(db_connection, cmd, image_key, uid):
     db_connection.commit()
 
 
-def get_user_blacklist(db_connection, uid):
+def get_user_denylist(db_connection, uid):
     uid = as_text(uid)
     cursor = db_connection.cursor(cursor_factory=RealDictCursor)
     cursor.execute(

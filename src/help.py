@@ -23,7 +23,7 @@ SHOWOFF_COMMANDS = [
     "remindme",
     "wiki",
     "youtube",
-    "imageblacklist",
+    "imagedenylist",
 ]
 MINOR_SHOWOFF_COMMANDS = [
     "emojispam",

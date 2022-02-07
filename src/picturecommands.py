@@ -57,9 +57,9 @@ from .picturecommands_utils import (
     get_all_user_images,
     get_cmd_aliases_from_db,
     get_cmd_size_server_user,
-    add_blacklist_association,
-    get_user_blacklist,
-    remove_blacklist_association,
+    add_denylist_association,
+    get_user_denylist,
+    remove_denylist_association,
 )
 
 logger = logging.getLogger()
@@ -665,8 +665,8 @@ class ReactionImages(discord.ext.commands.Cog):
                     name="How big is..."
                 ),
                 create_choice(
-                    value="blacklist",
-                    name="Blacklist image..."
+                    value="denylist",
+                    name="Block image..."
                 ),
                 create_choice(
                     value="listcommands",
@@ -726,7 +726,7 @@ class ReactionImages(discord.ext.commands.Cog):
                     return
                 else:
                     await self.return_cmd_size(ctx, command_name)
-        elif image_util == "blacklist":
+        elif image_util == "denylist":
             await util.err_not_implemented(ctx)
         elif image_util == "top10":
             await self.top_ten_cmds(ctx)
@@ -1057,30 +1057,30 @@ class ReactionImages(discord.ext.commands.Cog):
         await util.displaytxt(
             ctx, image_urls_str, separator="\n", max_separators=max_separators)
 
-    @commands.group(aliases=["imgbl", "imgblacklist", "imagebl"])
-    async def imageblacklist(self, ctx):
+    @commands.group(aliases=["imgbl", "imgdenylist", "imagebl"])
+    async def imagedenylist(self, ctx):
         """
-        See, add to, or remove from your blacklisted images!
-        mb.imageblacklist
-        mb.imageblacklist add imagecommand/image01.png
-        mb.imageblacklist remove imagecommand/image01.png
+        See, add to, or remove from your blocked images!
+        mb.imagedenylist
+        mb.imagedenylist add imagecommand/image01.png
+        mb.imagedenylist remove imagecommand/image01.png
         """
         if ctx.invoked_subcommand is not None:
             return
-        cmd_image_pairs = get_user_blacklist(
+        cmd_image_pairs = get_user_denylist(
             self.bot.db_connection, ctx.author.id)
         if not cmd_image_pairs:
-            await ctx.send("Looks like you haven't blacklisted any images!")
+            await ctx.send("Looks like you haven't blocked any images!")
             return
         cmd_image_pairs_text = ", ".join([
             f"{cmd}/{image_key}" for cmd, image_key in cmd_image_pairs])
-        await ctx.send(f"Your blacklisted images: {cmd_image_pairs_text}")
+        await ctx.send(f"Your blocked images: {cmd_image_pairs_text}")
 
-    @imageblacklist.command()
+    @imagedenylist.command()
     async def add(self, ctx, cmd_and_key: str):
         """
         Add an image to a list of images that you don't want to see
-        mb.imageblacklist add imagecommand/image01.png
+        mb.imagedenylist add imagecommand/image01.png
         """
         uid = ctx.author.id
         try:
@@ -1096,14 +1096,14 @@ class ReactionImages(discord.ext.commands.Cog):
         if not image_exists_in_cmd(self.bot.db_connection, image_key, cmd):
             await ctx.send("I can't find that image :?")
             return
-        add_blacklist_association(self.bot.db_connection, cmd, image_key, uid)
+        add_denylist_association(self.bot.db_connection, cmd, image_key, uid)
         await ctx.send("Done!")
 
-    @imageblacklist.command()
+    @imagedenylist.command()
     async def remove(self, ctx, cmd_and_key: str):
         """
-        Undo a mb.imageblacklist add command
-        mb.imageblacklist remove imagecommand/image01.png
+        Undo a mb.imagedenylist add command
+        mb.imagedenylist remove imagecommand/image01.png
         """
         uid = ctx.author.id
         try:
@@ -1119,17 +1119,17 @@ class ReactionImages(discord.ext.commands.Cog):
         if not image_exists_in_cmd(self.bot.db_connection, image_key, cmd):
             await ctx.send("I can't find that image :?")
             return
-        remove_blacklist_association(
+        remove_denylist_association(
             self.bot.db_connection, cmd, image_key, uid)
         await ctx.send("Sure!")
 
     @commands.command(hidden=True)
     async def nolike(self, ctx, cmd_and_key: str):
-        await self.add_to_blacklist(ctx, cmd_and_key)
+        await self.add_to_denylist(ctx, cmd_and_key)
 
     @commands.command(hidden=True)
     async def relike(self, ctx, cmd_and_key: str):
-        await self.remove_from_blacklist(ctx, cmd_and_key)
+        await self.remove_from_denylist(ctx, cmd_and_key)
 
 
 def setup(bot):
