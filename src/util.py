@@ -18,6 +18,10 @@ logger = logging.getLogger()
 
 S3 = boto3.client("s3")
 
+LEFT_CURLY_BRACKET = "\u007B"
+RIGHT_CURLY_BRACKET = "\u007D"
+NO_WIDTH_SPACE = "\u200B"
+BULLET_POINT = "\u2022"
 
 def improve_url(url):
     return url.replace(" ", "+")
