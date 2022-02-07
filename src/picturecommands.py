@@ -474,9 +474,6 @@ class ReactionImages(discord.ext.commands.Cog):
             text=f"Psst... I'm {most_similar_score}% sure you meant `{most_similar_invocation}`.")
         await ctx.send(hidden=True, embed=embed)
 
-    async def sanitize_command_name(self, command_name: str):
-        return re.sub(r"[^a-zA-Z0-9]", "", command_name.lower())
-
     @cog_ext.cog_slash(name="img", description="Pull from hundreds of community-driven image commands or just type 'hey' for a random one!")
     async def user_image_command(self, ctx, command, text=None):
         input_args = command.split(" ", 1)
@@ -491,7 +488,7 @@ class ReactionImages(discord.ext.commands.Cog):
                 embed_title = "Hey Makubot!"
         else:
             is_rand = "nonrandom"
-            command_name = await self.sanitize_command_name(input_args[0])
+            command_name = input_args[0]
             cmd = get_cmd_from_alias(ctx.bot.db_connection, command_name)
             if not cmd:
                 syntax = f"/img {util.LEFT_CURLY_BRACKET}command_name{util.RIGHT_CURLY_BRACKET} [optional text]"
@@ -718,7 +715,6 @@ class ReactionImages(discord.ext.commands.Cog):
                 await ctx.send(embed=embed, hidden=True)
                 return
             else:
-                command_name = await self.sanitize_command_name(input_args.split(" ", 1)[0])
                 command_name = input_args.split(" ", 1)[0]
                 cmd = get_cmd_from_alias(ctx.bot.db_connection, command_name)
                 if not cmd:
