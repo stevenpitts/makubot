@@ -474,32 +474,31 @@ class ReactionImages(discord.ext.commands.Cog):
             text=f"Psst... I'm {most_similar_score}% sure you meant `{most_similar_invocation}`.")
         await ctx.send(hidden=True, embed=embed)
 
-    async def sanitize_command_name(self, command_name: str):
-        return re.sub(r"[^a-zA-Z0-9]", "", command_name.lower())
-
     @cog_ext.cog_slash(name="img", description="Pull from hundreds of community-driven image commands or just type 'hey' for a random one!")
     async def user_image_command(self, ctx, command, text=None):
         input_args = command.split(" ", 1)
-        # Random image command
-        if input_args[0].lower() in ["yo", "hey", "makubot"]:
-            is_rand = "random"
+        command_name = input_args[0].lower()
+        is_rand = True if command_name in ["yo", "hey", "makubot"] else False
+        txt_from_cmd = input_args[1] if len(input_args) > 1 else None
+        if txt_from_cmd and text:
+            embed_title = f"{txt_from_cmd} {text}"
+        elif not txt_from_cmd and not text:
+            embed_title = None
+        else:
+            embed_title = txt_from_cmd or text
+        if is_rand:
             command_name = "Makubot"
             chosen_path = get_random_image(self.bot.db_connection)
-            if len(input_args) == 2:
-                embed_title = input_args[1]
-            else:
+            if not embed_title:
                 embed_title = "Hey Makubot!"
         else:
-            is_rand = "nonrandom"
-            command_name = await self.sanitize_command_name(input_args[0])
+            command_name = input_args[0]
             cmd = get_cmd_from_alias(ctx.bot.db_connection, command_name)
             if not cmd:
                 syntax = f"/img {util.LEFT_CURLY_BRACKET}command_name{util.RIGHT_CURLY_BRACKET} [optional text]"
                 await self.image_command_error(ctx, command_name, syntax)
                 return
-            if len(input_args) == 2:
-                embed_title = input_args[1]
-            else:
+            if not embed_title:
                 embed_title = f"{ctx.author.display_name} used {command_name}!"
             # Handle user/server command associations
             uid = ctx.author.id
@@ -530,7 +529,7 @@ class ReactionImages(discord.ext.commands.Cog):
             ctx.bot.s3_bucket, ctx.bot.s3_bucket_location, chosen_path,
             improve=True)
         logging.info(
-            f"Sending {is_rand} url in user_image_command func: {chosen_url}")
+            f"Sending RAND={is_rand} url in user_image_command func: {chosen_url}")
         image_embed = await generate_slash_image_embed(ctx, chosen_url, command_name, embed_title)
         await ctx.send(embed=image_embed)
 
@@ -718,7 +717,6 @@ class ReactionImages(discord.ext.commands.Cog):
                 await ctx.send(embed=embed, hidden=True)
                 return
             else:
-                command_name = await self.sanitize_command_name(input_args.split(" ", 1)[0])
                 command_name = input_args.split(" ", 1)[0]
                 cmd = get_cmd_from_alias(ctx.bot.db_connection, command_name)
                 if not cmd:
