@@ -494,7 +494,7 @@ class ReactionImages(discord.ext.commands.Cog):
             command_name = await self.sanitize_command_name(input_args[0])
             cmd = get_cmd_from_alias(ctx.bot.db_connection, command_name)
             if not cmd:
-                syntax = f"/img \u007Bcommand_name\u007D [optional text]"
+                syntax = f"/img {util.LEFT_CURLY_BRACKET}command_name{util.RIGHT_CURLY_BRACKET} [optional text]"
                 await self.image_command_error(ctx, command_name, syntax)
                 return
             if len(input_args) == 2:
@@ -609,12 +609,12 @@ class ReactionImages(discord.ext.commands.Cog):
             "description": f"{top_ten_commands[0]} is currently in the lead with {command_sizes[top_ten_commands[0]]} images!",
             "fields": [
                 {
-                    "name": f"\u200b",
-                    "value": f"".join(f"\u2022 {top_ten_commands.index(command) + 1}: {command} ({command_sizes[command]} images)\n" for command in top_ten_commands),
+                    "name": util.NO_WIDTH_SPACE,
+                    "value": f"".join(f"{util.BULLET_POINT} {top_ten_commands.index(command) + 1}: {command} ({command_sizes[command]} images)\n" for command in top_ten_commands),
                     "inline": False
                 }
             ],
-            "footer": {"text": "Psst - bot prefixes are deprecated! Type `/slashhelp` in chat to find out more, or type `/mb` to try again!"} if is_old_invoke else {"text": "\u200b"}
+            "footer": {"text": "Psst - bot prefixes are deprecated! Type `/slashhelp` in chat to find out more, or type `/mb` to try again!"} if is_old_invoke else {"text": util.NO_WIDTH_SPACE}
         }
         embed = discord.Embed.from_dict(embed_dict)
         await ctx.send(embed=embed)
