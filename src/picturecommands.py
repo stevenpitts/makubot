@@ -477,9 +477,10 @@ class ReactionImages(discord.ext.commands.Cog):
     @cog_ext.cog_slash(name="img", description="Pull from hundreds of community-driven image commands or just type 'hey' for a random one!")
     async def user_image_command(self, ctx, command, text=None):
         input_args = command.split(" ", 1)
+
         # Random image command
         if input_args[0].lower() in ["yo", "hey", "makubot"]:
-            is_rand = "random"
+            is_rand = True
             command_name = "Makubot"
             chosen_path = get_random_image(self.bot.db_connection)
             if len(input_args) == 2:
@@ -487,7 +488,7 @@ class ReactionImages(discord.ext.commands.Cog):
             else:
                 embed_title = "Hey Makubot!"
         else:
-            is_rand = "nonrandom"
+            is_rand = False
             command_name = input_args[0]
             cmd = get_cmd_from_alias(ctx.bot.db_connection, command_name)
             if not cmd:
@@ -527,7 +528,7 @@ class ReactionImages(discord.ext.commands.Cog):
             ctx.bot.s3_bucket, ctx.bot.s3_bucket_location, chosen_path,
             improve=True)
         logging.info(
-            f"Sending {is_rand} url in user_image_command func: {chosen_url}")
+            f"Sending RAND={is_rand} url in user_image_command func: {chosen_url}")
         image_embed = await generate_slash_image_embed(ctx, chosen_url, command_name, embed_title)
         await ctx.send(embed=image_embed)
 
