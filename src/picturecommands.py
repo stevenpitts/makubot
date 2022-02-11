@@ -17,7 +17,7 @@ from discord_slash import cog_ext
 from discord_slash.utils.manage_components import create_button, create_actionrow, wait_for_component
 from discord_slash.model import ButtonStyle
 from discord_slash.utils.manage_commands import create_option, create_choice
-from fuzzywuzzy import process
+from thefuzz import process
 from typing import Optional
 from . import util
 from .picturecommands_utils import (
