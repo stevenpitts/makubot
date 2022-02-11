@@ -857,6 +857,7 @@ class ReactionImages(discord.ext.commands.Cog):
 
     @commands.command()
     async def howbig(self, ctx, cmd):
+        """Shows how many images are in a command!"""
         await self.return_cmd_size(ctx, cmd)
 
     @commands.is_owner()
