@@ -46,12 +46,14 @@ class MakuBot(commands.Bot):
                  db_port=None,
                  db_user=None,
                  db_name=None,
+                 bot_owner=None,
+                 bot_devs=None,
                  ):
         commands.Bot.__init__(
             self,
             command_prefix=commands.when_mentioned,
             case_insensitive=True,
-            owner_id=203285581004931072,
+            owner_id=bot_owner,
             allowed_mentions=discord.AllowedMentions(
                 everyone=False,
                 roles=False,
@@ -65,6 +67,8 @@ class MakuBot(commands.Bot):
         logger.info("Bot entering setup")
         self.s3_bucket = s3_bucket
         self.makusu = None
+        self.dev_ids = []
+        self.dev_ids = bot_devs
         self.shared = {}
         self.temp_dir_pointer = tempfile.TemporaryDirectory()
         self.shared["temp_dir"] = Path(self.temp_dir_pointer.name)
@@ -135,7 +139,8 @@ class MakuBot(commands.Bot):
         self.makusu = await self.fetch_user(self.owner_id)
         logger.info(
             f"\n\n\nLogged in at {datetime.now()} as {self.user.name} "
-            f"with ID {self.user.id}\n\n\n"
+            f"with ID {self.user.id}\n"
+            f"Sending errors to owner {self.owner_id} and devs {self.dev_ids}\n\n\n"
         )
         await self.change_presence(activity=discord.Game(
             name=r"Nao is being tsun to me :<"))

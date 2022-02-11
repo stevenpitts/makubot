@@ -13,6 +13,8 @@ def main():
         db_port=os.environ["PGPORT"],
         db_user=os.environ["PGUSER"],
         db_name=os.environ["PGNAME"],
+        bot_owner=os.environ.get("OWNER", 203285581004931072),
+        bot_devs=[int(id) for id in os.environ.get("DEVELOPERS", "766337842031886336").split(",")],
     )
 
     makubot_bot.run(token)
