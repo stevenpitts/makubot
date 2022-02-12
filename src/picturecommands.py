@@ -238,9 +238,10 @@ class PictureAdder(discord.ext.commands.Cog):
                 await status_message.edit(content=response)
             except discord.errors.NotFound:
                 pass
-            await self.bot.makusu.send(
-                "Something went wrong in image_suggestion"
-                f"\n```{formatted_tb}```")
+            await util.alert_devs(self.bot,
+                "Something went wrong in image_suggestion",
+                f"\n```{formatted_tb}```",
+                alert_owner=True)
 
     async def apply_image_approved(
             self, filepath, cmd, requestor, status_message, image_bytes):
@@ -395,8 +396,9 @@ you just need to add an image to it!"""
             except BaseException as e:
                 formatted_tb = util.get_formatted_traceback(e)
                 await status_message.edit(content="Something went wrong ;a;")
-                await self.bot.makusu.send(
-                    f"Something went wrong in addimage\n```{formatted_tb}```")
+                await util.alert_devs(self.bot,
+                    f"Something went wrong in addimage\n```{formatted_tb}```",
+                    alert_owner=True)
                 raise
             else:
                 await status_message.edit(content="Sent to Maku for approval!")
