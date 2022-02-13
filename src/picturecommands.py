@@ -652,6 +652,38 @@ class ReactionImages(discord.ext.commands.Cog):
             await ctx.send(
                 f"{base_size_msg} {server_size_msg} {user_size_msg}")
 
+    async def how_big(self, ctx, input_args):
+        syntax = "`/mb howbig [command]`"
+        if not input_args:
+            embed = discord.Embed(
+                title="Oops!",
+                description="You didn't specify a command!",
+                color=discord.Color.dark_red()
+            )
+            embed.set_footer(
+                text=f"*Remember to click the optional field \"input_args\" in the command prompt!*")
+            await ctx.send(embed=embed, hidden=True)
+            return
+        else:
+            command_name = input_args.split(" ", 1)[0]
+            cmd = get_cmd_from_alias(ctx.bot.db_connection, command_name)
+            if not cmd:
+                await self.image_command_error(ctx, command_name, syntax)
+                return
+            else:
+                await self.return_cmd_size(ctx, command_name)
+
+    async def my_commands(self, ctx):
+        cmds = get_all_user_cmds(self.bot.db_connection, ctx.author_id)
+        if not cmds:
+            await ctx.send("You don't have any commands!", hidden=True)
+            return
+        embed = discord.Embed(
+            title=f"{ctx.author}'s Commands",
+            description="\n".join(cmds),
+            color=discord.Color.blue()
+        )
+        await ctx.send(embed=embed, hidden=True)
     __super_utils_options = [
         create_option(
             name="image_util",
@@ -695,45 +727,16 @@ class ReactionImages(discord.ext.commands.Cog):
 
     @cog_ext.cog_slash(name="mb", description="Modify or see information about my commands!", options=__super_utils_options, guild_ids=DEV_GUILDS)
     async def super_image_utils(self, ctx, image_util: str, input_args: Optional[str] = None):
-        async def my_commands(ctx):
-            cmds = get_all_user_cmds(self.bot.db_connection, ctx.author_id)
-            if not cmds:
-                await ctx.send("You don't have any commands!", hidden=True)
-                return
-            embed = discord.Embed(
-                title=f"{ctx.author}'s Commands",
-                description="\n".join(cmds),
-                color=discord.Color.blue()
-            )
-            await ctx.send(embed=embed, hidden=True)
         if image_util == "add":
             await util.err_not_implemented(ctx)
         elif image_util == "howbig":
-            syntax = "`/mb howbig [command]`"
-            if not input_args:
-                embed = discord.Embed(
-                    title="Oops!",
-                    description="You didn't specify a command!",
-                    color=discord.Color.dark_red()
-                )
-                embed.set_footer(
-                    text=f"*Remember to click the optional field \"input_args\" in the command prompt!*")
-                await ctx.send(embed=embed, hidden=True)
-                return
-            else:
-                command_name = input_args.split(" ", 1)[0]
-                cmd = get_cmd_from_alias(ctx.bot.db_connection, command_name)
-                if not cmd:
-                    await self.image_command_error(ctx, command_name, syntax)
-                    return
-                else:
-                    await self.return_cmd_size(ctx, command_name)
+            await self.how_big(ctx, input_args)
         elif image_util == "denylist":
             await util.err_not_implemented(ctx)
         elif image_util == "top10":
             await self.top_ten_cmds(ctx)
         elif image_util == "mycommands":
-            await my_commands(ctx)
+            await self.my_commands(ctx)
         elif image_util == "listcommands":
             await self.list_reactions(ctx)
 
