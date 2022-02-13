@@ -36,7 +36,6 @@ def get_intents():
     intents.members = False
     return intents
 
-
 class MakuBot(commands.Bot):
     def __init__(self,
                  s3_bucket=None,
@@ -99,7 +98,6 @@ class MakuBot(commands.Bot):
         self.db_user = db_user
         self.db_name = db_name
         self.loop.set_debug(True)
-
         logger.info(
             f"Attempting to connect to postgres database at {self.db_host} "
             f"on port {self.db_port} as user {self.db_user} "
@@ -140,7 +138,8 @@ class MakuBot(commands.Bot):
         logger.info(
             f"\n\n\nLogged in at {datetime.now()} as {self.user.name} "
             f"with ID {self.user.id}\n"
-            f"Sending errors to owner {self.owner_id} and devs {self.dev_ids}\n\n\n"
+            f"Sending errors to owner {self.owner_id} and devs {self.dev_ids}."
+            f"\nBeta access available in test servers {util.get_dev_guilds()}\n\n\n"
         )
         await self.change_presence(activity=discord.Game(
             name=r"Nao is being tsun to me :<"))

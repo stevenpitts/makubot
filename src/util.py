@@ -1,3 +1,4 @@
+from contextlib import suppress
 import traceback
 import logging
 from datetime import datetime
@@ -316,3 +317,13 @@ async def err_not_implemented(ctx, warn=True):
             "know that you want this worked on!"
         )
     await ctx.send(embed=embed, hidden=True)
+
+def get_dev_guilds():
+    envvar = os.environ.get("DEV_GUILDS")
+    if envvar is None or envvar == "":
+        return None
+    else:
+        dev_guilds = []
+        for id in envvar.split(" "):
+            dev_guilds.append(int(id))
+        return dev_guilds

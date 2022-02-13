@@ -62,6 +62,8 @@ from .picturecommands_utils import (
     remove_denylist_association,
 )
 
+DEV_GUILDS = util.get_dev_guilds()
+
 logger = logging.getLogger()
 
 S3 = boto3.client("s3")
@@ -691,7 +693,7 @@ class ReactionImages(discord.ext.commands.Cog):
         )
     ]
 
-    @cog_ext.cog_slash(name="mb", description="Modify or see information about my commands!", options=__super_utils_options, guild_ids=[669939748529504267])
+    @cog_ext.cog_slash(name="mb", description="Modify or see information about my commands!", options=__super_utils_options, guild_ids=DEV_GUILDS)
     async def super_image_utils(self, ctx, image_util: str, input_args: Optional[str] = None):
         async def my_commands(ctx):
             cmds = get_all_user_cmds(self.bot.db_connection, ctx.author_id)
