@@ -684,6 +684,58 @@ class ReactionImages(discord.ext.commands.Cog):
             color=discord.Color.blue()
         )
         await ctx.send(embed=embed, hidden=True)
+    
+    async def add_image(self, ctx, input_args):
+        syntax = "/mb add [command] (I will send a message you can respond to with your image(s))"
+        if not input_args:
+            embed = discord.Embed(
+                title="Oops!",
+                description="You didn't specify a command!",
+                color=discord.Color.dark_red()
+            )
+            embed.add_field(name="Usage", value="Since you can't attach images to slash commands, " + \
+                                                "once I know what command you want to add to, " + \
+                                                "I'll post a message asking you to respond with " + \
+                                                "your image(s).")
+            embed.set_footer(
+                text=f"*Remember to click the optional field \"input_args\" in the command prompt!*")
+            await ctx.send(embed=embed, hidden=True)
+            return
+        else:
+            command_name = input_args.split(" ", 1)[0]
+            cmd = get_cmd_from_alias(ctx.bot.db_connection, command_name)
+            if not cmd:
+                await self.image_command_error(ctx, command_name, syntax)
+                return
+            else:
+                waiting_embed = discord.Embed(
+                    title="Waiting for Images...",
+                    description=f"I'm ready to add images to `{command_name}`! Reply to this message with your image(s)!",
+                    color=discord.Color.blue()
+                )
+                waiting_embed.set_image(url="https://thumbs.gfycat.com/ExcellentNeglectedLeech-size_restricted.gif")
+                waiting_embed.set_footer(text="Using `/mb add`")
+                waiting = await ctx.send(embed=waiting_embed)
+                try:
+                    response = await ctx.bot.wait_for("message", check=lambda m: m.author == ctx.author, timeout=5)
+                except asyncio.TimeoutError:
+                    waiting_embed = discord.Embed(
+                        title="Hey!",
+                        description=f"You took too long to respond, <@{ctx.author.id}>! "
+                                    f"Don't waste my time like that next time you want "
+                                    f"to add to `{command_name}`! 😡",
+                        color=discord.Color.dark_red()
+                    )
+                    waiting_embed.set_image(url="https://thumbs.gfycat.com/JoyousSilverHagfish-size_restricted.gif")
+                    waiting_embed.set_footer(text="Psst - you get 60 seconds starting from when I ask to repond with your image(s)!")
+                    await waiting.edit(embed=waiting_embed)
+                    return
+                else:
+                    if response.attachments:
+                        await util.err_not_implemented(ctx, warn=False)
+                    else:
+                        await response.reply("I'm sorry, I couldn't find any images in your message!")
+                        return
     __super_utils_options = [
         create_option(
             name="image_util",
@@ -728,7 +780,7 @@ class ReactionImages(discord.ext.commands.Cog):
     @cog_ext.cog_slash(name="mb", description="Modify or see information about my commands!", options=__super_utils_options, guild_ids=DEV_GUILDS)
     async def super_image_utils(self, ctx, image_util: str, input_args: Optional[str] = None):
         if image_util == "add":
-            await util.err_not_implemented(ctx)
+            await self.add_image(ctx, input_args)
         elif image_util == "howbig":
             await self.how_big(ctx, input_args)
         elif image_util == "denylist":
