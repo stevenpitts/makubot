@@ -289,7 +289,7 @@ async def get_visible_names(users):
         user_names.append(user.name+"#"+str(user.discriminator))
     return user_names
 
-async def err_not_implemented(ctx, warn=True):
+async def err_not_implemented(ctx, warn=True, is_hidden=True):
     bot = ctx.bot
     embed = discord.Embed(
         title="Sorry!",
@@ -316,7 +316,7 @@ async def err_not_implemented(ctx, warn=True):
             value=f"By the way - I let my (active) developer(s), {dev_name_string}, "
             "know that you want this worked on!"
         )
-    await ctx.send(embed=embed, hidden=True)
+    await ctx.send(embed=embed, hidden=is_hidden)
 
 def get_dev_guilds():
     envvar = os.environ.get("DEV_GUILDS")
@@ -327,3 +327,25 @@ def get_dev_guilds():
         for id in envvar.split(" "):
             dev_guilds.append(int(id))
         return dev_guilds
+
+def generate_angry_embed(title=NO_WIDTH_SPACE, description=NO_WIDTH_SPACE, footer_text=None):
+    embed = discord.Embed(
+        title=title,
+        description=description,
+        color=discord.Color.dark_red()
+    )
+    embed.set_image(url="https://thumbs.gfycat.com/JoyousSilverHagfish-size_restricted.gif")
+    if footer_text is not None:
+        embed.set_footer(text=footer_text)
+    return embed
+
+def generate_waiting_embed(title=NO_WIDTH_SPACE, description=NO_WIDTH_SPACE, footer_text=None):
+    embed = discord.Embed(
+        title=title,
+        description=description,
+        color=discord.Color.blue()
+    )
+    embed.set_image(url="https://thumbs.gfycat.com/ExcellentNeglectedLeech-size_restricted.gif")
+    if footer_text is not None:
+        embed.set_footer(text=footer_text)
+    return embed

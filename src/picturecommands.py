@@ -459,83 +459,59 @@ class ReactionImages(discord.ext.commands.Cog):
 
         self.sent_messages_image_urls = dict()
 
-    async def image_command_error(self, ctx, user_input, syntax):
+    # TODO: Move all of these to picturecommands_util.py or something
+    async def image_command_not_found(self, ctx, invalid_command, syntax, usage = None):
         embed = discord.Embed(
             title="Uh oh!",
-            description=f"I had trouble understanding that. `{user_input.capitalize()}` doesn't seem to be a command...",
+            description=f"I had trouble understanding that. `{invalid_command.capitalize()}` doesn't seem to be a command...",
             color=discord.Color.dark_red(),
         )
         all_invocations = get_all_cmds_aliases_from_db(
             self.bot.db_connection)
         most_similar = process.extractOne(
-            user_input, all_invocations)
-        # There will always be at least one positive-scoring invocation
-        assert most_similar is not None
-        # For some reason, I have to add these manually or else they don't show up
+            invalid_command, all_invocations)
+        if most_similar:
+            most_similar_invocation, most_similar_score = most_similar
+            embed.set_footer(
+                text=f"Psst... I'm {most_similar_score}% sure you meant `{most_similar_invocation}`.")
+        if usage:
+            embed.add_field(name="Usage", value=usage)
         embed.add_field(name="Syntax", value=f"```{syntax}```", inline=False)
-        most_similar_invocation, most_similar_score = most_similar
-        embed.set_footer(
-            text=f"Psst... I'm {most_similar_score}% sure you meant `{most_similar_invocation}`.")
         await ctx.send(hidden=True, embed=embed)
 
-    @cog_ext.cog_slash(name="img", description="Pull from hundreds of community-driven image commands or just type 'hey' for a random one!")
-    async def user_image_command(self, ctx, command, text=None):
-        input_args = command.split(" ", 1)
-        command_name = input_args[0].lower()
-        is_rand = True if command_name in ["yo", "hey", "makubot"] else False
-        txt_from_cmd = input_args[1] if len(input_args) > 1 else None
-        if txt_from_cmd and text:
-            embed_title = f"{txt_from_cmd} {text}"
-        elif not txt_from_cmd and not text:
-            embed_title = None
+    async def validate_image_command(self, ctx, command_name, syntax, usage = None):
+        if not command_name:
+            embed = discord.Embed(
+                title="Oops!",
+                description="You didn't specify a command!",
+                color=discord.Color.dark_red()
+            )
+            if usage:
+                embed.add_field(name="Usage", value=usage)
+            embed.set_footer(
+                text="Remember to click the optional field \"input_args\" in the command prompt!")
+            await ctx.send(embed=embed, hidden=True)
+            return None
         else:
-            embed_title = txt_from_cmd or text
-        if is_rand:
-            command_name = "Makubot"
-            chosen_path = get_random_image(self.bot.db_connection)
-            if not embed_title:
-                embed_title = "Hey Makubot!"
-        else:
-            command_name = input_args[0]
             cmd = get_cmd_from_alias(ctx.bot.db_connection, command_name)
             if not cmd:
-                syntax = f"/img {util.LEFT_CURLY_BRACKET}command_name{util.RIGHT_CURLY_BRACKET} [optional text]"
-                await self.image_command_error(ctx, command_name, syntax)
-                return
-            if not embed_title:
-                embed_title = f"{ctx.author.display_name} used {command_name}!"
-            # Handle user/server command associations
-            uid = ctx.author.id
-            try:
-                sid = ctx.guild.id
-            except AttributeError:
-                sid = None
-            cmd_uid = get_cmd_uid(ctx.bot.db_connection, cmd)
-            if cmd_uid == uid and sid:
-                add_server_command_association(
-                    ctx.bot.db_connection, sid, cmd)
-            user_sids = get_user_sids(ctx.bot, uid)
-            user_origin_server_intersection = get_user_origin_server_intersection(
-                ctx.bot.db_connection, user_sids, cmd)
-            candidate_images = get_appropriate_images(
-                ctx.bot.db_connection, cmd, uid, sid,
-                user_origin_server_intersection)
-            logger.info(f"From {cmd=}, {uid=}, {sid=}, "
-                        f"{user_origin_server_intersection=}, got "
-                        f"{candidate_images=}")
-            chosen_key = random.choice(candidate_images)
-            if img_sid_should_be_set(ctx.bot.db_connection, cmd, chosen_key, uid):
-                logger.info(f"{cmd}'s sid will be set to {sid}")
-                set_img_sid(ctx.bot.db_connection,
-                            cmd, chosen_key, sid)
-            chosen_path = f"pictures/{cmd}/{chosen_key}"
-        chosen_url = util.url_from_s3_key(
-            ctx.bot.s3_bucket, ctx.bot.s3_bucket_location, chosen_path,
-            improve=True)
-        logging.info(
-            f"Sending RAND={is_rand} url in user_image_command func: {chosen_url}")
-        image_embed = await generate_slash_image_embed(ctx, chosen_url, command_name, embed_title)
-        await ctx.send(embed=image_embed)
+                await self.image_command_not_found(ctx, command_name, syntax)
+                return None
+            else:
+                return cmd
+
+    def parse_img_command_input(self, user_input):
+        if not user_input:
+            return None, None
+        user_input = user_input.split(" ", 1)
+        command_name = user_input[0].lower()
+        if (command_name in ["yo", "hey", "makubot"]):
+            command_name = "makubot"
+        if len(user_input) > 1:
+            message_text = user_input[1]
+        else:
+            message_text = None
+        return command_name, message_text
 
     async def list_reactions(self, ctx):
 
@@ -668,7 +644,7 @@ class ReactionImages(discord.ext.commands.Cog):
             command_name = input_args.split(" ", 1)[0]
             cmd = get_cmd_from_alias(ctx.bot.db_connection, command_name)
             if not cmd:
-                await self.image_command_error(ctx, command_name, syntax)
+                await self.image_command_not_found(ctx, command_name, syntax)
                 return
             else:
                 await self.return_cmd_size(ctx, command_name)
@@ -686,57 +662,46 @@ class ReactionImages(discord.ext.commands.Cog):
         await ctx.send(embed=embed, hidden=True)
     
     async def add_image(self, ctx, input_args):
-        syntax = "/mb add [command] (I will send a message you can respond to with your image(s))"
-        if not input_args:
-            embed = discord.Embed(
-                title="Oops!",
-                description="You didn't specify a command!",
-                color=discord.Color.dark_red()
+        syntax = "/mb add [command]"
+        usage = "Since you can't attach images to slash commands, " + \
+                "once I know what command you want to add to, " + \
+                "I'll post a message asking you to respond with " + \
+                "your image(s)."
+        command_name = self.parse_img_command_input(input_args)[0]
+        validated_command = await self.validate_image_command(ctx, command_name, syntax, usage)
+        if not validated_command:
+            return
+        cmd = validated_command
+        waiting_embed = util.generate_waiting_embed(
+            title="Waiting for Images...",
+            description=f"I'm ready to add images to `{command_name}`! "
+                        f"Reply to this message with your image(s)!",
+            footer_text="Using `/mb addimage`"
+        )
+        prompt_message = await ctx.send(embed=waiting_embed)
+        try:
+            response = await ctx.bot.wait_for("message", check=lambda m: m.author == ctx.author, timeout=60)
+        except asyncio.TimeoutError:
+            angry_embed = util.generate_angry_embed(
+                title = "Hey!",
+                description=f"You took too long to respond, <@{ctx.author.id}>! "
+                            f"Don't waste my time like that next time you want "
+                            f"to add to `{command_name}`! 😡",
+                footer_text="Psst - you get 60 seconds starting from when " + \
+                            "I ask for your response!",
             )
-            embed.add_field(name="Usage", value="Since you can't attach images to slash commands, " + \
-                                                "once I know what command you want to add to, " + \
-                                                "I'll post a message asking you to respond with " + \
-                                                "your image(s).")
-            embed.set_footer(
-                text=f"*Remember to click the optional field \"input_args\" in the command prompt!*")
-            await ctx.send(embed=embed, hidden=True)
+            await prompt_message.edit(embed=angry_embed)
             return
         else:
-            command_name = input_args.split(" ", 1)[0]
-            cmd = get_cmd_from_alias(ctx.bot.db_connection, command_name)
-            if not cmd:
-                await self.image_command_error(ctx, command_name, syntax)
-                return
+            if response.attachments:
+                await util.err_not_implemented(ctx, warn=False, is_hidden=False)
             else:
-                waiting_embed = discord.Embed(
-                    title="Waiting for Images...",
-                    description=f"I'm ready to add images to `{command_name}`! Reply to this message with your image(s)!",
-                    color=discord.Color.blue()
-                )
-                waiting_embed.set_image(url="https://thumbs.gfycat.com/ExcellentNeglectedLeech-size_restricted.gif")
-                waiting_embed.set_footer(text="Using `/mb add`")
-                waiting = await ctx.send(embed=waiting_embed)
-                try:
-                    response = await ctx.bot.wait_for("message", check=lambda m: m.author == ctx.author, timeout=5)
-                except asyncio.TimeoutError:
-                    waiting_embed = discord.Embed(
-                        title="Hey!",
-                        description=f"You took too long to respond, <@{ctx.author.id}>! "
-                                    f"Don't waste my time like that next time you want "
-                                    f"to add to `{command_name}`! 😡",
-                        color=discord.Color.dark_red()
-                    )
-                    waiting_embed.set_image(url="https://thumbs.gfycat.com/JoyousSilverHagfish-size_restricted.gif")
-                    waiting_embed.set_footer(text="Psst - you get 60 seconds starting from when I ask to repond with your image(s)!")
-                    await waiting.edit(embed=waiting_embed)
-                    return
-                else:
-                    if response.attachments:
-                        await util.err_not_implemented(ctx, warn=False)
-                    else:
-                        await response.reply("I'm sorry, I couldn't find any images in your message!")
-                        return
-    __super_utils_options = [
+                await response.reply("You didn't respond with ay images! " + \
+                                    "I'm not sure what you want me to do! " + \
+                                    "🙄")
+                return
+
+    super_utils_options = [
         create_option(
             name="image_util",
             description="Pick an option...",
@@ -777,7 +742,7 @@ class ReactionImages(discord.ext.commands.Cog):
         )
     ]
 
-    @cog_ext.cog_slash(name="mb", description="Modify or see information about my commands!", options=__super_utils_options, guild_ids=DEV_GUILDS)
+    @cog_ext.cog_slash(name="mb", description="Modify or see information about my commands!", options=super_utils_options, guild_ids=DEV_GUILDS)
     async def super_image_utils(self, ctx, image_util: str, input_args: Optional[str] = None):
         if image_util == "add":
             await self.add_image(ctx, input_args)
@@ -791,6 +756,61 @@ class ReactionImages(discord.ext.commands.Cog):
             await self.my_commands(ctx)
         elif image_util == "listcommands":
             await self.list_reactions(ctx)
+
+    @cog_ext.cog_slash(name="img", description="Pull from hundreds of community-driven image commands or just type 'hey' for a random one!")
+    async def user_image_command(self, ctx, command, text=None):
+        command_name, txt_from_cmd = self.parse_img_command_input(command)
+        is_rand = True if command_name in ["yo", "hey", "makubot"] else False
+        if txt_from_cmd and text:
+            embed_title = f"{txt_from_cmd} {text}"
+        elif not txt_from_cmd and not text:
+            embed_title = None
+        else:
+            embed_title = txt_from_cmd or text
+        if is_rand:
+            command_name = "Makubot"
+            chosen_path = get_random_image(self.bot.db_connection)
+            if not embed_title:
+                embed_title = "Hey Makubot!"
+        else:
+            syntax = f"/img {util.LEFT_CURLY_BRACKET}command_name{util.RIGHT_CURLY_BRACKET} [optional text]"
+            cmd = await self.validate_image_command(ctx, command_name, syntax)
+            if not embed_title:
+                embed_title = f"{ctx.author.display_name} used {command_name}!"
+            # TODO: Did anyone even want guild specific image commands?
+            # I don't know why Steven added this...
+            uid = ctx.author.id
+            try:
+                sid = ctx.guild.id
+            except AttributeError:
+                sid = None
+            cmd_uid = get_cmd_uid(ctx.bot.db_connection, cmd)
+            if cmd_uid == uid and sid:
+                add_server_command_association(
+                    ctx.bot.db_connection, sid, cmd)
+            user_sids = get_user_sids(ctx.bot, uid)
+            user_origin_server_intersection = get_user_origin_server_intersection(
+                ctx.bot.db_connection, user_sids, cmd)
+            candidate_images = get_appropriate_images(
+                ctx.bot.db_connection, cmd, uid, sid,
+                user_origin_server_intersection)
+            logger.info(f"From {cmd=}, {uid=}, {sid=}, "
+                        f"{user_origin_server_intersection=}, got "
+                        f"{candidate_images=}")
+            # TODO: Make this appear more random because it keeps clumping
+            chosen_key = random.choice(candidate_images)
+            if img_sid_should_be_set(ctx.bot.db_connection, cmd, chosen_key, uid):
+                logger.info(f"{cmd}'s sid will be set to {sid}")
+                set_img_sid(ctx.bot.db_connection,
+                            cmd, chosen_key, sid)
+            chosen_path = f"pictures/{cmd}/{chosen_key}"
+        chosen_url = util.url_from_s3_key(
+            ctx.bot.s3_bucket, ctx.bot.s3_bucket_location, chosen_path,
+            improve=True)
+        logging.info(
+            f"Sending RAND={is_rand} url in user_image_command func: {chosen_url}")
+        image_embed = await generate_slash_image_embed(ctx, chosen_url, command_name, embed_title)
+        await ctx.send(embed=image_embed)
 
     @commands.command(aliases=["yo", "hey", "makubot"])
     async def randomimage(self, ctx):
