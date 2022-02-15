@@ -13,6 +13,7 @@ import mimetypes
 import boto3
 import re
 import math
+import secrets
 from discord_slash import cog_ext
 from discord_slash.utils.manage_components import create_button, create_actionrow, wait_for_component
 from discord_slash.model import ButtonStyle
@@ -767,42 +768,25 @@ class ReactionImages(discord.ext.commands.Cog):
             embed_title = None
         else:
             embed_title = txt_from_cmd or text
+        # This comment is only here to add visual spacing. You look good today :)
         if is_rand:
             command_name = "Makubot"
             chosen_path = get_random_image(self.bot.db_connection)
             if not embed_title:
                 embed_title = "Hey Makubot!"
         else:
-            syntax = f"/img {util.LEFT_CURLY_BRACKET}command_name{util.RIGHT_CURLY_BRACKET} [optional text]"
-            cmd = await self.validate_image_command(ctx, command_name, syntax)
             if not embed_title:
                 embed_title = f"{ctx.author.display_name} used {command_name}!"
-            # TODO: Did anyone even want guild specific image commands?
-            # I don't know why Steven added this...
-            uid = ctx.author.id
-            try:
-                sid = ctx.guild.id
-            except AttributeError:
-                sid = None
-            cmd_uid = get_cmd_uid(ctx.bot.db_connection, cmd)
-            if cmd_uid == uid and sid:
-                add_server_command_association(
-                    ctx.bot.db_connection, sid, cmd)
-            user_sids = get_user_sids(ctx.bot, uid)
-            user_origin_server_intersection = get_user_origin_server_intersection(
-                ctx.bot.db_connection, user_sids, cmd)
+            syntax = f"/img {util.LEFT_CURLY_BRACKET}command_name{util.RIGHT_CURLY_BRACKET} [optional text]"
+            cmd = await self.validate_image_command(ctx, command_name, syntax)
+            if not cmd:
+                return
+            uid = ctx.author.id # Get user's ID
             candidate_images = get_appropriate_images(
-                ctx.bot.db_connection, cmd, uid, sid,
-                user_origin_server_intersection)
-            logger.info(f"From {cmd=}, {uid=}, {sid=}, "
-                        f"{user_origin_server_intersection=}, got "
-                        f"{candidate_images=}")
-            # TODO: Make this appear more random because it keeps clumping
-            chosen_key = random.choice(candidate_images)
-            if img_sid_should_be_set(ctx.bot.db_connection, cmd, chosen_key, uid):
-                logger.info(f"{cmd}'s sid will be set to {sid}")
-                set_img_sid(ctx.bot.db_connection,
-                            cmd, chosen_key, sid)
+                ctx.bot.db_connection, cmd, uid)
+            # logger.info(f"From {cmd=}, {uid=}, got " # Annoying log_spam
+            #            f"{candidate_images=}")
+            chosen_key = secrets.choice(candidate_images)
             chosen_path = f"pictures/{cmd}/{chosen_key}"
         chosen_url = util.url_from_s3_key(
             ctx.bot.s3_bucket, ctx.bot.s3_bucket_location, chosen_path,

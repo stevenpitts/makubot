@@ -588,7 +588,7 @@ def get_appropriate_images(
     sid = as_text(sid)
     user_sids = as_text(user_sids)
     cursor = db_connection.cursor(cursor_factory=RealDictCursor)
-    if enable_insulation:
+    if enable_insulation: # Deprecated
         cursor.execute(
             """
             SELECT * FROM media.images
