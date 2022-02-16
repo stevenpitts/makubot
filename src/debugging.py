@@ -102,20 +102,10 @@ class Debugging(discord.ext.commands.Cog):
             {guild.name: guild.id for guild in self.bot.guilds})
         total_reactions = len(
             get_all_cmds_aliases_from_db(self.bot.db_connection))
-        eval_path = r"http://snekbox:8060/eval"
-        try:
-            async with aiohttp.ClientSession() as session:
-                async with session.head(eval_path) as resp:
-                    await resp.text()
-                    snekbox_running = True
-        except aiohttp.client_exceptions.ClientConnectorError:
-            snekbox_running = False
-        snekbox_status = "up" if snekbox_running else "down"
         db_size = util.db_size(self.bot.db_connection)
         status_text = (
             f"I'm in {len(self.bot.guilds)} servers!\n"
             f"I have {total_reactions} reaction commands.\n"
-            f"Snekbox is {snekbox_status}.\n"
             f"The database size is {db_size}.\n"
             f"I'm using {util.hardware_usage()}.\n"
             f"{current_servers_string}")

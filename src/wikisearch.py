@@ -36,7 +36,7 @@ class Wikisearch(discord.ext.commands.Cog):
     @commands.command(name="wiki")
     async def _wikicmd(self, ctx, *, query):
         """Searches Wikipedia to see what something is!"""
-        await self.wiki(ctx, query)
+        await ctx.send("Sorry, you'll have to type `/wiki` to do that now.")
 
 
 def setup(bot):

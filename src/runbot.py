@@ -75,7 +75,6 @@ class MakuBot(commands.Bot):
                                              "reminders",
                                              "serverlogging",
                                              "movement",
-                                             "evaluations",
                                              "listeners",
                                              "wikisearch",
                                              "ytsearch",

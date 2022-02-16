@@ -799,66 +799,11 @@ class ReactionImages(discord.ext.commands.Cog):
     @commands.command(aliases=["yo", "hey", "makubot"])
     async def randomimage(self, ctx):
         """Get a totally random image!"""
-        chosen_path = get_random_image(self.bot.db_connection)
-        chosen_url = util.url_from_s3_key(
-            self.bot.s3_bucket,
-            self.bot.s3_bucket_location,
-            chosen_path,
-            improve=True)
-        logging.info(f"Sending url in randomimage func: {chosen_url}")
-        image_embed = await generate_image_embed(
-            ctx, chosen_url, call_bot_name=True)
-        sent_message = await ctx.send(embed=image_embed)
-        self.sent_messages_image_urls[sent_message.id] = chosen_url
-        if not await util.url_is_image(chosen_url):
-            new_url = util.improve_url(chosen_url)
-            logger.info(
-                "URL wasn't image, so turned to text URL. "
-                f"{chosen_url} -> {new_url}")
-            await sent_message.edit(embed=None, content=new_url)
+        await ctx.send(f"Sorry! You'll have to type `/img hey` to do that now.")
 
     @commands.command(hidden=True)
     async def send_image_func(self, ctx):
-        if ctx.invoked_with == "send_image_func":
-            await ctx.send("Nice try, fucker")
-            return
-        invoked_command = ctx.invoked_with.lower()
-        cmd = get_cmd_from_alias(ctx.bot.db_connection, invoked_command)
-        uid = ctx.author.id
-        try:
-            sid = ctx.guild.id
-        except AttributeError:
-            sid = None
-        cmd_uid = get_cmd_uid(ctx.bot.db_connection, cmd)
-        if cmd_uid == uid and sid:
-            add_server_command_association(ctx.bot.db_connection, sid, cmd)
-        user_sids = get_user_sids(ctx.bot, uid)
-        user_origin_server_intersection = get_user_origin_server_intersection(
-            ctx.bot.db_connection, user_sids, cmd)
-        candidate_images = get_appropriate_images(
-            ctx.bot.db_connection, cmd, uid, sid,
-            user_origin_server_intersection)
-        logger.info(f"From {cmd=}, {uid=}, {sid=}, "
-                    f"{user_origin_server_intersection=}, got "
-                    f"{candidate_images=}")
-        chosen_key = random.choice(candidate_images)
-        if img_sid_should_be_set(ctx.bot.db_connection, cmd, chosen_key, uid):
-            logger.info(f"{cmd}'s sid will be set to {sid}")
-            set_img_sid(ctx.bot.db_connection, cmd, chosen_key, sid)
-        chosen_path = f"pictures/{cmd}/{chosen_key}"
-        chosen_url = util.url_from_s3_key(
-            ctx.bot.s3_bucket, ctx.bot.s3_bucket_location, chosen_path,
-            improve=True)
-        logging.info(f"Sending url in send_image func: {chosen_url}")
-        image_embed = await generate_image_embed(ctx, chosen_url)
-        sent_message = await ctx.send(embed=image_embed)
-        self.sent_messages_image_urls[sent_message.id] = chosen_url
-        if not await util.url_is_image(chosen_url):
-            new_url = util.improve_url(chosen_url)
-            logger.info(
-                "URL wasn't image, so turned to text URL. "
-                f"{chosen_url} -> {new_url}")
-            await sent_message.edit(embed=None, content=new_url)
+        await ctx.send(f"Sorry! You'll have to type `/img {util.LEFT_CURLY_BRACKET}command{util.RIGHT_CURLY_BRACKET}` to do that now.")
 
     @commands.command()
     async def showimage(self, ctx, cmdimgpath):

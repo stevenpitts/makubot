@@ -34,9 +34,7 @@ class YTSearch(discord.ext.commands.Cog):
 
     @commands.command(name="youtube", aliases=["yt"])
     async def _ytcmd(self, ctx, *, search_term: str):
-        """Post a YouTube video based on a search phrase!
-        Idea stolen from KitchenSink"""
-        await self.youtube(ctx, search_term)
+        await ctx.send("Sorry, you'll have to type `/youtube` to do that now.")
 
 
 def setup(bot):
