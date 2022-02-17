@@ -64,6 +64,7 @@ from .picturecommands_utils import (
 )
 
 DEV_GUILDS = util.get_dev_guilds()
+STAGING_PREFIX = util.get_staging_prefix()
 
 logger = logging.getLogger()
 
@@ -743,7 +744,7 @@ class ReactionImages(discord.ext.commands.Cog):
         )
     ]
 
-    @cog_ext.cog_slash(name="mb", description="Modify or see information about my commands!", options=super_utils_options, guild_ids=DEV_GUILDS)
+    @cog_ext.cog_slash(name=f"{STAGING_PREFIX}mb", description="Modify or see information about my commands!", options=super_utils_options, guild_ids=DEV_GUILDS)
     async def super_image_utils(self, ctx, image_util: str, input_args: Optional[str] = None):
         if image_util == "add":
             await self.add_image(ctx, input_args)
@@ -758,7 +759,7 @@ class ReactionImages(discord.ext.commands.Cog):
         elif image_util == "listcommands":
             await self.list_reactions(ctx)
 
-    @cog_ext.cog_slash(name="img", description="Pull from hundreds of community-driven image commands or just type 'hey' for a random one!")
+    @cog_ext.cog_slash(name=f"{STAGING_PREFIX}img", description="Pull from hundreds of community-driven image commands or just type 'hey' for a random one!", guild_ids=DEV_GUILDS)
     async def user_image_command(self, ctx, command, text=None):
         command_name, txt_from_cmd = self.parse_img_command_input(command)
         is_rand = True if command_name in ["yo", "hey", "makubot"] else False

@@ -3,9 +3,11 @@ from discord.ext import commands
 import logging
 from googleapiclient.discovery import build
 from discord_slash import cog_ext
+from . import util
 
 logger = logging.getLogger()
-
+STAGING_PREFIX = util.get_staging_prefix()
+DEV_GUILDS = util.get_dev_guilds()
 
 class YTSearch(discord.ext.commands.Cog):
     def __init__(self, bot):
@@ -28,7 +30,7 @@ class YTSearch(discord.ext.commands.Cog):
         await ctx.send(f"https://www.youtube.com/watch?v={search_result}"
                        if search_result else "Sowwy, I can\"t find it :(")
 
-    @cog_ext.cog_slash(name="youtube", description="Post a YouTube video based on a search phrase!")
+    @cog_ext.cog_slash(name=f"{STAGING_PREFIX}youtube", description="Post a YouTube video based on a search phrase!",guild_ids=DEV_GUILDS)
     async def _ytslash(self, ctx, *, search_term: str):
         await self.youtube(ctx, search_term)
 

@@ -3,9 +3,11 @@ from discord.ext import commands
 import logging
 import wikipedia
 from discord_slash import cog_ext
+from . import util
 
 logger = logging.getLogger()
-
+STAGING_PREFIX = util.get_staging_prefix()
+DEV_GUILDS = util.get_dev_guilds()
 
 class Wikisearch(discord.ext.commands.Cog):
     def __init__(self, bot):
@@ -29,7 +31,7 @@ class Wikisearch(discord.ext.commands.Cog):
             embed.add_field(name=result.url, value=summary)
             await ctx.send(embed=embed)
 
-    @cog_ext.cog_slash(name="wiki", description="Searches Wikipedia to see what something is!")
+    @cog_ext.cog_slash(name=f"{STAGING_PREFIX}wiki", description="Searches Wikipedia to see what something is!", guild_ids=DEV_GUILDS)
     async def _wikislash(self, ctx, *, query):
         await self.wiki(ctx, query)
 

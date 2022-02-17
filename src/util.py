@@ -328,6 +328,13 @@ def get_dev_guilds():
             dev_guilds.append(int(id))
         return dev_guilds
 
+def get_staging_prefix():
+    envvar = os.environ.get("STAGING_PREFIX")
+    if envvar is None or envvar == "":
+        return ""
+    else:
+        return envvar
+
 def generate_angry_embed(title=NO_WIDTH_SPACE, description=NO_WIDTH_SPACE, footer_text=None):
     embed = discord.Embed(
         title=title,
