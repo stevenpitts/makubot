@@ -10,6 +10,7 @@ from discord.ext.commands.errors import (
     UserInputError,
 )
 from . import util
+from . import sentience
 
 logger = logging.getLogger()
 
@@ -70,11 +71,16 @@ class Listeners(discord.ext.commands.Cog):
     async def on_message(self, message: discord.Message):
         if message.author.bot or not message.guild:
             return
+        if self.bot.user in message.mentions or f"{self.bot.user.name}" in message.content.lower():
+            message_text = message.content.lower()
+            message_text = message_text.replace(f"<@{self.bot.user.id}>","")
+            message_text = message_text.replace(f"{self.bot.user.name}","")
+            await sentience.sentience_response(message, message_text)
         guild_is_free = (
             str(message.guild.id)
             in self.bot.get_cog("Base").get_free_guild_ids()
         )
-        if ("+hug" in message.content.lower()
+        if ("+hug" in message.content.lower() # TODO: Remove this because it's broken
                 and str(self.bot.user.id) in message.content):
             hug_responses = (
                 "!!! *hug*",
@@ -84,7 +90,7 @@ class Listeners(discord.ext.commands.Cog):
                 "*Hug u bak*",
                 "*Hugs you!!*")
             await message.channel.send(random.choice(hug_responses))
-        if guild_is_free or self.bot.user in message.mentions:
+        if guild_is_free or self.bot.user in message.mentions: # TODO: Remove this
             new_activity = discord.Game(name=message.author.name)
             await self.bot.change_presence(activity=new_activity)
         if not guild_is_free:
