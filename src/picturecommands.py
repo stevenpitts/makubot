@@ -1,7 +1,6 @@
 import discord
 from discord.ext import commands
 import logging
-import random
 import aiohttp
 import asyncio
 import concurrent
@@ -22,6 +21,7 @@ from thefuzz import process
 from typing import Optional
 from . import util
 from .picturecommands_utils import (
+    INTERACTION_CMDS,
     YES_EMOJI,
     NO_EMOJI,
     cmd_has_hash,
@@ -760,41 +760,66 @@ class ReactionImages(discord.ext.commands.Cog):
             await self.list_reactions(ctx)
 
     @cog_ext.cog_slash(name=f"{STAGING_PREFIX}img", description="Pull from hundreds of community-driven image commands or just type 'hey' for a random one!", guild_ids=DEV_GUILDS)
-    async def user_image_command(self, ctx, command, text=None):
-        command_name, txt_from_cmd = self.parse_img_command_input(command)
-        is_rand = True if command_name in ["yo", "hey", "makubot"] else False
-        if txt_from_cmd and text:
-            embed_title = f"{txt_from_cmd} {text}"
-        elif not txt_from_cmd and not text:
-            embed_title = None
+    async def user_image_command(self, ctx, command, message=None):
+        image_command_name, message_in_command_input = self.parse_img_command_input(command)
+        has_interactions = True if image_command_name in INTERACTION_CMDS else False
+        if image_command_name in ["yo", "hey", "makubot"]:
+            is_random_command = True
+            image_command_name = "Makubot"
+            chosen_image = get_random_image(self.bot.db_connection)
         else:
-            embed_title = txt_from_cmd or text
-        # This comment is only here to add visual spacing. You look good today :)
-        if is_rand:
-            command_name = "Makubot"
-            chosen_path = get_random_image(self.bot.db_connection)
-            if not embed_title:
-                embed_title = "Hey Makubot!"
-        else:
-            if not embed_title:
-                embed_title = f"{ctx.author.display_name} used {command_name}!"
-            syntax = f"/img {util.LEFT_CURLY_BRACKET}command_name{util.RIGHT_CURLY_BRACKET} [optional text]"
-            cmd = await self.validate_image_command(ctx, command_name, syntax)
-            if not cmd:
+            is_random_command = False
+            command_syntax = f"/img {util.LEFT_CURLY_BRACKET}command_name{util.RIGHT_CURLY_BRACKET} [optional text]"
+            image_command = await self.validate_image_command(ctx, image_command_name, command_syntax)
+            if not image_command:
                 return
-            uid = ctx.author.id # Get user's ID
+            uid = ctx.author.id
             candidate_images = get_appropriate_images(
-                ctx.bot.db_connection, cmd, uid)
+                ctx.bot.db_connection, image_command, uid)
             # logger.info(f"From {cmd=}, {uid=}, got " # Annoying log_spam
             #            f"{candidate_images=}")
             chosen_key = secrets.choice(candidate_images)
-            chosen_path = f"pictures/{cmd}/{chosen_key}"
-        chosen_url = util.url_from_s3_key(
-            ctx.bot.s3_bucket, ctx.bot.s3_bucket_location, chosen_path,
+            chosen_image = f"pictures/{image_command}/{chosen_key}"
+        if message_in_command_input and message:
+            unified_message_text = f"{message_in_command_input} {message}"
+        elif not message_in_command_input and not message:
+            unified_message_text = None
+        else:
+            unified_message_text = message_in_command_input or message
+        try:
+            message_mentions = re.findall("<@!*&*[0-9]+>",  unified_message_text)
+        except TypeError:
+            message_mentions = None
+        if message_mentions:
+            embed_title = None
+            if has_interactions:
+                embed_description = INTERACTION_CMDS[image_command_name].format(
+                    receiver = ", ".join([mention for mention in message_mentions]),
+                    sender = ctx.author.mention
+                )
+            else:
+                embed_description = unified_message_text
+                if is_random_command:
+                    embed_title = "Hey Makubot!"
+        else:
+            embed_description = None
+            if has_interactions:
+                embed_description = INTERACTION_CMDS[image_command_name].format(
+                    receiver = ctx.author.mention,
+                    sender = "yourself"
+                )
+            elif is_random_command and not unified_message_text:
+                embed_title = "Hey Makubot!"
+            elif not is_random_command and not unified_message_text:
+                embed_title = f"{ctx.author.display_name} used {image_command_name}!"
+            else:
+                embed_title = unified_message_text
+        image_s3_url = util.url_from_s3_key(
+            ctx.bot.s3_bucket, ctx.bot.s3_bucket_location, chosen_image,
             improve=True)
         logging.info(
-            f"Sending RAND={is_rand} url in user_image_command func: {chosen_url}")
-        image_embed = await generate_slash_image_embed(ctx, chosen_url, command_name, embed_title)
+            f"Sending RAND={is_random_command} url in user_image_command func: {image_s3_url}")
+        image_embed = await generate_slash_image_embed(ctx, image_s3_url, image_command_name, embed_title, embed_description)
         await ctx.send(embed=image_embed)
 
     @commands.command(aliases=["yo", "hey", "makubot"])

@@ -23,6 +23,7 @@ LEFT_CURLY_BRACKET = "\u007B"
 RIGHT_CURLY_BRACKET = "\u007D"
 NO_WIDTH_SPACE = "\u200B"
 BULLET_POINT = "\u2022"
+NO_BREAK_SPACE = "\u00A0"
 
 def improve_url(url):
     return url.replace(" ", "+")
