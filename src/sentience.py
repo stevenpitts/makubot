@@ -39,11 +39,11 @@ class _Common:
 class Rating():
     """ This class handles emotional ratings for input phrases. """
     # initialize the class
-
     def __init__(self):
         self.__common = _Common()
         self.mean_phrases = self.__common.mean_phrases
         self.nice_phrases = self.__common.nice_phrases
+        self.logger = logging.getLogger()
 
     def rate_string_emotion(self, string):
         mean_scores = self.__common.compare_string_fuzzy(
@@ -52,7 +52,8 @@ class Rating():
             string, self.__common.nice_phrases)
         mean_score = max(mean_scores)
         nice_score = max(nice_scores)
-        if mean_score < 55 and nice_score < 55:
+        self.logger.info(f"{string}: {mean_score} mean, {nice_score} nice")
+        if mean_score < 50 and nice_score < 50:
             if mean_score > nice_score:
                 return 'Confusing', f'{mean_score} mean'
             else:
@@ -62,6 +63,8 @@ class Rating():
             return 'Mean', mean_score
         elif nice_score > mean_score:
             return 'Nice', nice_score
+        else:
+            return 'Confusing', f'{mean_score} mean, {nice_score} nice'
 
 
 class ResponseObject():
@@ -86,7 +89,7 @@ async def sentience_response(message: discord.Message, text: str):
             await asyncio.sleep(random.randint(1, 3))
     elif response_type == 'Nice':
         async with message.channel.typing():
-            response = random.choice(response_object.mean)
+            response = random.choice(response_object.nice)
             # wait for 1 to 3 seconds
             await asyncio.sleep(random.randint(1, 3))
     else:

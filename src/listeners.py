@@ -2,6 +2,7 @@ import random
 import itertools
 import discord
 import logging
+import re
 from discord.ext import commands, tasks
 from discord.ext.commands.errors import (
     CommandError, CommandNotFound, CommandOnCooldown, NotOwner,
@@ -75,6 +76,7 @@ class Listeners(discord.ext.commands.Cog):
             message_text = message.content.lower()
             message_text = message_text.replace(f"<@{self.bot.user.id}>","")
             message_text = message_text.replace(f"{self.bot.user.name}","")
+            message_text = re.sub(r'[^a-zA-Z0-9]', ' ', message_text)
             await sentience.sentience_response(message, message_text)
         guild_is_free = (
             str(message.guild.id)
