@@ -321,7 +321,7 @@ async def err_not_implemented(ctx, warn=True, is_hidden=True):
 
 def get_dev_guilds():
     envvar = os.environ.get("DEV_GUILDS")
-    if envvar is None or envvar == "":
+    if envvar is "None" or envvar == "":
         return None
     else:
         dev_guilds = []
@@ -331,7 +331,7 @@ def get_dev_guilds():
 
 def get_staging_prefix():
     envvar = os.environ.get("STAGING_PREFIX")
-    if envvar is None or envvar == "":
+    if envvar is "None" or envvar == "":
         return ""
     else:
         return envvar
