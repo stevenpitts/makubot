@@ -61,9 +61,8 @@ class Listeners(discord.ext.commands.Cog):
                 caught_exception)
             logger.error(formatted_tb)
             await ctx.send("Something went wrong, sorry!")
-            await util.alert_devs(self.bot,
-                f"Something went wrong!\n```{formatted_tb}```",
-                alert_owner=True)
+            await self.bot.makusu.send(
+                f"Something went wrong!\n```{formatted_tb}```")
 
     @commands.Cog.listener()
     async def on_error(self, ctx, caught_exception):

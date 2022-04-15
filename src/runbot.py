@@ -13,7 +13,6 @@ import time
 import psycopg2
 from . import util
 import boto3
-from discord_slash import SlashCommand
 
 LOGGING_FORMAT = ("%(asctime)-15s %(levelname)s in %(funcName)s "
                   "at %(pathname)s:%(lineno)d: %(message)s")
@@ -36,6 +35,7 @@ def get_intents():
     intents.members = False
     return intents
 
+
 class MakuBot(commands.Bot):
     def __init__(self,
                  s3_bucket=None,
@@ -45,14 +45,12 @@ class MakuBot(commands.Bot):
                  db_port=None,
                  db_user=None,
                  db_name=None,
-                 bot_owner=None,
-                 bot_devs=None,
                  ):
         commands.Bot.__init__(
             self,
             command_prefix=commands.when_mentioned,
             case_insensitive=True,
-            owner_id=bot_owner,
+            owner_id=203285581004931072,
             allowed_mentions=discord.AllowedMentions(
                 everyone=False,
                 roles=False,
@@ -60,14 +58,11 @@ class MakuBot(commands.Bot):
             ),
             intents=get_intents(),
         )
-        SlashCommand(self, sync_commands=True)
         logger.info("Starting healthcheck server")
         self.healthcheck_server = discordhealthcheck.start(self)
         logger.info("Bot entering setup")
         self.s3_bucket = s3_bucket
         self.makusu = None
-        self.dev_ids = []
-        self.dev_ids = bot_devs
         self.shared = {}
         self.temp_dir_pointer = tempfile.TemporaryDirectory()
         self.shared["temp_dir"] = Path(self.temp_dir_pointer.name)
@@ -98,6 +93,7 @@ class MakuBot(commands.Bot):
         self.db_user = db_user
         self.db_name = db_name
         self.loop.set_debug(True)
+
         logger.info(
             f"Attempting to connect to postgres database at {self.db_host} "
             f"on port {self.db_port} as user {self.db_user} "
@@ -137,9 +133,7 @@ class MakuBot(commands.Bot):
         self.makusu = await self.fetch_user(self.owner_id)
         logger.info(
             f"\n\n\nLogged in at {datetime.now()} as {self.user.name} "
-            f"with ID {self.user.id}\n"
-            f"Sending errors to owner {self.owner_id} and devs {self.dev_ids}."
-            f"\nBeta access available in test servers {util.get_dev_guilds()}\n\n\n"
+            f"with ID {self.user.id}\n\n\n"
         )
         await self.change_presence(activity=discord.Game(
             name=r"Nao is being tsun to me :<"))

@@ -583,7 +583,7 @@ def get_appropriate_images(
         sid=None,
         user_sids=[],
         enable_insulation=False,
-):
+        ):
     uid = as_text(uid)
     sid = as_text(sid)
     user_sids = as_text(user_sids)
@@ -634,9 +634,9 @@ def get_appropriate_images(
     return [result["image_key"] for result in results]
 
 
-def add_denylist_association(db_connection, cmd, image_key, uid):
+def add_blacklist_association(db_connection, cmd, image_key, uid):
     uid = as_text(uid)
-    logger.info(f"Adding denylist for {cmd=}, {image_key=}, {uid=}.")
+    logger.info(f"Adding blacklist for {cmd=}, {image_key=}, {uid=}.")
     cursor = db_connection.cursor(cursor_factory=RealDictCursor)
     cursor.execute(
         """
@@ -651,9 +651,9 @@ def add_denylist_association(db_connection, cmd, image_key, uid):
     db_connection.commit()
 
 
-def remove_denylist_association(db_connection, cmd, image_key, uid):
+def remove_blacklist_association(db_connection, cmd, image_key, uid):
     uid = as_text(uid)
-    logger.info(f"Removing denylist for {cmd=}, {image_key=}, {uid=}.")
+    logger.info(f"Removing blacklist for {cmd=}, {image_key=}, {uid=}.")
     cursor = db_connection.cursor(cursor_factory=RealDictCursor)
     cursor.execute(
         """
@@ -667,7 +667,7 @@ def remove_denylist_association(db_connection, cmd, image_key, uid):
     db_connection.commit()
 
 
-def get_user_denylist(db_connection, uid):
+def get_user_blacklist(db_connection, uid):
     uid = as_text(uid)
     cursor = db_connection.cursor(cursor_factory=RealDictCursor)
     cursor.execute(
@@ -756,22 +756,7 @@ async def generate_image_embed(ctx, url, call_bot_name=False):
                    "icon_url": str(ctx.author.avatar_url)
                    } if has_content and not fstring else {},
         "image": {"url": url},
-        "footer": {"text": f"Psst - bot prefixes are deprecated! Type `/slashhelp` in chat to find out more,"
-                           f"or type `/img {util.LEFT_CURLY_BRACKET}command{util.RIGHT_CURLY_BRACKET}` to try again!",
-                   "icon_url": str(ctx.me.avatar_url)},
-    }
-    image_embed = discord.Embed.from_dict(image_embed_dict)
-    return image_embed
-
-async def generate_slash_image_embed(ctx, url, command, title):
-    url = util.improve_url(url)
-    bot_nick = ctxhelpers.get_bot_nick(ctx)
-    image_embed_dict = {
-        "author": {"name": title,
-                "icon_url": str(ctx.author.avatar_url)
-                },
-        "image": {"url": url},
-        "footer": {"text": f"{command.upper()} via {bot_nick}", "icon_url": str(ctx.me.avatar_url)},
+        "footer": {"text": f"-{bot_nick}", "icon_url": str(ctx.me.avatar_url)},
     }
     image_embed = discord.Embed.from_dict(image_embed_dict)
     return image_embed

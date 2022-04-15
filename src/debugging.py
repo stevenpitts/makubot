@@ -21,6 +21,12 @@ class Debugging(discord.ext.commands.Cog):
 
     @commands.command(hidden=True)
     @commands.is_owner()
+    async def long_computation(self, ctx):
+        result = 2 ** 1000000
+        await ctx.send(str(result)[:1000])
+
+    @commands.command(hidden=True)
+    @commands.is_owner()
     async def supereval(self, ctx, *, to_eval: str):
         sys.stdout = StringIO()
         eval_result = ""

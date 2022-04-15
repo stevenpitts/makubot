@@ -269,7 +269,7 @@ class ReminderCommands(discord.ext.commands.Cog):
                 "Uhh there was a person but they're gone now but the reminder "
                 f"was {reminder['reminder_message']}")
         elif not reminder_channel and not reminder_user:
-            await util.alert_devs(self.bot, f"Couldn't find stuff for {reminder}", alert_owner=True)
+            await self.bot.makusu.send(f"Couldn't find stuff for {reminder}")
         else:
             await reminder_channel.send(
                 f"{reminder_user.mention}, you have a message from "

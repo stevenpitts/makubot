@@ -1,4 +1,3 @@
-from contextlib import suppress
 import traceback
 import logging
 from datetime import datetime
@@ -19,10 +18,6 @@ logger = logging.getLogger()
 
 S3 = boto3.client("s3")
 
-LEFT_CURLY_BRACKET = "\u007B"
-RIGHT_CURLY_BRACKET = "\u007D"
-NO_WIDTH_SPACE = "\u200B"
-BULLET_POINT = "\u2022"
 
 def improve_url(url):
     return url.replace(" ", "+")
@@ -268,62 +263,3 @@ async def displaytxt(
                 pass
             await block_message.edit(content=r"```Closed.```")
             current_index = None
-
-async def get_dev_users(bot, include_owner):
-    ids = bot.dev_ids
-    ids += [bot.owner_id] if include_owner else []
-    users = []
-    for user_id in ids:
-        user = await bot.fetch_user(user_id)
-        users.append(user)
-    return users
-
-async def alert_devs(bot, message, alert_owner=False):
-    devs = await get_dev_users(bot, alert_owner)
-    for dev in devs:
-        await dev.send(message)
-
-async def get_visible_names(users):
-    user_names = []
-    for user in users:
-        user_names.append(user.name+"#"+str(user.discriminator))
-    return user_names
-
-async def err_not_implemented(ctx, warn=True):
-    bot = ctx.bot
-    embed = discord.Embed(
-        title="Sorry!",
-        description="This command or feature hasn't been implemented yet! "
-            "You can use the regular, prefixed version of this command "
-            "until it's added.",
-        color=discord.Color.red()
-    )
-    embed.set_image(url="https://thumbs.gfycat.com/EssentialBrownFrenchbulldog-size_restricted.gif")
-    if warn:
-        warning = f"User {ctx.author.name}#{ctx.author.discriminator} (`{ctx.author.id}`) " \
-                  f"in {ctx.guild.name} (`{ctx.guild.id}`) channel {ctx.channel.name} (`{ctx.channel.id}`) " \
-                  f"tried to use a command that hasn't been implemented yet.\n" \
-                  f"Raw data:\n```json\n{ctx.data}\n```"
-        await alert_devs(bot, warning)
-        devs = await get_dev_users(bot, False)
-        dev_names = await get_visible_names(devs)
-        if len(dev_names) > 1:
-            dev_name_string = f"`{'`, `'.join(dev_names[:-1])}` and `{dev_names[-1]}`"
-        else:
-            dev_name_string = f"`{dev_names[0]}`"
-        embed.add_field(
-            name=NO_WIDTH_SPACE,
-            value=f"By the way - I let my (active) developer(s), {dev_name_string}, "
-            "know that you want this worked on!"
-        )
-    await ctx.send(embed=embed, hidden=True)
-
-def get_dev_guilds():
-    envvar = os.environ.get("DEV_GUILDS")
-    if envvar is None or envvar == "":
-        return None
-    else:
-        dev_guilds = []
-        for id in envvar.split(" "):
-            dev_guilds.append(int(id))
-        return dev_guilds
