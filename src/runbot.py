@@ -13,7 +13,6 @@ import time
 import psycopg2
 from . import util
 import boto3
-from discord_slash import SlashCommand
 
 LOGGING_FORMAT = ("%(asctime)-15s %(levelname)s in %(funcName)s "
                   "at %(pathname)s:%(lineno)d: %(message)s")
@@ -59,7 +58,6 @@ class MakuBot(commands.Bot):
             ),
             intents=get_intents(),
         )
-        SlashCommand(self, sync_commands=True)
         logger.info("Starting healthcheck server")
         self.healthcheck_server = discordhealthcheck.start(self)
         logger.info("Bot entering setup")
