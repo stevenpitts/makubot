@@ -28,8 +28,5 @@ services:
             - PGUSER=${PGUSER}
             - PGNAME=${PGNAME}
             - PYTHONUNBUFFERED=1
-            - OWNER=${OWNER:-203285581004931072}
-            - DEVELOPERS=${DEVELOPERS:-766337842031886336}
-            - DEV_GUILDS=${DEV_GUILDS:-None}
         healthcheck:
             test: ["CMD-SHELL", "discordhealthcheck"]
