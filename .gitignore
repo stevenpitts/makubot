@@ -1,5 +1,7 @@
 data/
 
+queen.ps1
+queen.sh
 secrets.env
 
 mblog.txt
