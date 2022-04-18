@@ -25,11 +25,8 @@ SHOWOFF_COMMANDS = [
     "imageblacklist",
 ]
 MINOR_SHOWOFF_COMMANDS = [
-    "bully",
     "choose",
     "emojispam",
-    "fact",
-    "hugme"
 ]
 
 

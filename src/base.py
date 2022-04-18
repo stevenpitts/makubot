@@ -2,12 +2,10 @@
 Module containing the majority of the basic commands makubot can execute.
 """
 import sys
-import importlib
 import logging
 import itertools
 import discord
 from discord.ext import commands
-from . import util
 from psycopg2.extras import RealDictCursor
 
 logger = logging.getLogger()
@@ -99,28 +97,6 @@ class Base(discord.ext.commands.Cog):
             (str(ctx.message.guild.id),))
         self.bot.db_connection.commit()
         await ctx.send("Ayaya~")
-
-    @commands.command()
-    @commands.bot_has_permissions(manage_messages=True)
-    async def opentxt(self, ctx):
-        """Opens the most recent file for reading!!!"""
-        try:
-            previous_messages = (message async for message in
-                                 ctx.channel.history() if message.attachments)
-            message_with_file = await previous_messages.__anext__()
-            attachment = message_with_file.attachments[0]
-            temp_save_dir = self.bot.shared["temp_dir"]
-            await attachment.save(temp_save_dir / attachment.filename)
-            with open(temp_save_dir / attachment.filename, "r") as file:
-                out_text = "\n".join(file.readlines()).replace("```", '"""')
-        except UnicodeDecodeError:
-            await ctx.send(f"It looks like you\"re trying to get me to "
-                           f"read ```{attachment.filename}```, but that "
-                           "doesn\"t seem to be a text file, sorry!! :<")
-        except StopAsyncIteration:
-            await ctx.send("Ah, I couldn't find any text file, sorry!")
-        else:
-            await util.displaytxt(ctx, out_text)
 
 
 def setup(bot):

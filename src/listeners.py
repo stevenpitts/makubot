@@ -76,16 +76,6 @@ class Listeners(discord.ext.commands.Cog):
             str(message.guild.id)
             in self.bot.get_cog("Base").get_free_guild_ids()
         )
-        if ("+hug" in message.content.lower()
-                and str(self.bot.user.id) in message.content):
-            hug_responses = (
-                "!!! *hug*",
-                "!!! *hug u*",
-                "*Hugs*!",
-                "Awwh!!! <333",
-                "*Hug u bak*",
-                "*Hugs you!!*")
-            await message.channel.send(random.choice(hug_responses))
         if guild_is_free or self.bot.user in message.mentions:
             new_activity = discord.Game(name=message.author.name)
             await self.bot.change_presence(activity=new_activity)

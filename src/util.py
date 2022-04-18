@@ -7,7 +7,6 @@ import subprocess
 from psycopg2.extras import RealDictCursor
 import boto3
 import botocore
-import time
 import discord
 import os
 import psutil
