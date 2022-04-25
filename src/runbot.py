@@ -67,10 +67,8 @@ class MakuBot(commands.Bot):
         self.temp_dir_pointer = tempfile.TemporaryDirectory()
         self.shared["temp_dir"] = Path(self.temp_dir_pointer.name)
         self.shared["default_extensions"] = ["base",
-                                             "reminders",
                                              "serverlogging",
                                              "movement",
-                                             "evaluations",
                                              "listeners",
                                              "wikisearch",
                                              "ytsearch",
