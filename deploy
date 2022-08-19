@@ -8,4 +8,4 @@ docker build . --tag makusu2/makubot
 
 docker push makusu2/makubot
 
-aws ecs update-service --cluster makubot --service makubot --force-new-deployment
+aws ecs update-service --cluster makubot --service makubot --force-new-deployment --no-cli-pager
