@@ -33,10 +33,7 @@ class Listeners(discord.ext.commands.Cog):
     async def on_command_error(self, ctx,
                                caught_exception: CommandError):
         if isinstance(caught_exception, CommandNotFound):
-            if str(self.bot.user.id) in ctx.message.content.split()[0]:
-                to_eval = " ".join(ctx.message.content.split()[1:]).strip()
-                await self.bot.get_cog("Evaluations").eval_and_respond(
-                    ctx, to_eval, force_reply=False)
+            await ctx.send("srryyyyyyyyyyyYYYY i dont now that COMMAND that you told me to useeeeeeeeeee ;a; ;a ;a ;a; ;a ;aa;;a;a;a;a;a;a;;a;a;a aaaaaaAAAAAAAAAAAAAAAAAAAAAAWAAAAAAAHHHHHHHHHHHHHHHHHHH fuck this bot")
         elif isinstance(caught_exception, NotOwner):
             await ctx.send("Sorry, only Maku can use that command :(")
         elif isinstance(caught_exception, CommandOnCooldown):
@@ -98,5 +95,5 @@ class Listeners(discord.ext.commands.Cog):
         await self.bot.wait_until_ready()
 
 
-def setup(bot):
-    bot.add_cog(Listeners(bot))
+async def setup(bot):
+    await bot.add_cog(Listeners(bot))

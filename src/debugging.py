@@ -118,7 +118,7 @@ class Debugging(discord.ext.commands.Cog):
         await ctx.send("Done!")
 
 
-def setup(bot):
+async def setup(bot):
     logger.info("debugging starting setup")
-    bot.add_cog(Debugging(bot))
+    await bot.add_cog(Debugging(bot))
     logger.info("debugging ending setup")

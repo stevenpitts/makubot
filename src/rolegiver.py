@@ -178,7 +178,7 @@ class RoleGiver(discord.ext.commands.Cog):
         await ctx.send("All done! ^_^")
 
 
-def setup(bot):
+async def setup(bot):
     logger.info("rolegiver starting setup")
-    bot.add_cog(RoleGiver(bot))
+    await bot.add_cog(RoleGiver(bot))
     logger.info("rolegiver ending setup")

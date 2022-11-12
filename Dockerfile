@@ -9,8 +9,6 @@ COPY requirements.txt ./requirements.txt
 
 RUN pip install --no-cache-dir -r requirements.txt
 
-HEALTHCHECK CMD discordhealthcheck || exit 1
-
 COPY src ./src
 
 CMD python3.8 -m src

@@ -31,7 +31,7 @@ class Wikisearch(discord.ext.commands.Cog):
             await ctx.send(embed=embed)
 
 
-def setup(bot):
+async def setup(bot):
     logger.info("wikisearch starting setup")
-    bot.add_cog(Wikisearch(bot))
+    await bot.add_cog(Wikisearch(bot))
     logger.info("wikisearch ending setup")

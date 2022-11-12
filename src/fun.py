@@ -203,12 +203,12 @@ class Fun(discord.ext.commands.Cog):
         await message.edit(content=f"{message.content}\nThe poll is now over!")
         await ctx.send(f"Results of \"{question}\":\n{results}")
 
-    @commands.command(aliases=["remindme"])
-    async def remind_me(self, ctx):
+    @commands.command()
+    async def remindme(self, ctx):
         await ctx.send("Remind it yourself")
 
 
-def setup(bot):
+async def setup(bot):
     logger.info("fun starting setup")
-    bot.add_cog(Fun(bot))
+    await bot.add_cog(Fun(bot))
     logger.info("fun ending setup")

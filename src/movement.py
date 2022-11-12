@@ -88,7 +88,7 @@ class Movement(discord.ext.commands.Cog):
                         ctx, message.content),
                     "footer": {"text": f"In {message.channel.name}"},
                     "author": {"name": message.author.name,
-                               "icon_url": str(message.author.avatar_url)
+                               "icon_url": str(message.author.display_avatar)
                                },
                     "timestamp": message.created_at.isoformat()
                 }
@@ -161,7 +161,7 @@ class Movement(discord.ext.commands.Cog):
                                             ctx.message.author)
 
 
-def setup(bot):
+async def setup(bot):
     logger.info("movement starting setup")
-    bot.add_cog(Movement(bot))
+    await bot.add_cog(Movement(bot))
     logger.info("movement ending setup")

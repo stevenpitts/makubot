@@ -17,9 +17,7 @@ SHOWOFF_COMMANDS = [
     "invite",
     "support",
     "",
-    "evaluate",
     "poll",
-    "remindme",
     "whatis",
     "youtube",
     "imageblacklist",
@@ -31,7 +29,8 @@ MINOR_SHOWOFF_COMMANDS = [
 
 
 def cmd_help_text(bot, cmd):
-    help_brief = bot.all_commands[cmd].help.split('\n')[0]
+    cmd_help = bot.all_commands[cmd].help
+    help_brief = cmd_help.split('\n')[0] if cmd_help is not None else "(Undefined)"
     return f"**mb.{cmd}**\n> {help_brief}\n"
 
 
@@ -57,16 +56,7 @@ def get_minor_help_commands_text():
 
 
 HELP_TEXT = """
-I'm Makubot! I have ***hundreds*** of community-driven image commands, \
-and you can add more!
-If you can think of an emotion, or a character, or a TV show, I probably have \
-a command for it. Try `mb.angry`, `mb.nao`, or `mb.f`!
-If I don't have that command, you can add an image to it by using \
-`mb.addimage`! Then my owner will approve the image, and it'll \
-get added to my collection!
-I'm not just another image bot; I can process lots of image/video types, \
-I'll try to show you only images relevant to you, and I'm \
-super speedy! Check me out!
+aaaaaaAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA please don't use this bot if you're new to it, I hate this bot
 {help_commands_text}
 {minor_help_commands_text} \
 For detailed help on a command and how to use it, use `mb.help CommandName`!
@@ -107,7 +97,7 @@ class Help(discord.ext.commands.Cog):
         await ctx.send(", ".join(all_non_image_commands))
 
 
-def setup(bot):
+async def setup(bot):
     logger.info("help starting setup")
-    bot.add_cog(Help(bot))
+    await bot.add_cog(Help(bot))
     logger.info("help ending setup")

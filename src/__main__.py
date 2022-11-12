@@ -1,8 +1,9 @@
 from . import runbot
+import asyncio
 import os
 
 
-def main():
+async def main():
     token = os.environ["DISCORD_BOT_TOKEN"]
 
     makubot_bot = runbot.MakuBot(
@@ -15,8 +16,9 @@ def main():
         db_name=os.environ["PGNAME"],
     )
 
-    makubot_bot.run(token)
+    async with makubot_bot:
+        await makubot_bot.start(token)
 
 
 if __name__ == "__main__":
-    main()
+    asyncio.run(main())
