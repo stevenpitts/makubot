@@ -1,6 +1,5 @@
 import traceback
 import logging
-from datetime import datetime
 import urllib
 import aiohttp
 import subprocess
@@ -150,7 +149,7 @@ def get_nonconflicting_filename(candidate_filename: str, existing_keys=None):
 
 
 def readable_timedelta(old, new=None):
-    new = new or datetime.now()
+    new = new or discord.utils.utcnow()
     return str(new - old).split(".")[0]
 
 
@@ -244,7 +243,7 @@ async def displaytxt(
 
     while current_index is not None:
         current_index = current_index % len(text_blocks)
-        await block_message.edit(content=text_blocks[current_index])
+        block_message = await block_message.edit(content=text_blocks[current_index])
         res = await ctx.bot.wait_for("reaction_add", check=check)
         emoji_result = res[0].emoji
         try:

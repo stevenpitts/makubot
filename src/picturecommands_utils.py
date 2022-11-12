@@ -7,7 +7,6 @@ import subprocess
 import youtube_dl
 import tempfile
 from psycopg2.extras import RealDictCursor
-from datetime import datetime
 import boto3
 from . import util
 from . import ctxhelpers
@@ -753,10 +752,10 @@ async def generate_image_embed(ctx, url, call_bot_name=False):
     image_embed_dict = {
         "description": embed_description,
         "author": {"name": ctx.author.display_name,
-                   "icon_url": str(ctx.author.avatar_url)
+                   "icon_url": str(ctx.author.display_avatar)
                    } if has_content and not fstring else {},
         "image": {"url": url},
-        "footer": {"text": f"-{bot_nick}", "icon_url": str(ctx.me.avatar_url)},
+        "footer": {"text": f"-{bot_nick}", "icon_url": str(ctx.me.display_avatar)},
     }
     image_embed = discord.Embed.from_dict(image_embed_dict)
     return image_embed
@@ -774,11 +773,11 @@ async def get_media_bytes_and_name(url, status_message=None, loading_emoji=""):
     }
     with youtube_dl.YoutubeDL(ydl_options) as ydl:
         await status_message.edit(content=f"Downloading...{loading_emoji}")
-        download_start_time = datetime.now()
+        download_start_time = discord.utils.utcnow()
         with concurrent.futures.ThreadPoolExecutor() as pool:
             await asyncio.get_running_loop().run_in_executor(
                 pool, ydl.extract_info, url)  # This guy takes a while
-        download_time = datetime.now() - download_start_time
+        download_time = discord.utils.utcnow() - download_start_time
         logger.info(f"{url} took {download_time} to download")
         files_in_dir = os.listdir(temp_dir.name)
         if len(files_in_dir) == 0:
@@ -796,12 +795,12 @@ async def get_media_bytes_and_name(url, status_message=None, loading_emoji=""):
         if filepath.endswith(".mkv"):
             filepath += ".webm"
         await status_message.edit(content=f"Processing...{loading_emoji}")
-        processing_start_time = datetime.now()
+        processing_start_time = discord.utils.utcnow()
         try:
             await convert_video(temp_filepath, filepath)
         except NotVideo:
             os.rename(temp_filepath, filepath)
-        processing_time = datetime.now() - processing_start_time
+        processing_time = discord.utils.utcnow() - processing_start_time
         logger.info(f"{url} took {processing_time} to process")
         with open(filepath, "rb") as downloaded_file:
             data = downloaded_file.read()

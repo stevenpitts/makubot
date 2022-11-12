@@ -2,7 +2,6 @@ import discord
 from discord.ext import commands
 import logging
 import aiohttp
-from datetime import datetime
 from psycopg2.extras import RealDictCursor
 import asyncio
 
@@ -154,7 +153,7 @@ class ServerLogging(discord.ext.commands.Cog):
 
         embed = discord.Embed(
             title="Edited message",
-            description=(f"{datetime.now()}: A message from "
+            description=(f"{discord.utils.utcnow()}: A message from "
                          f"{before.author.name} has been "
                          f"edited in {before.channel} of {guild_description}.")
         )
@@ -181,7 +180,7 @@ class ServerLogging(discord.ext.commands.Cog):
     @commands.Cog.listener()
     async def on_member_remove(self, member):
         guild = member.guild
-        leave_message = f"{datetime.now()}: {member} has left {guild}"
+        leave_message = f"{discord.utils.utcnow()}: {member} has left {guild}"
         log_to_channels = await self.get_log_channels(
             guild, guild.system_channel)
         for log_to_channel in log_to_channels:
@@ -200,7 +199,7 @@ class ServerLogging(discord.ext.commands.Cog):
             embed.add_field(name="Old", value=str(before))
             embed.add_field(name="New", value=str(after))
         else:
-            embed.set_image(url=after.avatar_url)
+            embed.set_image(url=after.display_avatar)
         log_to_channels = set.union(*[
             set(await self.get_log_channels(server,
                                             server.system_channel))
@@ -245,7 +244,7 @@ class ServerLogging(discord.ext.commands.Cog):
                                        for captured_embed in message.embeds])
         embed_content_str = str(embed_content_str).strip()
         deletion_description = (
-            f"{datetime.now()}: A message from {message.author.name} "
+            f"{discord.utils.utcnow()}: A message from {message.author.name} "
             f"has been deleted in {message.channel} of {guild_description} "
             f"with {len(message.attachments)} attachment(s)"
             f"{failed_attachments_str} and "
@@ -269,7 +268,7 @@ class ServerLogging(discord.ext.commands.Cog):
             await log_to_channel.send(embed=embed, files=discord_files)
 
 
-def setup(bot):
+async def setup(bot):
     logger.info("serverlogging starting setup")
-    bot.add_cog(ServerLogging(bot))
+    await bot.add_cog(ServerLogging(bot))
     logger.info("serverlogging ending setup")

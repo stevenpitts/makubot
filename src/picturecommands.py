@@ -7,7 +7,6 @@ import asyncio
 import concurrent
 import youtube_dl
 import hashlib
-from datetime import datetime
 import mimetypes
 import boto3
 from . import util
@@ -185,9 +184,9 @@ class PictureAdder(discord.ext.commands.Cog):
                     content="Waiting for Maku's approval...")
             except discord.errors.NotFound:
                 pass
-            approval_start_time = datetime.now()
+            approval_start_time = discord.utils.utcnow()
             approved = await self.get_approval(request.id)
-            approval_time = datetime.now() - approval_start_time
+            approval_time = discord.utils.utcnow() - approval_start_time
             logger.info(f"{filename} took {approval_time} to get approved")
             await request.delete()
             if collection_has_image_bytes(
@@ -879,10 +878,10 @@ class ReactionImages(discord.ext.commands.Cog):
         await self.remove_from_blacklist(ctx, cmd_and_key)
 
 
-def setup(bot):
+async def setup(bot):
     logger.info("picturecommands starting setup")
-    bot.add_cog(ReactionImages(bot))
-    bot.add_cog(PictureAdder(bot))
+    await bot.add_cog(ReactionImages(bot))
+    await bot.add_cog(PictureAdder(bot))
     image_command_invocations = list(
         get_all_cmds_aliases_from_db(bot.db_connection))
 

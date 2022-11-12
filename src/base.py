@@ -99,7 +99,7 @@ class Base(discord.ext.commands.Cog):
         await ctx.send("Ayaya~")
 
 
-def setup(bot):
+async def setup(bot):
     logger.info("base starting setup")
-    bot.add_cog(Base(bot))
+    await bot.add_cog(Base(bot))
     logger.info("base ending setup")

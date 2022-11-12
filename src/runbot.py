@@ -3,10 +3,8 @@ Main module for makubot.
 """
 import logging
 import discord
-import discordhealthcheck
 import tempfile
 import sys
-from datetime import datetime
 from discord.ext import commands
 from pathlib import Path
 import time
@@ -58,9 +56,6 @@ class MakuBot(commands.Bot):
             ),
             intents=get_intents(),
         )
-        logger.info("Starting healthcheck server")
-        self.healthcheck_server = discordhealthcheck.start(self)
-        logger.info("Bot entering setup")
         self.s3_bucket = s3_bucket
         self.makusu = None
         self.shared = {}
@@ -90,7 +85,10 @@ class MakuBot(commands.Bot):
         self.db_port = db_port
         self.db_user = db_user
         self.db_name = db_name
-        self.loop.set_debug(True)
+
+    async def setup_hook(self):
+        logger.info("Bot entering setup")
+        # self.loop.set_debug(True)
 
         logger.info(
             f"Attempting to connect to postgres database at {self.db_host} "
@@ -122,7 +120,7 @@ class MakuBot(commands.Bot):
             util.restore_db(self.s3_bucket)
 
         for extension in self.shared["default_extensions"]:
-            self.load_extension(f"src.{extension}")
+            await self.load_extension(f"src.{extension}")
 
     async def on_ready(self):
         """
@@ -130,7 +128,7 @@ class MakuBot(commands.Bot):
         """
         self.makusu = await self.fetch_user(self.owner_id)
         logger.info(
-            f"\n\n\nLogged in at {datetime.now()} as {self.user.name} "
+            f"\n\n\nLogged in at {discord.utils.utcnow()} as {self.user.name} "
             f"with ID {self.user.id}\n\n\n"
         )
         await self.change_presence(activity=discord.Game(

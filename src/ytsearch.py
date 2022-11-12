@@ -31,7 +31,7 @@ class YTSearch(discord.ext.commands.Cog):
                        if search_result else "Sowwy, I can\"t find it :(")
 
 
-def setup(bot):
+async def setup(bot):
     logger.info("ytsearch starting setup")
-    bot.add_cog(YTSearch(bot))
+    await bot.add_cog(YTSearch(bot))
     logger.info("ytsearch ending setup")
