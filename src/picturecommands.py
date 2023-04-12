@@ -416,11 +416,11 @@ class ReactionImages(discord.ext.commands.Cog):
                 cmd TEXT REFERENCES media.commands(cmd) ON DELETE CASCADE,
                 image_key TEXT,
                 uid CHARACTER(18),
-                sid CHARACTER(18),
+                sid CHARACTER(19),
                 md5 TEXT,
                 PRIMARY KEY (cmd, image_key));
             CREATE TABLE IF NOT EXISTS media.server_command_associations (
-                sid CHARACTER(18),
+                sid CHARACTER(19),
                 cmd TEXT REFERENCES media.commands(cmd) ON DELETE CASCADE,
                 PRIMARY KEY (sid, cmd));
             CREATE TABLE IF NOT EXISTS media.aliases (
@@ -774,7 +774,7 @@ class ReactionImages(discord.ext.commands.Cog):
     @commands.is_owner()
     @commands.command(hidden=True, aliases=["setcmdserver"])
     async def set_cmd_images_server(self, ctx, cmd, sid):
-        assert len(sid) == 18
+        assert len(sid) in [18, 19]
         cmd = get_cmd_from_alias(self.bot.db_connection, cmd)
         if not cmd:
             await ctx.send("That's not an image command :?")

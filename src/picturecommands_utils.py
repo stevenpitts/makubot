@@ -53,7 +53,7 @@ def as_ids(value):
     Tries to turn a value which might have come from the database
     into an int (for IDs and such)
     """
-    if isinstance(value, str) and len(value) == 18:
+    if isinstance(value, str) and len(value) in [18, 19]:
         try:
             return int(value)
         except ValueError:
