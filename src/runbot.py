@@ -69,7 +69,6 @@ class MakuBot(commands.Bot):
                                              "ytsearch",
                                              "fun",
                                              "debugging",
-                                             "rolegiver",
                                              "help",
                                              ]
         if self.s3_bucket:
