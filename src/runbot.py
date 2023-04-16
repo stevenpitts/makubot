@@ -63,7 +63,6 @@ class MakuBot(commands.Bot):
         self.shared["temp_dir"] = Path(self.temp_dir_pointer.name)
         self.shared["default_extensions"] = ["base",
                                              "serverlogging",
-                                             "movement",
                                              "listeners",
                                              "wikisearch",
                                              "ytsearch",
