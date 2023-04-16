@@ -9,6 +9,7 @@ from discord.ext.commands.errors import (
     MissingRequiredArgument, BadArgument, PrivateMessageOnly, NoPrivateMessage,
     UserInputError,
 )
+import psycopg2
 from . import util
 
 logger = logging.getLogger()
@@ -60,6 +61,14 @@ class Listeners(discord.ext.commands.Cog):
             await ctx.send("Something went wrong, sorry!")
             await self.bot.makusu.send(
                 f"Something went wrong!\n```{formatted_tb}```")
+            should_rollback = (
+                isinstance(caught_exception, psycopg2.DataError)
+                or (hasattr(caught_exception, "__cause__") and isinstance(caught_exception.__cause__, psycopg2.errors.InFailedSqlTransaction))
+                or (hasattr(caught_exception, "__cause__") and isinstance(caught_exception.__cause__, psycopg2.DataError))
+            )
+            if should_rollback:
+                await self.bot.makusu.send("Rolling back DB")
+                self.bot.db_connection.rollback()
 
     @commands.Cog.listener()
     async def on_error(self, ctx, caught_exception):
